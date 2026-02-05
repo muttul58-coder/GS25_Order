@@ -1,0 +1,2704 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문서 - LG 생산기술원점</title>
+    <style>
+        /* 전체 요소 초기화 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 본문 스타일 */
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        /* 메인 컨테이너 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* 헤더 스타일 - 노란색 배경의 주문서 제목 */
+        .header {
+            background-color: #f9f3c4;
+            border: 3px solid black;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 10px;
+        }
+
+        /* 상단 정보 영역 - 담당자 정보와 주문 일시 */
+        .top-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+
+        .shop-info {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .date-info {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* 주문자 정보 컨테이너 - 보라색 테두리 */
+        .orderer-info-container {
+            border: 3px solid #9C27B0;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f3e5f5;
+            position: relative;
+        }
+
+        /* 주문자 정보 배지 */
+        .orderer-info-badge {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background-color: #9C27B0;
+            color: white;
+            padding: 5px 15px;
+            font-weight: bold;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+
+        /* 섹션 헤더 - 보내는 분/받는 분 제목 */
+        .section-header {
+            background-color: #ffb3ba;
+            padding: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 5px;
+            border: 2px solid #333;
+        }
+
+        /* 주문자 정보 섹션 헤더 - 보라색 */
+        .orderer-section-header {
+            background-color: #ce93d8;
+            padding: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            border: 2px solid #333;
+            margin-bottom: 0;
+        }
+
+        /* 테이블 공통 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+        }
+
+        th, td {
+            border: 2px solid #333;
+            padding: 5px 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #ffc9d9;
+            font-weight: bold;
+        }
+
+        /* 주문자 정보 테이블 헤더 - 보라색 */
+        .orderer-info-container th {
+            background-color: #ba68c8;
+            color: white;
+        }
+
+        /* 입력 필드 스타일 */
+        input[type="text"],
+        input[type="tel"],
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* 주소 필드는 왼쪽 정렬 */
+        .address-field input {
+            text-align: left;
+        }
+
+        /* 입력 필드 포커스 시 녹색 테두리 */
+        input[type="text"]:focus,
+        input[type="tel"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        /* 입력 오류 시 빨간색 테두리 */
+        input.error {
+            border-color: #f44336;
+            background-color: #ffebee;
+            animation: shake 0.5s;
+        }
+
+        /* 오류 필드 흔들림 애니메이션 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        /* placeholder 스타일 - 입력 전 회색으로 표시 */
+        input::placeholder {
+            color: #999;
+            opacity: 1;
+        }
+
+        input::-webkit-input-placeholder {
+            color: #999;
+        }
+
+        input::-moz-placeholder {
+            color: #999;
+            opacity: 1;
+        }
+
+        input:-ms-input-placeholder {
+            color: #999;
+        }
+
+        /* 입력된 값은 진한 검정색으로 표시 */
+        input {
+            color: #000;
+        }
+
+        /* 단가와 금액 필드를 오른쪽 정렬 */
+        input.unit-price,
+        input.total-price {
+            text-align: right;
+        }
+
+        /* 받는 분 섹션 스타일 - 파란색 배경 */
+        .receiver-section {
+            background-color: #d4e9ff;
+        }
+
+        .receiver-section th {
+            background-color: #b3d9ff;
+        }
+
+        /* 상품 정보 섹션 스타일 - 녹색 배경 */
+        .product-section {
+            background-color: #e8f5e9;
+        }
+
+        .product-section th {
+            background-color: #c8e6c9;
+        }
+
+        /* 버튼 공통 스타일 */
+        .button-container {
+            text-align: center;
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .submit-btn, .print-btn, .add-section-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        .print-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .print-btn:hover {
+            background-color: #0b7dda;
+            transform: scale(1.05);
+        }
+
+        .add-section-btn {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        .add-section-btn:hover {
+            background-color: #e68900;
+            transform: scale(1.05);
+        }
+
+        /* 행 추가/삭제 버튼 스타일 */
+        .add-btn, .remove-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .add-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .add-btn:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        .remove-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .remove-btn:hover {
+            background-color: #da190b;
+            transform: scale(1.05);
+        }
+
+        /* 섹션 구분선 */
+        .order-section {
+            border: 3px solid #FF9800;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #fff3e0;
+            position: relative;
+        }
+
+        /* 섹션 번호 배지 */
+        .section-number {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background-color: #FF9800;
+            color: white;
+            padding: 5px 15px;
+            font-weight: bold;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+
+        /* 섹션 삭제 버튼 */
+        .section-delete-btn {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            background-color: #f44336;
+            color: white;
+            padding: 5px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .section-delete-btn:hover {
+            background-color: #da190b;
+            transform: scale(1.05);
+        }
+
+        /* 체크박스 셀 스타일 */
+        .checkbox-cell {
+            width: 200px;
+            vertical-align: middle;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        /* 총 금액 행 스타일 */
+        .total-row {
+            font-weight: bold;
+            background-color: #fff9c4;
+        }
+
+        .total-row td {
+            font-size: 16px;
+        }
+
+        /* 인쇄 시 스타일 */
+        @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
+            body {
+                background-color: white;
+                padding: 0;
+                margin: 0;
+                font-size: 11pt;
+            }
+
+            .container {
+                box-shadow: none;
+                max-width: 100%;
+                padding: 0;
+                margin: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            /* 헤더 크기 조정 */
+            .header {
+                padding: 8px;
+                margin-bottom: 10px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+                letter-spacing: 5px;
+            }
+
+            /* 상단 정보 크기 조정 */
+            .top-info {
+                padding: 5px;
+                margin-bottom: 10px;
+                font-size: 10pt;
+            }
+
+            /* 주문자 정보 컨테이너 크기 조정 */
+            .orderer-info-container {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+
+            .orderer-info-badge {
+                font-size: 12px;
+                padding: 3px 10px;
+            }
+
+            /* 섹션 헤더 간격 조정 */
+            .section-header {
+                padding: 5px;
+                font-size: 12pt;
+                margin-top: 5px;
+                margin-bottom: 0;
+            }
+
+            /* 테이블 간격 조정 */
+            table {
+                margin-bottom: 5px;
+            }
+
+            /* 인쇄 시 섹션 구분선 진하게 */
+            .order-section {
+                border: 3px solid black;
+                page-break-after: always;
+                padding: 10px;
+                margin-bottom: 0;
+            }
+
+            .section-number {
+                font-size: 12px;
+                padding: 3px 10px;
+            }
+
+            /* 인쇄 시 테두리 및 패딩 조정 */
+            th, td {
+                border: 1px solid black;
+                padding: 3px 5px;
+                font-size: 9pt;
+                word-wrap: break-word;
+                word-break: break-all;
+            }
+
+            /* 인쇄 시 입력 필드 테두리 제거 */
+            input[type="text"],
+            input[type="tel"],
+            input[type="number"] {
+                border: none;
+                background: transparent;
+                padding: 0;
+                font-size: 9pt;
+                width: 100%;
+            }
+
+            /* 주소 필드 폰트 크기 더 작게 */
+            .address-field input {
+                font-size: 8pt;
+            }
+
+            /* 총 금액 행 */
+            .total-row td {
+                font-size: 10pt;
+            }
+
+            /* 테이블 레이아웃 고정 */
+            table {
+                table-layout: fixed;
+                width: 100%;
+            }
+
+            /* 우편번호 검색 버튼 숨김 */
+            .postal-search-btn {
+                display: none;
+            }
+
+            /* 우편번호 래퍼 조정 */
+            .postal-input-wrapper {
+                display: block;
+            }
+        }
+
+        /* 상품 행 액션 버튼 컨테이너 */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        /* 행 추가 버튼 컨테이너 */
+        .add-row-container {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        /* 도움말 텍스트 */
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            line-height: 1.6;
+        }
+
+        .help-text strong {
+            color: #333;
+        }
+
+        /* 알림 메시지 스타일 */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            display: none;
+            font-weight: bold;
+            text-align: center;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .alert.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+
+        .alert.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        /* 구글 설문지 설정 패널 스타일 */
+        .settings-panel {
+            background-color: #e8f5e9;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .settings-panel h3 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+        }
+
+        .settings-panel label {
+            display: block;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .settings-panel input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .entry-id-config {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f1f8e9;
+            border-radius: 5px;
+        }
+
+        .entry-id-config h4 {
+            color: #33691e;
+            margin-bottom: 10px;
+        }
+
+        .entry-grid {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .entry-grid label {
+            font-weight: bold;
+            color: #33691e;
+        }
+
+        .entry-grid input {
+            padding: 8px;
+            border: 1px solid #9ccc65;
+            border-radius: 4px;
+        }
+
+        .save-settings-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .save-settings-btn:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        /* 상품이름 필드 스타일 - 읽기 전용 강조 */
+        .product-name {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* 모바일 반응형 스타일 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+                letter-spacing: 5px;
+            }
+
+            .top-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .shop-info, .date-info {
+                font-size: 14px;
+            }
+
+            /* 테이블을 가로 스크롤 가능하게 */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            table {
+                min-width: 800px;
+            }
+
+            th, td {
+                padding: 8px;
+                font-size: 13px;
+            }
+
+            input[type="text"],
+            input[type="tel"],
+            input[type="number"] {
+                padding: 6px;
+                font-size: 13px;
+            }
+
+            .button-container {
+                flex-direction: column;
+            }
+
+            .submit-btn, .print-btn, .add-section-btn {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            .entry-grid {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+
+            .entry-grid label {
+                margin-top: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 20px;
+                letter-spacing: 3px;
+            }
+
+            .section-number {
+                font-size: 14px;
+                padding: 3px 10px;
+            }
+
+            .orderer-info-badge {
+                font-size: 14px;
+                padding: 3px 10px;
+            }
+        }
+
+        /* 검증 오류 메시지 스타일 */
+        .validation-error-list {
+            background-color: #ffebee;
+            border: 2px solid #f44336;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .validation-error-list h4 {
+            color: #c62828;
+            margin-bottom: 10px;
+        }
+
+        .validation-error-list ul {
+            margin-left: 20px;
+            color: #d32f2f;
+        }
+
+        .validation-error-list li {
+            margin: 5px 0;
+        }
+        /* 우편번호 검색 버튼 스타일 */
+        .postal-search-btn {
+            padding: 6px 12px;
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .postal-search-btn:hover {
+            background-color: #e68900;
+            transform: scale(1.05);
+        }
+
+        /* 우편번호 필드와 버튼을 담는 컨테이너 */
+        .postal-input-wrapper {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .postal-input-wrapper input {
+            flex: 1;
+        }
+    </style>
+    <!-- 카카오 우편번호 서비스 -->
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <!-- 상품 데이터 자동 로드 - products.js 파일이 같은 폴더에 있어야 합니다 -->
+    <script src="products.js"></script>
+    <!-- 구글 폼 설정 파일 - config.js 파일이 같은 폴더에 있어야 합니다 -->
+    <script src="config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 구글 설문지 설정 패널 (인쇄 시 숨김) -->
+        <div class="settings-panel no-print">
+            <h3>⚙️ 설정</h3>
+            
+            <!-- 상품 데이터 로드 상태 표시 -->
+            <div id="productDataStatus" style="padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                <strong>📦 상품 데이터:</strong> <span id="productDataStatusText">로딩 중...</span>
+            </div>
+            
+            <!-- 구글 폼 설정 안내 -->
+            <div style="padding: 15px; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 5px;">
+                <h4 style="color: #856404; margin-bottom: 10px;">📋 구글 폼 설정</h4>
+                <p class="help-text" style="color: #856404; margin-bottom: 10px;">
+                    <strong>구글 폼 URL과 Entry ID는 config.js 파일에서 설정됩니다.</strong>
+                </p>
+                <p class="help-text" style="color: #856404;">
+                    💡 <strong>설정 방법:</strong><br>
+                    1. <strong>config.js</strong> 파일을 메모장이나 편집기로 엽니다<br>
+                    2. <strong>formUrl</strong>에 구글 폼의 formResponse URL을 입력합니다<br>
+                    3. <strong>entries</strong>에 각 필드의 Entry ID를 입력합니다<br>
+                    4. 파일을 저장하고 페이지를 새로고침합니다
+                </p>
+                <div id="configStatus" style="margin-top: 15px; padding: 10px; border-radius: 5px;">
+                    <strong>현재 설정 상태:</strong> <span id="configStatusText">확인 중...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 알림 메시지 영역 (인쇄 시 숨김) -->
+        <div id="alertBox" class="alert"></div>
+
+        <!-- 헤더 - 주문서 제목 -->
+        <div class="header">
+            <h1>주 문 서</h1>
+        </div>
+
+        <!-- 상단 정보 - 담당자 및 주문 일시 -->
+        <div class="top-info">
+            <div class="shop-info">
+                LG 생산기술원점&nbsp;&nbsp;&nbsp;담당 : 양창호&nbsp;&nbsp;&nbsp;휴대전화 : 010-7568-3522
+            </div>
+            <div class="date-info">
+                주문 일시 : <span id="currentDateTime"></span>
+            </div>
+        </div>
+
+        <!-- 주문자 정보 컨테이너 -->
+        <div class="orderer-info-container">
+            <div class="orderer-info-badge">주문자 정보</div>
+            <div class="table-responsive">
+                <table>
+                    <tr>
+                        <th style="width: 120px;">성명</th>
+                        <th style="width: 200px;">전화번호</th>
+                        <th style="width: 180px;">우편번호</th>
+                        <th style="width: 300px;">기본주소</th>
+                        <th>상세주소</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" id="ordererName" placeholder="______" required></td>
+                        <td><input type="tel" id="ordererPhone" placeholder="010-0000-0000" required></td>
+                        <td>
+                            <div class="postal-input-wrapper">
+                                <input type="text" id="ordererPostal" placeholder="00000" maxlength="5" required readonly>
+                                <button type="button" class="postal-search-btn no-print" onclick="searchOrdererAddress()">검색</button>
+                            </div>
+                        </td>
+                        <td class="address-field"><input type="text" id="ordererAddress" placeholder="기본주소" required readonly></td>
+                        <td class="address-field"><input type="text" id="ordererAddressDetail" placeholder="상세주소 입력"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- 주문 섹션들을 담는 컨테이너 -->
+        <div id="orderSectionsContainer">
+            <!-- 첫 번째 섹션 (기본) -->
+            <div class="order-section" data-section="1">
+                <div class="section-number">주문 #1</div>
+                
+                <!-- 보내는 분 정보 테이블 (별도 분리) -->
+                <div class="section-header">보내는 분</div>
+                <div class="table-responsive">
+                    <table>
+                        <tr>
+                            <th style="width: 120px;">성명</th>
+                            <th style="width: 200px;">전화번호</th>
+                            <th style="width: 180px;">우편번호</th>
+                            <th style="width: 300px;">기본주소</th>
+                            <th style="width: 200px;">상세주소</th>
+                            <th class="checkbox-cell no-print">자동 입력</th>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="sender-name" placeholder="______" required></td>
+                            <td><input type="tel" class="sender-phone" placeholder="010-0000-0000" required></td>
+                            <td>
+                                <div class="postal-input-wrapper">
+                                    <input type="text" class="sender-postal" placeholder="00000" maxlength="5" required readonly>
+                                    <button type="button" class="postal-search-btn no-print" onclick="searchSenderAddress(this)">검색</button>
+                                </div>
+                            </td>
+                            <td class="address-field"><input type="text" class="sender-address" placeholder="기본주소" required readonly></td>
+                            <td class="address-field"><input type="text" class="sender-address-detail" placeholder="상세주소 입력"></td>
+                            <td class="checkbox-cell no-print">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
+                                    <span>주문자 정보와 동일</span>
+                                </label>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- 받는 분 정보 테이블 (분리됨) -->
+                <div class="section-header receiver-section">받는 분</div>
+                <div class="table-responsive">
+                    <table class="receiver-section">
+                        <tr>
+                            <th style="width: 120px;">성명</th>
+                            <th style="width: 200px;">전화번호</th>
+                            <th style="width: 180px;">우편번호</th>
+                            <th style="width: 300px;">기본주소</th>
+                            <th style="width: 200px;">상세주소</th>
+                            <th class="checkbox-cell no-print">자동 입력</th>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="receiver-name" placeholder="______" required></td>
+                            <td><input type="tel" class="receiver-phone" placeholder="010-0000-0000" required></td>
+                            <td>
+                                <div class="postal-input-wrapper">
+                                    <input type="text" class="receiver-postal" placeholder="00000" maxlength="5" required readonly>
+                                    <button type="button" class="postal-search-btn no-print" onclick="searchReceiverAddress(this)">검색</button>
+                                </div>
+                            </td>
+                            <td class="address-field"><input type="text" class="receiver-address" placeholder="기본주소" required readonly></td>
+                            <td class="address-field"><input type="text" class="receiver-address-detail" placeholder="상세주소 입력"></td>
+                            <td class="checkbox-cell no-print">
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" class="copy-orderer-to-receiver" onchange="toggleReceiverInfoCopy(this, 'orderer')">
+                                        <span>주문자 정보와 동일</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" class="copy-sender-to-receiver" onchange="toggleReceiverInfoCopy(this, 'sender')">
+                                        <span>보내는 분 정보와 동일</span>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- 상품 정보 테이블 (별도 분리) -->
+                <div class="section-header product-section">상품 정보</div>
+                <div class="table-responsive">
+                    <table class="product-section">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;" class="no-print">No.</th>
+                                <th style="width: 120px;">상품 코드</th>
+                                <th style="width: 200px;">상품이름</th>
+                                <th style="width: 80px;">수량</th>
+                                <th style="width: 120px;">단가</th>
+                                <th style="width: 120px;">금액</th>
+                                <th style="width: 100px;" class="no-print">작업</th>
+                            </tr>
+                        </thead>
+                        <tbody class="product-table-body">
+                            <!-- 첫 번째 상품 행 -->
+                            <tr class="product-row" data-row="1">
+                                <td class="row-number no-print">1</td>
+                                <td><input type="text" class="product-code" placeholder="00-00" required></td>
+                                <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
+                                <td><input type="number" class="quantity" value="1" min="1" required></td>
+                                <td><input type="text" class="unit-price" placeholder="______" required></td>
+                                <td><input type="text" class="total-price" readonly></td>
+                                <td class="no-print">
+                                    <div class="action-buttons">
+                                        <button type="button" class="remove-btn" onclick="removeProductRow(this)">삭제</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <!-- 행 추가 버튼 -->
+                            <tr class="no-print">
+                                <td colspan="7" class="add-row-container">
+                                    <button type="button" class="add-btn" onclick="addProductRowInSection(this)">+ 상품 추가</button>
+                                </td>
+                            </tr>
+                            <!-- 합계 행 -->
+                            <tr class="total-row">
+                                <td colspan="3">총 수량</td>
+                                <td class="section-total-quantity">0</td>
+                                <td>총 금액</td>
+                                <td colspan="2" class="section-grand-total">0원</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <!-- 첫 번째 섹션 끝 -->
+        </div>
+        <!-- orderSectionsContainer 끝 -->
+
+        <!-- 하단 버튼 영역 (인쇄 시 숨김) -->
+        <div class="button-container no-print">
+            <button type="button" class="add-section-btn" onclick="addSection()">➕ 주문 섹션 추가</button>
+            <button type="button" class="print-btn" onclick="printOrder()">🖨️ 인쇄 및 주문 전송</button>
+        </div>
+    </div>
+    <!-- container 끝 -->
+
+    <script>
+        // ========================================
+        // 전역 변수 선언
+        // ========================================
+        let sectionCounter = 1; // 섹션 번호를 추적하는 카운터
+        
+        // PRODUCTS_DATA는 products.js 파일에서 자동으로 로드됩니다.
+        // 파일이 제대로 로드되지 않으면 undefined가 됩니다.
+
+        /**
+         * 상품 데이터 로드 상태 확인 및 표시
+         */
+        function checkProductsDataLoaded() {
+            const statusDiv = document.getElementById('productDataStatus');
+            const statusText = document.getElementById('productDataStatusText');
+            
+            if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA) {
+                const productCount = Object.keys(PRODUCTS_DATA).length;
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.border = '2px solid #c3e6cb';
+                statusText.innerHTML = `✅ <strong>products.js</strong> 로드 완료 (상품 <strong>${productCount}</strong>개)`;
+                console.log('상품 데이터 로드 완료:', PRODUCTS_DATA);
+                showAlert(`✅ 상품 데이터가 성공적으로 로드되었습니다! (상품 ${productCount}개)`, 'success');
+                return true;
+            } else {
+                statusDiv.style.backgroundColor = '#ffebee';
+                statusDiv.style.border = '2px solid #f44336';
+                statusText.innerHTML = '❌ <strong>products.js</strong> 파일을 찾을 수 없습니다. HTML 파일과 같은 폴더에 있는지 확인해주세요.';
+                console.error('products.js 파일이 로드되지 않았습니다.');
+                showAlert('⚠️ products.js 파일을 HTML 파일과 같은 폴더에 위치시켜주세요.', 'error');
+                return false;
+            }
+        }
+
+        /**
+         * 상품 코드로 상품 정보 검색
+         * @param {string} code - 상품 코드 (예: "08-01")
+         * @returns {Object|null} - 상품 정보 또는 null
+         */
+        function getProductInfo(code) {
+            if (typeof PRODUCTS_DATA === 'undefined' || !PRODUCTS_DATA) {
+                return null;
+            }
+            return PRODUCTS_DATA[code] || null;
+        }
+
+        // ========================================
+        // 우편번호 검색 함수
+        // ========================================
+
+        /**
+         * 주문자 우편번호 검색
+         */
+        function searchOrdererAddress() {
+            // 카카오 Postcode API 로드 확인
+            if (typeof daum === 'undefined' || typeof daum.Postcode === 'undefined') {
+                alert('우편번호 검색 서비스를 불러오는 중입니다.\n잠시 후 다시 시도해주세요.\n\n인터넷 연결을 확인해주세요.');
+                console.error('Daum Postcode API가 로드되지 않았습니다.');
+                return;
+            }
+
+            new daum.Postcode({
+                oncomplete: function(data) {
+                    // 우편번호와 주소 정보를 해당 필드에 넣기
+                    document.getElementById('ordererPostal').value = data.zonecode;
+                    document.getElementById('ordererAddress').value = data.roadAddress || data.jibunAddress;
+                    // 상세주소 필드로 포커스 이동
+                    document.getElementById('ordererAddressDetail').focus();
+                }
+            }).open();
+        }
+
+        /**
+         * 보내는 분 우편번호 검색
+         * @param {HTMLElement} button - 검색 버튼 요소
+         */
+        function searchSenderAddress(button) {
+            // 카카오 Postcode API 로드 확인
+            if (typeof daum === 'undefined' || typeof daum.Postcode === 'undefined') {
+                alert('우편번호 검색 서비스를 불러오는 중입니다.\n잠시 후 다시 시도해주세요.\n\n인터넷 연결을 확인해주세요.');
+                console.error('Daum Postcode API가 로드되지 않았습니다.');
+                return;
+            }
+
+            const section = button.closest('.order-section');
+            const postalInput = section.querySelector('.sender-postal');
+            const addressInput = section.querySelector('.sender-address');
+            const addressDetailInput = section.querySelector('.sender-address-detail');
+
+            new daum.Postcode({
+                oncomplete: function(data) {
+                    postalInput.value = data.zonecode;
+                    addressInput.value = data.roadAddress || data.jibunAddress;
+                    addressDetailInput.focus();
+                }
+            }).open();
+        }
+
+        /**
+         * 받는 분 우편번호 검색
+         * @param {HTMLElement} button - 검색 버튼 요소
+         */
+        function searchReceiverAddress(button) {
+            // 카카오 Postcode API 로드 확인
+            if (typeof daum === 'undefined' || typeof daum.Postcode === 'undefined') {
+                alert('우편번호 검색 서비스를 불러오는 중입니다.\n잠시 후 다시 시도해주세요.\n\n인터넷 연결을 확인해주세요.');
+                console.error('Daum Postcode API가 로드되지 않았습니다.');
+                return;
+            }
+
+            const section = button.closest('.order-section');
+            const postalInput = section.querySelector('.receiver-postal');
+            const addressInput = section.querySelector('.receiver-address');
+            const addressDetailInput = section.querySelector('.receiver-address-detail');
+
+            new daum.Postcode({
+                oncomplete: function(data) {
+                    postalInput.value = data.zonecode;
+                    addressInput.value = data.roadAddress || data.jibunAddress;
+                    addressDetailInput.focus();
+                }
+            }).open();
+        }
+
+        // ========================================
+        // 날짜/시간 관련 함수
+        // ========================================
+        
+        /**
+         * 현재 날짜와 시간을 업데이트하여 표시
+         * 형식: YYYY-MM-DD HH:MM
+         */
+        function updateDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('currentDateTime').textContent = 
+                `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+
+        // ========================================
+        // 주문자 정보 복사 함수
+        // ========================================
+        
+        /**
+         * 주문자 정보를 보내는 분 필드로 복사하거나 초기화
+         * @param {HTMLInputElement} checkbox - 체크박스 요소
+         */
+        function toggleOrdererInfoCopy(checkbox) {
+            const section = checkbox.closest('.order-section');
+            const senderName = section.querySelector('.sender-name');
+            const senderPhone = section.querySelector('.sender-phone');
+            const senderPostal = section.querySelector('.sender-postal');
+            const senderAddress = section.querySelector('.sender-address');
+            const senderAddressDetail = section.querySelector('.sender-address-detail');
+
+            if (checkbox.checked) {
+                // 주문자 정보를 보내는 분 필드로 복사
+                senderName.value = document.getElementById('ordererName').value;
+                senderPhone.value = document.getElementById('ordererPhone').value;
+                senderPostal.value = document.getElementById('ordererPostal').value;
+                senderAddress.value = document.getElementById('ordererAddress').value;
+                senderAddressDetail.value = document.getElementById('ordererAddressDetail').value;
+
+                // 필드를 읽기 전용으로 설정
+                senderName.readOnly = true;
+                senderPhone.readOnly = true;
+                senderPostal.readOnly = true;
+                senderAddress.readOnly = true;
+                senderAddressDetail.readOnly = true;
+
+                // 시각적 피드백 (배경색 변경)
+                senderName.style.backgroundColor = '#f0f0f0';
+                senderPhone.style.backgroundColor = '#f0f0f0';
+                senderPostal.style.backgroundColor = '#f0f0f0';
+                senderAddress.style.backgroundColor = '#f0f0f0';
+                senderAddressDetail.style.backgroundColor = '#f0f0f0';
+
+                showAlert('✅ 주문자 정보가 보내는 분 필드로 복사되었습니다.', 'success');
+            } else {
+                // 필드 초기화 및 편집 가능하게 설정
+                senderName.value = '';
+                senderPhone.value = '';
+                senderPostal.value = '';
+                senderAddress.value = '';
+                senderAddressDetail.value = '';
+
+                senderName.readOnly = false;
+                senderPhone.readOnly = false;
+                senderPostal.readOnly = false;
+                senderAddress.readOnly = false;
+                senderAddressDetail.readOnly = false;
+
+                // 배경색 원래대로
+                senderName.style.backgroundColor = '';
+                senderPhone.style.backgroundColor = '';
+                senderPostal.style.backgroundColor = '';
+                senderAddress.style.backgroundColor = '';
+                senderAddressDetail.style.backgroundColor = '';
+            }
+        }
+
+        /**
+         * 받는 분 필드에 주문자 또는 보내는 분 정보 복사
+         * @param {HTMLInputElement} checkbox - 체크박스 요소
+         * @param {string} sourceType - 'orderer' 또는 'sender'
+         */
+        function toggleReceiverInfoCopy(checkbox, sourceType) {
+            const section = checkbox.closest('.order-section');
+            const receiverName = section.querySelector('.receiver-name');
+            const receiverPhone = section.querySelector('.receiver-phone');
+            const receiverPostal = section.querySelector('.receiver-postal');
+            const receiverAddress = section.querySelector('.receiver-address');
+            const receiverAddressDetail = section.querySelector('.receiver-address-detail');
+
+            if (checkbox.checked) {
+                // 다른 체크박스가 체크되어 있으면 해제
+                const otherCheckbox = sourceType === 'orderer'
+                    ? section.querySelector('.copy-sender-to-receiver')
+                    : section.querySelector('.copy-orderer-to-receiver');
+
+                if (otherCheckbox && otherCheckbox.checked) {
+                    otherCheckbox.checked = false;
+                }
+
+                // 소스에 따라 정보 복사
+                if (sourceType === 'orderer') {
+                    // 주문자 정보 복사
+                    receiverName.value = document.getElementById('ordererName').value;
+                    receiverPhone.value = document.getElementById('ordererPhone').value;
+                    receiverPostal.value = document.getElementById('ordererPostal').value;
+                    receiverAddress.value = document.getElementById('ordererAddress').value;
+                    receiverAddressDetail.value = document.getElementById('ordererAddressDetail').value;
+                    showAlert('✅ 주문자 정보가 받는 분 필드로 복사되었습니다.', 'success');
+                } else if (sourceType === 'sender') {
+                    // 보내는 분 정보 복사
+                    const senderName = section.querySelector('.sender-name');
+                    const senderPhone = section.querySelector('.sender-phone');
+                    const senderPostal = section.querySelector('.sender-postal');
+                    const senderAddress = section.querySelector('.sender-address');
+                    const senderAddressDetail = section.querySelector('.sender-address-detail');
+
+                    receiverName.value = senderName.value;
+                    receiverPhone.value = senderPhone.value;
+                    receiverPostal.value = senderPostal.value;
+                    receiverAddress.value = senderAddress.value;
+                    receiverAddressDetail.value = senderAddressDetail.value;
+                    showAlert('✅ 보내는 분 정보가 받는 분 필드로 복사되었습니다.', 'success');
+                }
+
+                // 필드를 읽기 전용으로 설정
+                receiverName.readOnly = true;
+                receiverPhone.readOnly = true;
+                receiverPostal.readOnly = true;
+                receiverAddress.readOnly = true;
+                receiverAddressDetail.readOnly = true;
+
+                // 시각적 피드백 (배경색 변경)
+                receiverName.style.backgroundColor = '#f0f0f0';
+                receiverPhone.style.backgroundColor = '#f0f0f0';
+                receiverPostal.style.backgroundColor = '#f0f0f0';
+                receiverAddress.style.backgroundColor = '#f0f0f0';
+                receiverAddressDetail.style.backgroundColor = '#f0f0f0';
+
+            } else {
+                // 필드 초기화 및 편집 가능하게 설정
+                receiverName.value = '';
+                receiverPhone.value = '';
+                receiverPostal.value = '';
+                receiverAddress.value = '';
+                receiverAddressDetail.value = '';
+
+                receiverName.readOnly = false;
+                receiverPhone.readOnly = false;
+                receiverPostal.readOnly = false;
+                receiverAddress.readOnly = false;
+                receiverAddressDetail.readOnly = false;
+
+                // 배경색 원래대로
+                receiverName.style.backgroundColor = '';
+                receiverPhone.style.backgroundColor = '';
+                receiverPostal.style.backgroundColor = '';
+                receiverAddress.style.backgroundColor = '';
+                receiverAddressDetail.style.backgroundColor = '';
+            }
+        }
+
+        // ========================================
+        // 섹션 관리 함수
+        // ========================================
+        
+        /**
+         * 새로운 주문 섹션(보내는 분 + 받는 분 + 상품 정보) 추가
+         */
+        function addSection() {
+            // 순차적 입력 검증 - 주문 #1이 완료되지 않았으면 섹션 추가 불가
+            if (!checkSequentialInput()) {
+                return;
+            }
+            
+            sectionCounter++;
+            const container = document.getElementById('orderSectionsContainer');
+            
+            // 새 섹션 div 생성
+            const newSection = document.createElement('div');
+            newSection.className = 'order-section';
+            newSection.setAttribute('data-section', sectionCounter);
+            
+            // 섹션 HTML 구조 생성
+            newSection.innerHTML = `
+                <div class="section-number">주문 #${sectionCounter}</div>
+                <button type="button" class="section-delete-btn no-print" onclick="removeSection(this)">🗑️ 섹션 삭제</button>
+
+                <!-- 보내는 분 정보 -->
+                <div class="section-header">보내는 분</div>
+                <div class="table-responsive">
+                    <table>
+                        <tr>
+                            <th style="width: 120px;">성명</th>
+                            <th style="width: 200px;">전화번호</th>
+                            <th style="width: 180px;">우편번호</th>
+                            <th style="width: 300px;">기본주소</th>
+                            <th style="width: 200px;">상세주소</th>
+                            <th class="checkbox-cell no-print">자동 입력</th>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="sender-name" placeholder="______" required></td>
+                            <td><input type="tel" class="sender-phone" placeholder="010-0000-0000" required></td>
+                            <td>
+                                <div class="postal-input-wrapper">
+                                    <input type="text" class="sender-postal" placeholder="00000" maxlength="5" required readonly>
+                                    <button type="button" class="postal-search-btn no-print" onclick="searchSenderAddress(this)">검색</button>
+                                </div>
+                            </td>
+                            <td class="address-field"><input type="text" class="sender-address" placeholder="기본주소" required readonly></td>
+                            <td class="address-field"><input type="text" class="sender-address-detail" placeholder="상세주소 입력"></td>
+                            <td class="checkbox-cell no-print">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
+                                    <span>주문자 정보와 동일</span>
+                                </label>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- 받는 분 정보 -->
+                <div class="section-header receiver-section">받는 분</div>
+                <div class="table-responsive">
+                    <table class="receiver-section">
+                        <tr>
+                            <th style="width: 120px;">성명</th>
+                            <th style="width: 200px;">전화번호</th>
+                            <th style="width: 180px;">우편번호</th>
+                            <th style="width: 300px;">기본주소</th>
+                            <th style="width: 200px;">상세주소</th>
+                            <th class="checkbox-cell no-print">자동 입력</th>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="receiver-name" placeholder="______" required></td>
+                            <td><input type="tel" class="receiver-phone" placeholder="010-0000-0000" required></td>
+                            <td>
+                                <div class="postal-input-wrapper">
+                                    <input type="text" class="receiver-postal" placeholder="00000" maxlength="5" required readonly>
+                                    <button type="button" class="postal-search-btn no-print" onclick="searchReceiverAddress(this)">검색</button>
+                                </div>
+                            </td>
+                            <td class="address-field"><input type="text" class="receiver-address" placeholder="기본주소" required readonly></td>
+                            <td class="address-field"><input type="text" class="receiver-address-detail" placeholder="상세주소 입력"></td>
+                            <td class="checkbox-cell no-print">
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" class="copy-orderer-to-receiver" onchange="toggleReceiverInfoCopy(this, 'orderer')">
+                                        <span>주문자 정보와 동일</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" class="copy-sender-to-receiver" onchange="toggleReceiverInfoCopy(this, 'sender')">
+                                        <span>보내는 분 정보와 동일</span>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- 상품 정보 -->
+                <div class="section-header product-section">상품 정보</div>
+                <div class="table-responsive">
+                    <table class="product-section">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;" class="no-print">No.</th>
+                                <th style="width: 120px;">상품 코드</th>
+                                <th style="width: 200px;">상품이름</th>
+                                <th style="width: 80px;">수량</th>
+                                <th style="width: 120px;">단가</th>
+                                <th style="width: 120px;">금액</th>
+                                <th style="width: 100px;" class="no-print">작업</th>
+                            </tr>
+                        </thead>
+                        <tbody class="product-table-body">
+                            <tr class="product-row" data-row="1">
+                                <td class="row-number no-print">1</td>
+                                <td><input type="text" class="product-code" placeholder="00-00" required></td>
+                                <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
+                                <td><input type="number" class="quantity" value="1" min="1" required></td>
+                                <td><input type="text" class="unit-price" placeholder="______" required></td>
+                                <td><input type="text" class="total-price" readonly></td>
+                                <td class="no-print">
+                                    <div class="action-buttons">
+                                        <button type="button" class="remove-btn" onclick="removeProductRow(this)">삭제</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="no-print">
+                                <td colspan="7" class="add-row-container">
+                                    <button type="button" class="add-btn" onclick="addProductRowInSection(this)">+ 상품 추가</button>
+                                </td>
+                            </tr>
+                            <tr class="total-row">
+                                <td colspan="3">총 수량</td>
+                                <td class="section-total-quantity">0</td>
+                                <td>총 금액</td>
+                                <td colspan="2" class="section-grand-total">0원</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+            
+            // 컨테이너에 새 섹션 추가
+            container.appendChild(newSection);
+            
+            // 새 섹션의 첫 번째 상품 행에 이벤트 리스너 및 포맷팅 적용
+            const firstRow = newSection.querySelector('.product-row');
+            attachRowEventListeners(firstRow);
+            attachProductCodeFormatting(firstRow);
+            
+            // 성공 메시지 표시
+            showAlert('✅ 새로운 주문 섹션이 추가되었습니다.', 'success');
+            
+            // 새 섹션으로 부드럽게 스크롤
+            newSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        /**
+         * 섹션 삭제
+         * @param {HTMLElement} button - 삭제 버튼 요소
+         */
+        function removeSection(button) {
+            const sections = document.querySelectorAll('.order-section');
+            
+            // 최소 1개의 섹션은 유지해야 함
+            if (sections.length <= 1) {
+                showAlert('⚠️ 최소 1개의 주문 섹션은 있어야 합니다.', 'warning');
+                return;
+            }
+            
+            const section = button.closest('.order-section');
+            if (!section) {
+                console.error('섹션을 찾을 수 없습니다.');
+                return;
+            }
+            
+            const sectionNumber = section.querySelector('.section-number').textContent;
+            
+            // 삭제 확인
+            const confirmDelete = confirm(`${sectionNumber} 섹션 전체를 삭제하시겠습니까?\n(보내는 분, 받는 분, 상품 정보가 모두 삭제됩니다)`);
+            if (!confirmDelete) {
+                return;
+            }
+            
+            // 섹션 제거
+            section.remove();
+            
+            // 섹션 번호 재정렬
+            renumberSections();
+            
+            showAlert('✅ 주문 섹션이 삭제되었습니다.', 'success');
+        }
+
+        /**
+         * 모든 섹션의 번호를 재정렬
+         */
+        function renumberSections() {
+            const sections = document.querySelectorAll('.order-section');
+            sections.forEach((section, index) => {
+                const sectionNumber = section.querySelector('.section-number');
+                sectionNumber.textContent = `주문 #${index + 1}`;
+                section.setAttribute('data-section', index + 1);
+            });
+            sectionCounter = sections.length;
+        }
+
+        // ========================================
+        // 상품 행 관리 함수
+        // ========================================
+        
+        /**
+         * 섹션 내에 새로운 상품 행 추가
+         * @param {HTMLElement} button - 상품 추가 버튼 요소
+         */
+        function addProductRowInSection(button) {
+            const section = button.closest('.order-section');
+            const tbody = section.querySelector('.product-table-body');
+            const rows = tbody.querySelectorAll('.product-row');
+            
+            // 현재 마지막 행이 완료되었는지 확인
+            if (rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                const productCode = lastRow.querySelector('.product-code');
+                const quantity = lastRow.querySelector('.quantity');
+                const unitPrice = lastRow.querySelector('.unit-price');
+                
+                if (!productCode.value.trim()) {
+                    productCode.focus();
+                    productCode.classList.add('error');
+                    showAlert('⚠️ 현재 상품의 코드를 먼저 입력해주세요.', 'warning');
+                    setTimeout(() => productCode.classList.remove('error'), 3000);
+                    return;
+                }
+                if (!quantity.value || parseInt(quantity.value) <= 0) {
+                    quantity.focus();
+                    quantity.classList.add('error');
+                    showAlert('⚠️ 현재 상품의 수량을 먼저 입력해주세요.', 'warning');
+                    setTimeout(() => quantity.classList.remove('error'), 3000);
+                    return;
+                }
+                if (!unitPrice.value || parseInt(unitPrice.value) <= 0) {
+                    unitPrice.focus();
+                    unitPrice.classList.add('error');
+                    showAlert('⚠️ 현재 상품의 단가를 먼저 입력해주세요.', 'warning');
+                    setTimeout(() => unitPrice.classList.remove('error'), 3000);
+                    return;
+                }
+            }
+            
+            const nextRowNumber = rows.length + 1;
+            
+            // 새 행 생성
+            const newRow = document.createElement('tr');
+            newRow.className = 'product-row';
+            newRow.setAttribute('data-row', nextRowNumber);
+            
+            // 행 HTML 구조 생성
+            newRow.innerHTML = `
+                <td class="row-number no-print">${nextRowNumber}</td>
+                <td><input type="text" class="product-code" placeholder="00-00" required></td>
+                <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
+                <td><input type="number" class="quantity" value="1" min="1" required></td>
+                <td><input type="text" class="unit-price" placeholder="______" required></td>
+                <td><input type="text" class="total-price" readonly></td>
+                <td class="no-print">
+                    <div class="action-buttons">
+                        <button type="button" class="remove-btn" onclick="removeProductRow(this)">삭제</button>
+                    </div>
+                </td>
+            `;
+            
+            // tbody에 새 행 추가
+            tbody.appendChild(newRow);
+            
+            // 새로 추가된 행에 이벤트 리스너 및 포맷팅 적용
+            attachRowEventListeners(newRow);
+            attachProductCodeFormatting(newRow);
+            
+            // 해당 섹션의 합계 업데이트
+            updateSectionTotals(section);
+            
+            showAlert('✅ 새로운 상품 행이 추가되었습니다.', 'success');
+        }
+
+        /**
+         * 상품 행 삭제
+         * @param {HTMLElement} button - 삭제 버튼 요소
+         */
+        function removeProductRow(button) {
+            const section = button.closest('.order-section');
+            const rows = section.querySelectorAll('.product-row');
+            
+            // 최소 1개의 행은 유지해야 함
+            if (rows.length <= 1) {
+                showAlert('⚠️ 최소 1개의 상품은 있어야 합니다.', 'warning');
+                return;
+            }
+            
+            const row = button.closest('.product-row');
+            row.remove();
+            
+            // 해당 섹션의 행 번호 재정렬
+            renumberRowsInSection(section);
+            
+            // 해당 섹션의 합계 업데이트
+            updateSectionTotals(section);
+            
+            showAlert('✅ 상품 행이 삭제되었습니다.', 'success');
+        }
+
+        /**
+         * 섹션 내 모든 행의 번호를 재정렬
+         * @param {HTMLElement} section - 대상 섹션 요소
+         */
+        function renumberRowsInSection(section) {
+            const rows = section.querySelectorAll('.product-row');
+            rows.forEach((row, index) => {
+                const rowNumber = row.querySelector('.row-number');
+                if (rowNumber) {
+                    rowNumber.textContent = index + 1;
+                }
+                row.setAttribute('data-row', index + 1);
+            });
+        }
+
+        // ========================================
+        // 이벤트 리스너 및 계산 함수
+        // ========================================
+        
+        /**
+         * 상품 행에 이벤트 리스너 추가 (수량, 단가 변경 시 금액 자동 계산)
+         * @param {HTMLElement} row - 대상 행 요소
+         */
+        function attachRowEventListeners(row) {
+            const quantity = row.querySelector('.quantity');
+            const unitPrice = row.querySelector('.unit-price');
+            
+            // 수량 변경 시 금액 재계산
+            quantity.addEventListener('input', () => calculateRowTotal(row));
+            
+            // 단가 입력 시 천단위 쉼표 자동 포맷팅 및 금액 재계산
+            unitPrice.addEventListener('input', function() {
+                // 현재 커서 위치 저장
+                let cursorPosition = this.selectionStart;
+                const oldValue = this.value;
+                const oldLength = oldValue.length;
+                
+                // 숫자만 추출
+                const numbersOnly = oldValue.replace(/[^\d]/g, '');
+                
+                // 빈 값이면 그대로 유지
+                if (!numbersOnly) {
+                    this.value = '';
+                    calculateRowTotal(row);
+                    return;
+                }
+                
+                // 천단위 쉼표 적용
+                const formatted = formatNumberWithCommas(parseInt(numbersOnly));
+                this.value = formatted;
+                
+                // 커서 위치 조정 (쉼표가 추가되면 커서가 이동하므로 조정 필요)
+                const newLength = formatted.length;
+                const diff = newLength - oldLength;
+                this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+                
+                // 금액 재계산
+                calculateRowTotal(row);
+            });
+            
+            // 단가 필드에서 포커스가 벗어날 때도 포맷팅 확인
+            unitPrice.addEventListener('blur', function() {
+                const value = this.value.replace(/,/g, '');
+                if (value) {
+                    this.value = formatNumberWithCommas(parseInt(value));
+                }
+            });
+        }
+
+        /**
+         * 개별 행의 금액 계산 (수량 × 단가)
+         * @param {HTMLElement} row - 대상 행 요소
+         */
+        function calculateRowTotal(row) {
+            const quantityInput = row.querySelector('.quantity');
+            const unitPriceInput = row.querySelector('.unit-price');
+            const totalPriceInput = row.querySelector('.total-price');
+            
+            const quantity = parseInt(quantityInput.value) || 0;
+            const unitPrice = parseFormattedNumber(unitPriceInput.value) || 0;
+            const total = quantity * unitPrice;
+            
+            // 금액 필드에 천단위 쉼표가 포함된 값 설정
+            totalPriceInput.value = formatNumberWithCommas(total);
+            
+            // 해당 섹션의 합계 업데이트
+            const section = row.closest('.order-section');
+            updateSectionTotals(section);
+        }
+
+        /**
+         * 섹션별 총 수량과 총 금액 계산 및 업데이트
+         * @param {HTMLElement} section - 대상 섹션 요소
+         */
+        function updateSectionTotals(section) {
+            const rows = section.querySelectorAll('.product-row');
+            let totalQuantity = 0;
+            let grandTotal = 0;
+            
+            // 모든 행의 수량과 금액을 합산
+            rows.forEach(row => {
+                const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+                const totalPriceValue = row.querySelector('.total-price').value;
+                const totalPrice = parseFormattedNumber(totalPriceValue) || 0;
+                
+                totalQuantity += quantity;
+                grandTotal += totalPrice;
+            });
+            
+            // 합계 필드 업데이트 (천단위 쉼표 포함)
+            const totalQuantityEl = section.querySelector('.section-total-quantity');
+            const grandTotalEl = section.querySelector('.section-grand-total');
+            
+            if (totalQuantityEl) totalQuantityEl.textContent = totalQuantity;
+            if (grandTotalEl) grandTotalEl.textContent = formatNumberWithCommas(grandTotal) + '원';
+        }
+
+        // ========================================
+        // 상품 코드 포맷팅 및 자동완성 함수
+        // ========================================
+        
+        /**
+         * 숫자를 천단위 쉼표 형식으로 변환
+         * @param {number} num - 변환할 숫자
+         * @returns {string} - 천단위 쉼표가 추가된 문자열
+         */
+        function formatNumberWithCommas(num) {
+            if (!num && num !== 0) return '';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        /**
+         * 천단위 쉼표가 포함된 문자열을 숫자로 변환
+         * @param {string} str - 변환할 문자열
+         * @returns {number} - 변환된 숫자
+         */
+        function parseFormattedNumber(str) {
+            if (!str) return 0;
+            return parseInt(str.toString().replace(/,/g, '')) || 0;
+        }
+
+        /**
+         * 상품 코드 입력 필드에 포맷팅 및 자동완성 기능 추가
+         * @param {HTMLElement} row - 대상 행 요소
+         */
+        function attachProductCodeFormatting(row) {
+            const productCodeInput = row.querySelector('.product-code');
+            const productNameInput = row.querySelector('.product-name');
+            const quantityInput = row.querySelector('.quantity');
+            const unitPriceInput = row.querySelector('.unit-price');
+            
+            // Enter 키 입력 시 Tab 키처럼 동작
+            productCodeInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // 기본 Enter 동작 방지
+                    
+                    // blur 이벤트를 트리거하여 포맷팅 및 자동완성 실행
+                    this.blur();
+                    
+                    // 다음 필드(수량)로 포커스 이동
+                    if (quantityInput) {
+                        setTimeout(() => {
+                            quantityInput.focus();
+                            quantityInput.select(); // 내용 전체 선택
+                        }, 100);
+                    }
+                }
+            });
+            
+            // 상품 코드 입력 시 포맷팅 및 자동완성
+            productCodeInput.addEventListener('blur', function() {
+                const code = this.value.trim();
+                
+                // 상품 코드가 비어있으면 상품이름과 필드 초기화
+                if (!code) {
+					productNameInput.value = '';
+					productNameInput.placeholder = '※ 상품 코드 형식 오류';
+					quantityInput.value = '1'; // 수량은 1로 초기화
+					unitPriceInput.value = '';
+					row.querySelector('.total-price').value = '';
+                    return;
+                }
+                
+                // 상품 코드 포맷팅
+                const formatSuccess = formatProductCode(this);
+                
+                // 포맷팅이 실패하면 상품이름, 단가, 금액 지우기
+				if (!formatSuccess) {
+					productNameInput.value = '';
+					productNameInput.placeholder = '※ 상품 코드 형식 오류';
+					quantityInput.value = '1'; // 수량은 1로 초기화
+					unitPriceInput.value = '';
+					row.querySelector('.total-price').value = '';
+					return;
+				}
+                
+                // 포맷팅된 코드로 상품 정보 검색
+                const formattedCode = this.value.trim();
+                
+                if (formattedCode) {
+                    // products.js 파일이 로드되었는지 확인
+                    if (typeof PRODUCTS_DATA === 'undefined' || !PRODUCTS_DATA) {
+                        productNameInput.value = '';
+                        productNameInput.placeholder = '※ products.js 파일 로드 필요';
+                        console.error('products.js 파일이 로드되지 않았습니다.');
+                        return;
+                    }
+                    
+                    const productInfo = getProductInfo(formattedCode);
+                    
+                    if (productInfo) {
+                        // 상품이름 자동 입력
+                        productNameInput.value = productInfo.name;
+                        productNameInput.placeholder = '상품이름';
+                        
+                        // 수량을 상품 정보의 기본 수량으로 설정 (있는 경우), 없으면 1로 유지
+                        if (productInfo.quantity) {
+                            quantityInput.value = productInfo.quantity;
+                        }
+                        
+                        // 단가를 상품 정보의 가격으로 자동 입력
+                        unitPriceInput.value = productInfo.price;
+                        
+                        // 금액 재계산 (천단위 쉼표 포함)
+                        calculateRowTotal(row);
+                        
+                        console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.price}원)`);
+                    } else {
+                        // 상품을 찾지 못한 경우 - 상품이름 지우기
+                        productNameInput.value = '';
+						quantityInput.value = '1'; // 수량은 1로 초기화
+						unitPriceInput.value = '';
+                        row.querySelector('.total-price').value = '';
+						productNameInput.placeholder = '※ 상품을 찾을 수 없음';
+                        console.log(`상품 코드 "${formattedCode}"에 해당하는 상품을 찾을 수 없습니다.`);
+						
+						// 상품코드로 포커스 이동 및 전체 선택
+						setTimeout(() => {
+							productCodeInput.focus();
+							productCodeInput.select();
+						}, 100);
+						}
+                }
+            });
+            
+            // 실시간으로도 확인 (입력 중)
+            productCodeInput.addEventListener('input', function() {
+                const code = this.value.trim();
+                
+                // 코드가 비어있으면 상품이름 지우기
+                if (!code) {
+                    productNameInput.value = '';
+                    productNameInput.placeholder = '상품이름';
+                    return;
+                }
+                
+                // products.js가 로드되어 있고, 코드에 하이픈이 있을 때만 실시간 검색
+                if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA && code && code.includes('-')) {
+                    const productInfo = getProductInfo(code);
+                    if (productInfo) {
+                        productNameInput.value = productInfo.name;
+                        productNameInput.placeholder = '상품이름';
+                        
+                        // 수량을 상품 정보의 기본 수량으로 설정 (있는 경우)
+                        if (productInfo.quantity) {
+                            quantityInput.value = productInfo.quantity;
+                        }
+                        
+                        // 단가를 상품 정보의 가격으로 자동 입력
+                        unitPriceInput.value = productInfo.price;
+                        
+                        // 금액 재계산 (천단위 쉼표 포함)
+                        calculateRowTotal(row);
+                    } else {
+                        // 상품을 찾지 못하면 상품이름 지우기
+                        productNameInput.value = '';
+                        productNameInput.placeholder = '상품이름';
+                    }
+                }
+            });
+        }
+
+        /**
+         * 상품 코드를 표준 형식으로 포맷팅
+         * 형식: 00-00 또는 000-00 (예: 8-1 → 08-01, 106-1 → 106-01)
+         * @param {HTMLInputElement} input - 상품 코드 입력 필드
+         * @returns {boolean} - 포맷팅 성공 여부
+         */
+        function formatProductCode(input) {
+            // 숫자와 하이픈만 허용
+            let value = input.value.replace(/[^0-9-]/g, '');
+            
+            if (!value) {
+                // 빈 값이면 처리 안 함
+                return true;
+            }
+            
+            // 하이픈이 없는 경우 - 오류
+            if (!value.includes('-')) {
+                input.classList.add('error');
+                input.value = value;
+                showAlert('⚠️ 상품 코드는 하이픈(-)을 포함해야 합니다. (예: 08-01)', 'warning');
+                setTimeout(() => {
+                    input.classList.remove('error');
+                }, 3000);
+                return false;
+            }
+            
+            // 하이픈이 여러 개인 경우 - 첫 번째 하이픈만 사용
+            const parts = value.split('-');
+            if (parts.length > 2) {
+                // 첫 번째와 두 번째 부분만 사용
+                value = parts[0] + '-' + parts.slice(1).join('');
+            }
+            
+            // 하이픈으로 분리
+            const [part1, part2] = value.split('-');
+            
+            // 앞부분과 뒷부분이 모두 있어야 함
+            if (!part1 || !part2) {
+                input.classList.add('error');
+                input.value = value;
+                showAlert('⚠️ 상품 코드 형식이 올바르지 않습니다. (예: 08-01)', 'warning');
+                setTimeout(() => {
+                    input.classList.remove('error');
+                }, 3000);
+                return false;
+            }
+            
+            // 앞부분 포맷팅: 1자리면 0 추가, 2자리 이상이면 그대로 (최대 3자리)
+            let formattedPart1 = part1;
+            if (part1.length === 1) {
+                formattedPart1 = '0' + part1;
+            } else if (part1.length > 3) {
+                formattedPart1 = part1.substring(0, 3);
+            }
+            
+            // 뒷부분 포맷팅: 2자리로 패딩 (00-99)
+            let formattedPart2 = part2.padStart(2, '0').substring(0, 2);
+            
+            // 최종 포맷팅된 값
+            const formattedValue = `${formattedPart1}-${formattedPart2}`;
+            input.value = formattedValue;
+            
+            return true;
+        }
+
+        // ========================================
+        // 알림 메시지 표시 함수
+        // ========================================
+        
+        /**
+         * 사용자에게 알림 메시지 표시
+         * @param {string} message - 표시할 메시지
+         * @param {string} type - 메시지 타입 ('success', 'warning', 'error')
+         */
+        function showAlert(message, type = 'success') {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.textContent = message;
+            alertBox.className = `alert ${type}`;
+            alertBox.style.display = 'block';
+            
+            // 3초 후 자동으로 숨김
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 3000);
+        }
+
+        // ========================================
+        // 인쇄 및 제출 함수
+        // ========================================
+        
+        /**
+         * 주문서 인쇄 및 구글 설문지 제출
+         */
+        async function printOrder() {
+            // 입력 검증
+            if (!validateAllInputs()) {
+                return;
+            }
+            
+            // 구글 폼 제출
+            const submitted = await submitToGoogleForm();
+            
+            if (submitted) {
+                // 인쇄 대화상자 표시
+                window.print();
+            }
+        }
+
+        /**
+         * 모든 입력 필드 검증
+         * @returns {boolean} - 검증 통과 여부
+         */
+        function validateAllInputs() {
+            // 1. 주문자 정보 검증
+            const ordererName = document.getElementById('ordererName');
+            const ordererPhone = document.getElementById('ordererPhone');
+            const ordererPostal = document.getElementById('ordererPostal');
+            const ordererAddress = document.getElementById('ordererAddress');
+            
+            if (!ordererName.value.trim()) {
+                ordererName.focus();
+                ordererName.classList.add('error');
+                showAlert('⚠️ 주문자 성명을 입력해주세요.', 'warning');
+                setTimeout(() => ordererName.classList.remove('error'), 3000);
+                return false;
+            }
+            
+            if (!ordererPhone.value.trim()) {
+                ordererPhone.focus();
+                ordererPhone.classList.add('error');
+                showAlert('⚠️ 주문자 전화번호를 입력해주세요.', 'warning');
+                setTimeout(() => ordererPhone.classList.remove('error'), 3000);
+                return false;
+            }
+            
+            if (!ordererPostal.value.trim()) {
+                ordererPostal.focus();
+                ordererPostal.classList.add('error');
+                showAlert('⚠️ 주문자 우편번호를 입력해주세요.', 'warning');
+                setTimeout(() => ordererPostal.classList.remove('error'), 3000);
+                return false;
+            }
+            
+            if (!ordererAddress.value.trim()) {
+                ordererAddress.focus();
+                ordererAddress.classList.add('error');
+                showAlert('⚠️ 주문자 주소를 입력해주세요.', 'warning');
+                setTimeout(() => ordererAddress.classList.remove('error'), 3000);
+                return false;
+            }
+            
+            // 2. 각 섹션별 검증
+            const sections = document.querySelectorAll('.order-section');
+            for (let i = 0; i < sections.length; i++) {
+                const section = sections[i];
+                const sectionNum = i + 1;
+                
+                // 보내는 분 정보 검증
+                const senderName = section.querySelector('.sender-name');
+                const senderPhone = section.querySelector('.sender-phone');
+                const senderPostal = section.querySelector('.sender-postal');
+                const senderAddress = section.querySelector('.sender-address');
+                
+                if (!senderName.value.trim()) {
+                    senderName.focus();
+                    senderName.classList.add('error');
+                    showAlert(`⚠️ [주문 #${sectionNum}] 보내는 분 성명을 입력해주세요.`, 'warning');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => senderName.classList.remove('error'), 3000);
+                    return false;
+                }
+                
+                if (!senderPhone.value.trim()) {
+                    senderPhone.focus();
+                    senderPhone.classList.add('error');
+                    showAlert(`⚠️ [주문 #${sectionNum}] 보내는 분 전화번호를 입력해주세요.`, 'warning');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => senderPhone.classList.remove('error'), 3000);
+                    return false;
+                }
+                
+                if (!senderPostal.value.trim()) {
+                    senderPostal.focus();
+                    senderPostal.classList.add('error');
+                    showAlert(`⚠️ [주문 #${sectionNum}] 보내는 분 우편번호를 입력해주세요.`, 'warning');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => senderPostal.classList.remove('error'), 3000);
+                    return false;
+                }
+                
+                if (!senderAddress.value.trim()) {
+                    senderAddress.focus();
+                    senderAddress.classList.add('error');
+                    showAlert(`⚠️ [주문 #${sectionNum}] 보내는 분 주소를 입력해주세요.`, 'warning');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => senderAddress.classList.remove('error'), 3000);
+                    return false;
+                }
+                
+                // 받는 분 정보 검증
+                const receiverName = section.querySelector('.receiver-name');
+                const receiverPhone = section.querySelector('.receiver-phone');
+                const receiverPostal = section.querySelector('.receiver-postal');
+                const receiverAddress = section.querySelector('.receiver-address');
+                
+                if (!receiverName.value.trim()) {
+                    receiverName.focus();
+                    receiverName.classList.add('error');
+                    showAlert(`⚠️ [주문 #${sectionNum}] 받는 분 성명을 입력해주세요.`, 'warning');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => receiverName.classList.remove('error'), 3000);
+                    return false;
+                }
+                
+                if (!receiverPhone.value.trim()) {
+                    receiverPhone.focus();
+                    receiverPhone.classList.add('error');
+                    showAlert(`⚠️ [주문 #${sectionNum}] 받는 분 전화번호를 입력해주세요.`, 'warning');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => receiverPhone.classList.remove('error'), 3000);
+                    return false;
+                }
+                
+                if (!receiverPostal.value.trim()) {
+                    receiverPostal.focus();
+                    receiverPostal.classList.add('error');
+                    showAlert(`⚠️ [주문 #${sectionNum}] 받는 분 우편번호를 입력해주세요.`, 'warning');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => receiverPostal.classList.remove('error'), 3000);
+                    return false;
+                }
+                
+                if (!receiverAddress.value.trim()) {
+                    receiverAddress.focus();
+                    receiverAddress.classList.add('error');
+                    showAlert(`⚠️ [주문 #${sectionNum}] 받는 분 주소를 입력해주세요.`, 'warning');
+                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => receiverAddress.classList.remove('error'), 3000);
+                    return false;
+                }
+                
+                // 상품 정보 검증
+                const rows = section.querySelectorAll('.product-row');
+                for (let j = 0; j < rows.length; j++) {
+                    const row = rows[j];
+                    const rowNum = j + 1;
+                    const productCode = row.querySelector('.product-code');
+                    const quantity = row.querySelector('.quantity');
+                    const unitPrice = row.querySelector('.unit-price');
+                    
+                    if (!productCode.value.trim()) {
+                        productCode.focus();
+                        productCode.classList.add('error');
+                        showAlert(`⚠️ [주문 #${sectionNum} - 상품 ${rowNum}] 상품 코드를 입력해주세요.`, 'warning');
+                        section.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        setTimeout(() => productCode.classList.remove('error'), 3000);
+                        return false;
+                    }
+                    
+                    if (!quantity.value || parseInt(quantity.value) <= 0) {
+                        quantity.focus();
+                        quantity.classList.add('error');
+                        showAlert(`⚠️ [주문 #${sectionNum} - 상품 ${rowNum}] 수량을 입력해주세요.`, 'warning');
+                        section.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        setTimeout(() => quantity.classList.remove('error'), 3000);
+                        return false;
+                    }
+                    
+                    if (!unitPrice.value || parseFormattedNumber(unitPrice.value) <= 0) {
+                        unitPrice.focus();
+                        unitPrice.classList.add('error');
+                        showAlert(`⚠️ [주문 #${sectionNum} - 상품 ${rowNum}] 단가를 입력해주세요.`, 'warning');
+                        section.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        setTimeout(() => unitPrice.classList.remove('error'), 3000);
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        /**
+         * 구글 설문지에 데이터 제출
+         * @returns {Promise<boolean>} - 제출 성공 여부
+         */
+        async function submitToGoogleForm() {
+            // config.js에서 구글 폼 설정 가져오기
+            if (typeof GOOGLE_FORM_CONFIG === 'undefined') {
+                console.log('config.js 파일이 로드되지 않았습니다.');
+                showAlert('⚠️ config.js 파일을 확인해주세요. 인쇄만 진행합니다.', 'warning');
+                return true; // 인쇄는 진행
+            }
+            
+            const googleFormUrl = GOOGLE_FORM_CONFIG.formUrl;
+            
+            // 구글 폼 URL이 설정되지 않았으면 제출하지 않음
+            if (!googleFormUrl) {
+                console.log('구글 폼 URL이 설정되지 않았습니다.');
+                return true; // 인쇄는 진행
+            }
+            
+            // Entry ID 가져오기
+            const entryDateTime = GOOGLE_FORM_CONFIG.entries.dateTime;
+            const entryName = GOOGLE_FORM_CONFIG.entries.name;
+            const entryPhone = GOOGLE_FORM_CONFIG.entries.phone;
+            const entryOrderData = GOOGLE_FORM_CONFIG.entries.orderData;
+            
+            // Entry ID가 모두 설정되었는지 확인
+            if (!entryDateTime || !entryName || !entryPhone || !entryOrderData) {
+                showAlert('⚠️ config.js에서 모든 Entry ID를 설정해주세요. 인쇄만 진행합니다.', 'warning');
+                return true;
+            }
+            
+            // 주문 데이터 수집
+            const orderData = collectOrderData();
+            
+            // FormData 생성
+            const formData = new FormData();
+            formData.append(entryDateTime, document.getElementById('currentDateTime').textContent);
+            formData.append(entryName, document.getElementById('ordererName').value);
+            formData.append(entryPhone, document.getElementById('ordererPhone').value);
+            formData.append(entryOrderData, JSON.stringify(orderData, null, 2));
+            
+            try {
+                // 구글 폼에 제출 (no-cors 모드로 전송)
+                await fetch(googleFormUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: formData
+                });
+                
+                showAlert('✅ 주문이 성공적으로 전송되었습니다!', 'success');
+                return true;
+            } catch (error) {
+                console.error('구글 폼 제출 오류:', error);
+                showAlert('⚠️ 주문 전송에 실패했습니다. 인쇄는 진행합니다.', 'warning');
+                return true; // 오류가 있어도 인쇄는 진행
+            }
+        }
+
+        /**
+         * 모든 주문 데이터를 수집하여 객체로 반환
+         * @returns {Object} - 주문 데이터 객체
+         */
+        function collectOrderData() {
+            const data = {
+                주문자정보: {
+                    성명: document.getElementById('ordererName').value,
+                    전화번호: document.getElementById('ordererPhone').value,
+                    우편번호: document.getElementById('ordererPostal').value,
+                    기본주소: document.getElementById('ordererAddress').value,
+                    상세주소: document.getElementById('ordererAddressDetail').value
+                },
+                주문목록: []
+            };
+
+            const sections = document.querySelectorAll('.order-section');
+            sections.forEach((section, index) => {
+                const sectionData = {
+                    주문번호: index + 1,
+                    보내는분: {
+                        성명: section.querySelector('.sender-name').value,
+                        전화번호: section.querySelector('.sender-phone').value,
+                        우편번호: section.querySelector('.sender-postal').value,
+                        기본주소: section.querySelector('.sender-address').value,
+                        상세주소: section.querySelector('.sender-address-detail').value
+                    },
+                    받는분: {
+                        성명: section.querySelector('.receiver-name').value,
+                        전화번호: section.querySelector('.receiver-phone').value,
+                        우편번호: section.querySelector('.receiver-postal').value,
+                        기본주소: section.querySelector('.receiver-address').value,
+                        상세주소: section.querySelector('.receiver-address-detail').value
+                    },
+                    상품목록: []
+                };
+                
+                const rows = section.querySelectorAll('.product-row');
+                rows.forEach(row => {
+                    const unitPriceValue = row.querySelector('.unit-price').value;
+                    const totalPriceValue = row.querySelector('.total-price').value;
+                    
+                    sectionData.상품목록.push({
+                        상품코드: row.querySelector('.product-code').value,
+                        상품이름: row.querySelector('.product-name').value,
+                        수량: row.querySelector('.quantity').value,
+                        단가: parseFormattedNumber(unitPriceValue),
+                        금액: parseFormattedNumber(totalPriceValue)
+                    });
+                });
+                
+                data.주문목록.push(sectionData);
+            });
+            
+            return data;
+        }
+
+        // ========================================
+        // 로컬 스토리지 관련 함수
+        // ========================================
+        
+        /**
+         * config.js 설정 상태 확인 및 표시
+         */
+        function checkConfigStatus() {
+            const statusDiv = document.getElementById('configStatus');
+            const statusText = document.getElementById('configStatusText');
+            
+            if (typeof GOOGLE_FORM_CONFIG === 'undefined') {
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.border = '2px solid #f5c6cb';
+                statusText.textContent = '❌ config.js 파일이 로드되지 않았습니다.';
+                statusText.style.color = '#721c24';
+                return;
+            }
+            
+            const hasUrl = GOOGLE_FORM_CONFIG.formUrl && GOOGLE_FORM_CONFIG.formUrl.trim() !== '';
+            const hasAllEntries = GOOGLE_FORM_CONFIG.entries.dateTime && 
+                                  GOOGLE_FORM_CONFIG.entries.name && 
+                                  GOOGLE_FORM_CONFIG.entries.phone && 
+                                  GOOGLE_FORM_CONFIG.entries.orderData;
+            
+            if (hasUrl && hasAllEntries) {
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.border = '2px solid #c3e6cb';
+                statusText.textContent = '✅ 모든 설정이 완료되었습니다!';
+                statusText.style.color = '#155724';
+            } else if (hasUrl || hasAllEntries) {
+                statusDiv.style.backgroundColor = '#fff3cd';
+                statusDiv.style.border = '2px solid #ffeaa7';
+                statusText.textContent = '⚠️ 일부 설정이 누락되었습니다. config.js 파일을 확인해주세요.';
+                statusText.style.color = '#856404';
+            } else {
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.border = '2px solid #f5c6cb';
+                statusText.textContent = '❌ 설정이 완료되지 않았습니다. config.js 파일을 설정해주세요.';
+                statusText.style.color = '#721c24';
+            }
+        }
+
+        /**
+         * 모든 설정 저장
+         * (호환성 유지를 위해 빈 함수로 남김 - 실제로는 config.js에서 관리)
+         */
+        function saveAllSettings() {
+            showAlert('💡 설정은 config.js 파일에서 관리됩니다.', 'warning');
+        }
+
+        /**
+         * 로컬 스토리지에서 모든 설정 불러오기
+         * (호환성 유지를 위해 빈 함수로 남김 - 실제로는 config.js에서 관리)
+         */
+        function loadAllSettings() {
+            console.log('config.js에서 설정을 가져옵니다.');
+            // config.js 설정 상태 확인
+            checkConfigStatus();
+        }
+
+        // ========================================
+        // 순차적 입력 검증 함수
+        // ========================================
+        
+        /**
+         * 주문자 정보 완료 여부 확인
+         * @returns {Object} - {complete: boolean, missingField: HTMLElement, fieldName: string}
+         */
+        function checkOrdererInfoComplete() {
+            const ordererName = document.getElementById('ordererName');
+            const ordererPhone = document.getElementById('ordererPhone');
+            const ordererPostal = document.getElementById('ordererPostal');
+            const ordererAddress = document.getElementById('ordererAddress');
+            
+            if (!ordererName.value.trim()) {
+                return { complete: false, missingField: ordererName, fieldName: '주문자 성명' };
+            }
+            if (!ordererPhone.value.trim()) {
+                return { complete: false, missingField: ordererPhone, fieldName: '주문자 전화번호' };
+            }
+            if (!ordererPostal.value.trim()) {
+                return { complete: false, missingField: ordererPostal, fieldName: '주문자 우편번호' };
+            }
+            if (!ordererAddress.value.trim()) {
+                return { complete: false, missingField: ordererAddress, fieldName: '주문자 주소' };
+            }
+            
+            return { complete: true };
+        }
+
+        /**
+         * 보내는 분 정보 완료 여부 확인 (첫 번째 섹션)
+         * @returns {Object} - {complete: boolean, missingField: HTMLElement, fieldName: string}
+         */
+        function checkSenderInfoComplete() {
+            const firstSection = document.querySelector('.order-section[data-section="1"]');
+            if (!firstSection) return { complete: true };
+            
+            const senderName = firstSection.querySelector('.sender-name');
+            const senderPhone = firstSection.querySelector('.sender-phone');
+            const senderPostal = firstSection.querySelector('.sender-postal');
+            const senderAddress = firstSection.querySelector('.sender-address');
+            
+            if (!senderName.value.trim()) {
+                return { complete: false, missingField: senderName, fieldName: '보내는 분 성명' };
+            }
+            if (!senderPhone.value.trim()) {
+                return { complete: false, missingField: senderPhone, fieldName: '보내는 분 전화번호' };
+            }
+            if (!senderPostal.value.trim()) {
+                return { complete: false, missingField: senderPostal, fieldName: '보내는 분 우편번호' };
+            }
+            if (!senderAddress.value.trim()) {
+                return { complete: false, missingField: senderAddress, fieldName: '보내는 분 주소' };
+            }
+            
+            return { complete: true };
+        }
+
+        /**
+         * 받는 분 정보 완료 여부 확인 (첫 번째 섹션)
+         * @returns {Object} - {complete: boolean, missingField: HTMLElement, fieldName: string}
+         */
+        function checkReceiverInfoComplete() {
+            const firstSection = document.querySelector('.order-section[data-section="1"]');
+            if (!firstSection) return { complete: true };
+            
+            const receiverName = firstSection.querySelector('.receiver-name');
+            const receiverPhone = firstSection.querySelector('.receiver-phone');
+            const receiverPostal = firstSection.querySelector('.receiver-postal');
+            const receiverAddress = firstSection.querySelector('.receiver-address');
+            
+            if (!receiverName.value.trim()) {
+                return { complete: false, missingField: receiverName, fieldName: '받는 분 성명' };
+            }
+            if (!receiverPhone.value.trim()) {
+                return { complete: false, missingField: receiverPhone, fieldName: '받는 분 전화번호' };
+            }
+            if (!receiverPostal.value.trim()) {
+                return { complete: false, missingField: receiverPostal, fieldName: '받는 분 우편번호' };
+            }
+            if (!receiverAddress.value.trim()) {
+                return { complete: false, missingField: receiverAddress, fieldName: '받는 분 주소' };
+            }
+            
+            return { complete: true };
+        }
+
+        /**
+         * 상품 정보 완료 여부 확인 (첫 번째 섹션)
+         * @returns {Object} - {complete: boolean, missingField: HTMLElement, fieldName: string}
+         */
+        function checkProductInfoComplete() {
+            const firstSection = document.querySelector('.order-section[data-section="1"]');
+            if (!firstSection) return { complete: true };
+            
+            const firstRow = firstSection.querySelector('.product-row');
+            if (!firstRow) return { complete: true };
+            
+            const productCode = firstRow.querySelector('.product-code');
+            const quantity = firstRow.querySelector('.quantity');
+            const unitPrice = firstRow.querySelector('.unit-price');
+            
+            if (!productCode.value.trim()) {
+                return { complete: false, missingField: productCode, fieldName: '상품 코드' };
+            }
+            if (!quantity.value || parseInt(quantity.value) <= 0) {
+                return { complete: false, missingField: quantity, fieldName: '수량' };
+            }
+            if (!unitPrice.value || parseInt(unitPrice.value) <= 0) {
+                return { complete: false, missingField: unitPrice, fieldName: '단가' };
+            }
+            
+            return { complete: true };
+        }
+
+        /**
+         * 순차적 입력 검증 - 주문 #1이 완료되었는지 확인
+         * @returns {boolean} - 검증 통과 여부
+         */
+        function checkSequentialInput() {
+            // 1. 주문자 정보 확인
+            const ordererCheck = checkOrdererInfoComplete();
+            if (!ordererCheck.complete) {
+                ordererCheck.missingField.focus();
+                ordererCheck.missingField.classList.add('error');
+                showAlert(`⚠️ [주문자 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                setTimeout(() => {
+                    ordererCheck.missingField.classList.remove('error');
+                }, 3000);
+                return false;
+            }
+            
+            // 2. 주문 #1 보내는 분 정보 확인
+            const senderCheck = checkSenderInfoComplete();
+            if (!senderCheck.complete) {
+                senderCheck.missingField.focus();
+                senderCheck.missingField.classList.add('error');
+                showAlert(`⚠️ [주문 #1 - 보내는 분] ${senderCheck.fieldName}을(를) 입력해주세요.`, 'warning');
+                
+                // 해당 섹션으로 스크롤
+                const firstSection = document.querySelector('.order-section[data-section="1"]');
+                firstSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                setTimeout(() => {
+                    senderCheck.missingField.classList.remove('error');
+                }, 3000);
+                return false;
+            }
+            
+            // 3. 주문 #1 받는 분 정보 확인
+            const receiverCheck = checkReceiverInfoComplete();
+            if (!receiverCheck.complete) {
+                receiverCheck.missingField.focus();
+                receiverCheck.missingField.classList.add('error');
+                showAlert(`⚠️ [주문 #1 - 받는 분] ${receiverCheck.fieldName}을(를) 입력해주세요.`, 'warning');
+                
+                // 해당 섹션으로 스크롤
+                const firstSection = document.querySelector('.order-section[data-section="1"]');
+                firstSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                setTimeout(() => {
+                    receiverCheck.missingField.classList.remove('error');
+                }, 3000);
+                return false;
+            }
+            
+            // 4. 주문 #1 상품 정보 확인
+            const productCheck = checkProductInfoComplete();
+            if (!productCheck.complete) {
+                productCheck.missingField.focus();
+                productCheck.missingField.classList.add('error');
+                showAlert(`⚠️ [주문 #1 - 상품 정보] ${productCheck.fieldName}을(를) 입력해주세요.`, 'warning');
+                
+                // 해당 섹션으로 스크롤
+                const firstSection = document.querySelector('.order-section[data-section="1"]');
+                firstSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                
+                setTimeout(() => {
+                    productCheck.missingField.classList.remove('error');
+                }, 3000);
+                return false;
+            }
+            
+            return true;
+        }
+        
+        /**
+         * 필드에 순차적 입력 가이드 이벤트 리스너 추가
+         */
+        function attachSequentialInputGuide() {
+            const firstSection = document.querySelector('.order-section[data-section="1"]');
+            if (!firstSection) return;
+            
+            // 보내는 분 필드들에 포커스 이벤트 추가
+            const senderFields = [
+                firstSection.querySelector('.sender-name'),
+                firstSection.querySelector('.sender-phone'),
+                firstSection.querySelector('.sender-postal'),
+                firstSection.querySelector('.sender-address')
+            ];
+            
+            senderFields.forEach(field => {
+                if (field) {
+                    field.addEventListener('focus', function() {
+                        const ordererCheck = checkOrdererInfoComplete();
+                        if (!ordererCheck.complete) {
+                            setTimeout(() => {
+                                ordererCheck.missingField.focus();
+                                ordererCheck.missingField.classList.add('error');
+                                showAlert(`⚠️ [주문자 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                setTimeout(() => {
+                                    ordererCheck.missingField.classList.remove('error');
+                                }, 3000);
+                            }, 100);
+                        }
+                    });
+                }
+            });
+            
+            // 받는 분 필드들에 포커스 이벤트 추가
+            const receiverFields = [
+                firstSection.querySelector('.receiver-name'),
+                firstSection.querySelector('.receiver-phone'),
+                firstSection.querySelector('.receiver-postal'),
+                firstSection.querySelector('.receiver-address')
+            ];
+            
+            receiverFields.forEach(field => {
+                if (field) {
+                    field.addEventListener('focus', function() {
+                        const ordererCheck = checkOrdererInfoComplete();
+                        if (!ordererCheck.complete) {
+                            setTimeout(() => {
+                                ordererCheck.missingField.focus();
+                                ordererCheck.missingField.classList.add('error');
+                                showAlert(`⚠️ [주문자 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                setTimeout(() => {
+                                    ordererCheck.missingField.classList.remove('error');
+                                }, 3000);
+                            }, 100);
+                            return;
+                        }
+                        
+                        const senderCheck = checkSenderInfoComplete();
+                        if (!senderCheck.complete) {
+                            setTimeout(() => {
+                                senderCheck.missingField.focus();
+                                senderCheck.missingField.classList.add('error');
+                                showAlert(`⚠️ [보내는 분] ${senderCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                setTimeout(() => {
+                                    senderCheck.missingField.classList.remove('error');
+                                }, 3000);
+                            }, 100);
+                        }
+                    });
+                }
+            });
+            
+            // 상품 정보 필드들에 포커스 이벤트 추가
+            const firstRow = firstSection.querySelector('.product-row');
+            if (firstRow) {
+                const productFields = [
+                    firstRow.querySelector('.product-code'),
+                    firstRow.querySelector('.quantity'),
+                    firstRow.querySelector('.unit-price')
+                ];
+                
+                productFields.forEach(field => {
+                    if (field) {
+                        field.addEventListener('focus', function() {
+                            const ordererCheck = checkOrdererInfoComplete();
+                            if (!ordererCheck.complete) {
+                                setTimeout(() => {
+                                    ordererCheck.missingField.focus();
+                                    ordererCheck.missingField.classList.add('error');
+                                    showAlert(`⚠️ [주문자 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                    setTimeout(() => {
+                                        ordererCheck.missingField.classList.remove('error');
+                                    }, 3000);
+                                }, 100);
+                                return;
+                            }
+                            
+                            const senderCheck = checkSenderInfoComplete();
+                            if (!senderCheck.complete) {
+                                setTimeout(() => {
+                                    senderCheck.missingField.focus();
+                                    senderCheck.missingField.classList.add('error');
+                                    showAlert(`⚠️ [보내는 분] ${senderCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                    setTimeout(() => {
+                                        senderCheck.missingField.classList.remove('error');
+                                    }, 3000);
+                                }, 100);
+                                return;
+                            }
+                            
+                            const receiverCheck = checkReceiverInfoComplete();
+                            if (!receiverCheck.complete) {
+                                setTimeout(() => {
+                                    receiverCheck.missingField.focus();
+                                    receiverCheck.missingField.classList.add('error');
+                                    showAlert(`⚠️ [받는 분] ${receiverCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                    setTimeout(() => {
+                                        receiverCheck.missingField.classList.remove('error');
+                                    }, 3000);
+                                }, 100);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+        // ========================================
+        // 초기화 함수
+        // ========================================
+        
+        /**
+         * 페이지 로드 시 초기화 작업 수행
+         */
+        function initializePage() {
+            // products.js 파일 로드 상태 확인
+            checkProductsDataLoaded();
+            
+            // 현재 날짜/시간 표시
+            updateDateTime();
+            // 매 분마다 날짜/시간 업데이트
+            setInterval(updateDateTime, 60000);
+            
+            // 첫 번째 섹션의 첫 번째 행에 이벤트 리스너 추가
+            const firstRow = document.querySelector('.product-row');
+            if (firstRow) {
+                attachRowEventListeners(firstRow);
+                attachProductCodeFormatting(firstRow);
+            }
+            
+            // 순차적 입력 가이드 이벤트 추가
+            attachSequentialInputGuide();
+            
+            // 로컬 스토리지에서 모든 설정 불러오기
+            loadAllSettings();
+        }
+
+        // ========================================
+        // 페이지 로드 이벤트
+        // ========================================
+        
+        // DOM이 완전히 로드된 후 초기화 함수 실행
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>
