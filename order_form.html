@@ -14,86 +14,102 @@
 
         /* 본문 스타일 */
         body {
-            font-family: 'Malgun Gothic', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
         }
 
         /* 메인 컨테이너 */
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             background-color: white;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
 
-        /* 헤더 스타일 - 노란색 배경의 주문서 제목 */
+        /* 헤더 스타일 - 그라데이션 배경 */
         .header {
-            background-color: #f9f3c4;
-            border: 3px solid black;
-            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 20px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
         .header h1 {
-            font-size: 36px;
-            font-weight: bold;
-            letter-spacing: 10px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
 
         /* 상단 정보 영역 - 담당자 정보와 주문 일시 */
         .top-info {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: none;
+            border-radius: 10px;
             flex-wrap: wrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
         .shop-info {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 15px;
+            font-weight: 600;
+            color: #495057;
         }
 
         .date-info {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 15px;
+            font-weight: 600;
+            color: #495057;
         }
 
-        /* 주문자 정보 컨테이너 - 보라색 테두리 */
+        /* 주문자 정보 컨테이너 - 모던한 보라색 */
         .orderer-info-container {
-            border: 3px solid #9C27B0;
+            border: none;
             margin-bottom: 30px;
-            padding: 20px;
-            background-color: #f3e5f5;
+            padding: 25px;
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
             position: relative;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(156, 39, 176, 0.15);
         }
 
         /* 주문자 정보 배지 */
         .orderer-info-badge {
             position: absolute;
-            top: -15px;
-            left: 20px;
-            background-color: #9C27B0;
+            top: -12px;
+            left: 25px;
+            background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
             color: white;
-            padding: 5px 15px;
-            font-weight: bold;
-            border-radius: 5px;
-            font-size: 18px;
+            padding: 8px 20px;
+            font-weight: 600;
+            border-radius: 20px;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(156, 39, 176, 0.3);
         }
 
         /* 섹션 헤더 - 보내는 분/받는 분 제목 */
         .section-header {
-            background-color: #ffb3ba;
-            padding: 10px;
-            font-weight: bold;
-            font-size: 18px;
+            background: linear-gradient(135deg, #ff8a95 0%, #ffc3a0 100%);
+            padding: 12px 15px;
+            font-weight: 600;
+            font-size: 16px;
             margin-top: 5px;
-            border: 2px solid #333;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
 
         /* 주문자 정보 섹션 헤더 - 보라색 */
@@ -109,24 +125,30 @@
         /* 테이블 공통 스타일 */
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             margin-bottom: 5px;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         th, td {
-            border: 2px solid #333;
-            padding: 5px 12px;
+            border: 1px solid #dee2e6;
+            padding: 10px 8px;
             text-align: center;
         }
 
         th {
-            background-color: #ffc9d9;
-            font-weight: bold;
+            background: linear-gradient(135deg, #ffc3a0 0%, #ffafbd 100%);
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            font-size: 14px;
         }
 
         /* 주문자 정보 테이블 헤더 - 보라색 */
         .orderer-info-container th {
-            background-color: #ba68c8;
+            background: linear-gradient(135deg, #ba68c8 0%, #9c27b0 100%);
             color: white;
         }
 
@@ -135,11 +157,13 @@
         input[type="tel"],
         input[type="number"] {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
+            padding: 8px 10px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
             text-align: center;
+            transition: all 0.3s ease;
+            background-color: #fafafa;
         }
 
         /* 주소 필드는 왼쪽 정렬 */
@@ -147,12 +171,14 @@
             text-align: left;
         }
 
-        /* 입력 필드 포커스 시 녹색 테두리 */
+        /* 입력 필드 포커스 시 그라데이션 테두리 */
         input[type="text"]:focus,
         input[type="tel"]:focus,
         input[type="number"]:focus {
             outline: none;
-            border-color: #4CAF50;
+            border-color: #667eea;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         /* 입력 오류 시 빨간색 테두리 */
@@ -201,20 +227,22 @@
 
         /* 받는 분 섹션 스타일 - 파란색 배경 */
         .receiver-section {
-            background-color: #d4e9ff;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
         }
 
         .receiver-section th {
-            background-color: #b3d9ff;
+            background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
+            color: white;
         }
 
         /* 상품 정보 섹션 스타일 - 녹색 배경 */
         .product-section {
-            background-color: #e8f5e9;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
         }
 
         .product-section th {
-            background-color: #c8e6c9;
+            background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
+            color: white;
         }
 
         /* 버튼 공통 스타일 */
@@ -228,116 +256,130 @@
         }
 
         .submit-btn, .print-btn, .add-section-btn {
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .submit-btn {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
             color: white;
         }
 
         .submit-btn:hover {
-            background-color: #45a049;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
         }
 
         .print-btn {
-            background-color: #2196F3;
+            background: linear-gradient(135deg, #42a5f5 0%, #2196f3 100%);
             color: white;
         }
 
         .print-btn:hover {
-            background-color: #0b7dda;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
         }
 
         .add-section-btn {
-            background-color: #FF9800;
+            background: linear-gradient(135deg, #ffa726 0%, #ff9800 100%);
             color: white;
         }
 
         .add-section-btn:hover {
-            background-color: #e68900;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
         }
 
         /* 행 추가/삭제 버튼 스타일 */
         .add-btn, .remove-btn {
-            padding: 8px 15px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
         }
 
         .add-btn {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
             color: white;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
 
         .add-btn:hover {
-            background-color: #45a049;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
         }
 
         .remove-btn {
-            background-color: #f44336;
+            background: linear-gradient(135deg, #ef5350 0%, #f44336 100%);
             color: white;
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
         }
 
         .remove-btn:hover {
-            background-color: #da190b;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
         }
 
         /* 섹션 구분선 */
         .order-section {
-            border: 3px solid #FF9800;
-            padding: 20px;
+            border: none;
+            padding: 25px;
             margin-bottom: 30px;
-            background-color: #fff3e0;
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
             position: relative;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.15);
         }
 
         /* 섹션 번호 배지 */
         .section-number {
             position: absolute;
-            top: -15px;
-            left: 20px;
-            background-color: #FF9800;
+            top: -12px;
+            left: 25px;
+            background: linear-gradient(135deg, #ffa726 0%, #ff9800 100%);
             color: white;
-            padding: 5px 15px;
-            font-weight: bold;
-            border-radius: 5px;
-            font-size: 18px;
+            padding: 8px 20px;
+            font-weight: 600;
+            border-radius: 20px;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
         }
 
         /* 섹션 삭제 버튼 */
         .section-delete-btn {
             position: absolute;
-            top: -15px;
-            right: 20px;
-            background-color: #f44336;
+            top: -12px;
+            right: 25px;
+            background: linear-gradient(135deg, #ef5350 0%, #f44336 100%);
             color: white;
-            padding: 5px 15px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 5px;
+            border-radius: 20px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(244, 67, 54, 0.3);
         }
 
         .section-delete-btn:hover {
-            background-color: #da190b;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(244, 67, 54, 0.4);
         }
 
         /* 체크박스 셀 스타일 */
@@ -362,33 +404,43 @@
 
         /* 총 금액 행 스타일 */
         .total-row {
-            font-weight: bold;
-            background-color: #fff9c4;
+            font-weight: 600;
+            background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
         }
 
         .total-row td {
-            font-size: 16px;
+            font-size: 15px;
+            color: #333;
         }
 
         /* 인쇄 시 스타일 */
         @media print {
             @page {
-                size: A4;
-                margin: 10mm;
+                size: A4 portrait;
+                margin: 8mm 5mm;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             body {
                 background-color: white;
+                background-image: none;
                 padding: 0;
                 margin: 0;
-                font-size: 11pt;
+                font-size: 9pt;
+                width: 210mm;
             }
 
             .container {
                 box-shadow: none;
                 max-width: 100%;
+                width: 100%;
                 padding: 0;
                 margin: 0;
+                border-radius: 0;
             }
 
             .no-print {
@@ -397,67 +449,100 @@
 
             /* 헤더 크기 조정 */
             .header {
-                padding: 8px;
-                margin-bottom: 10px;
+                padding: 6px;
+                margin-bottom: 8px;
+                border-radius: 0;
+                background: #667eea !important;
             }
 
             .header h1 {
-                font-size: 24px;
-                letter-spacing: 5px;
+                font-size: 20px;
+                letter-spacing: 4px;
             }
 
             /* 상단 정보 크기 조정 */
             .top-info {
-                padding: 5px;
-                margin-bottom: 10px;
-                font-size: 10pt;
+                padding: 4px 8px;
+                margin-bottom: 8px;
+                font-size: 8pt;
+                border-radius: 0;
+                background: #f8f9fa !important;
+            }
+
+            .shop-info, .date-info {
+                font-size: 8pt;
             }
 
             /* 주문자 정보 컨테이너 크기 조정 */
             .orderer-info-container {
-                padding: 10px;
-                margin-bottom: 10px;
+                padding: 8px;
+                margin-bottom: 8px;
+                border-radius: 0;
+                background: #f3e5f5 !important;
             }
 
             .orderer-info-badge {
-                font-size: 12px;
-                padding: 3px 10px;
+                font-size: 10px;
+                padding: 3px 8px;
+                border-radius: 10px;
+                background: #9C27B0 !important;
             }
 
             /* 섹션 헤더 간격 조정 */
             .section-header {
-                padding: 5px;
-                font-size: 12pt;
-                margin-top: 5px;
+                padding: 4px 8px;
+                font-size: 10pt;
+                margin-top: 3px;
                 margin-bottom: 0;
+                border-radius: 0;
             }
 
-            /* 테이블 간격 조정 */
+            /* 테이블 간격 및 레이아웃 고정 */
             table {
-                margin-bottom: 5px;
+                margin-bottom: 3px;
+                table-layout: fixed;
+                width: 100%;
+                border-radius: 0;
+                border-spacing: 0;
+                border-collapse: collapse;
             }
 
-            /* 인쇄 시 섹션 구분선 진하게 */
+            /* 인쇄 시 섹션 구분선 */
             .order-section {
-                border: 3px solid black;
+                border: 2px solid #999;
                 page-break-after: always;
-                padding: 10px;
+                padding: 8px;
                 margin-bottom: 0;
+                border-radius: 0;
+                background: #fff3e0 !important;
             }
 
             .section-number {
-                font-size: 12px;
-                padding: 3px 10px;
+                font-size: 10px;
+                padding: 3px 8px;
+                border-radius: 10px;
+                background: #ff9800 !important;
             }
 
             /* 인쇄 시 테두리 및 패딩 조정 */
             th, td {
-                border: 1px solid black;
-                padding: 3px 5px;
-                font-size: 9pt;
+                border: 1px solid #666;
+                padding: 2px 3px;
+                font-size: 8pt;
                 word-wrap: break-word;
-                word-break: break-all;
+                overflow-wrap: break-word;
             }
+
+            th {
+                font-size: 8pt;
+            }
+
+            /* 컬럼 너비 최적화 - A4에 맞춤 */
+            th[style*="width: 120px"], td:first-child { width: 60px !important; }
+            th[style*="width: 200px"] { width: 80px !important; }
+            th[style*="width: 180px"] { width: 70px !important; }
+            th[style*="width: 300px"] { width: 140px !important; }
+            th[style*="width: 150px"] { width: 60px !important; }
 
             /* 인쇄 시 입력 필드 테두리 제거 */
             input[type="text"],
@@ -466,24 +551,20 @@
                 border: none;
                 background: transparent;
                 padding: 0;
-                font-size: 9pt;
+                font-size: 7.5pt;
                 width: 100%;
             }
 
-            /* 주소 필드 폰트 크기 더 작게 */
+            /* 주소 필드 폰트 크기 */
             .address-field input {
-                font-size: 8pt;
+                font-size: 7pt;
+                word-break: break-all;
             }
 
             /* 총 금액 행 */
             .total-row td {
-                font-size: 10pt;
-            }
-
-            /* 테이블 레이아웃 고정 */
-            table {
-                table-layout: fixed;
-                width: 100%;
+                font-size: 9pt;
+                font-weight: bold;
             }
 
             /* 우편번호 검색 버튼 숨김 */
@@ -495,6 +576,12 @@
             .postal-input-wrapper {
                 display: block;
             }
+
+            /* 상품 정보 테이블 최적화 */
+            .product-section th[style*="width: 50px"] { width: 25px !important; }
+            .product-section th[style*="width: 120px"] { width: 70px !important; }
+            .product-section th[style*="width: 200px"] { width: 120px !important; }
+            .product-section th[style*="width: 80px"] { width: 40px !important; }
         }
 
         /* 상품 행 액션 버튼 컨테이너 */
@@ -754,27 +841,29 @@
         }
         /* 우편번호 검색 버튼 스타일 */
         .postal-search-btn {
-            padding: 6px 12px;
-            background-color: #FF9800;
+            padding: 7px 14px;
+            background: linear-gradient(135deg, #ffa726 0%, #ff9800 100%);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 12px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
             white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
         }
 
         .postal-search-btn:hover {
-            background-color: #e68900;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
         }
 
         /* 우편번호 필드와 버튼을 담는 컨테이너 */
         .postal-input-wrapper {
             display: flex;
-            gap: 5px;
+            gap: 6px;
             align-items: center;
         }
 
