@@ -2558,7 +2558,23 @@
                 
                 data.주문목록.push(sectionData);
             });
-            
+
+            // 전체 합계 계산
+            let allTotalQuantity = 0;
+            let allGrandTotal = 0;
+            data.주문목록.forEach(section => {
+                section.상품목록.forEach(product => {
+                    allTotalQuantity += Number(product.수량) || 0;
+                    allGrandTotal += Number(product.금액) || 0;
+                });
+            });
+
+            data.전체합계 = {
+                총주문건수: data.주문목록.length,
+                총수량: allTotalQuantity,
+                총금액: allGrandTotal
+            };
+
             return data;
         }
 
