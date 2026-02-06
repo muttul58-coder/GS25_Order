@@ -22,7 +22,7 @@
 
         /* 메인 컨테이너 */
         .container {
-            max-width: 900px;
+            max-width: 1024px;
             margin: 0 auto;
             background-color: white;
             padding: 25px;
@@ -260,6 +260,26 @@
             text-align: right;
         }
 
+        /* 보내는 분 섹션 스타일 - 주황색 배경 */
+        .send-header {
+            background: #fde68a;
+        }
+
+        /* 보내는 분 제목 행 - 연한 보라색 */
+        .section-header.send-section {
+            background: #f97316;
+        }
+
+        .send-section th {
+            background: #fb923c;
+            color: white;
+        }
+
+        /* 보내는 분 데이터 입력행 배경색 */
+        table.send-section td {
+            background: #fef3c7;
+        }
+
         /* 받는 분 섹션 스타일 - 보라색 배경 */
         .receiver-section {
             background: #fae8ff;
@@ -384,10 +404,10 @@
             border: none;
             padding: 25px;
             margin-bottom: 30px;
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            background: #f1f5f9;
             position: relative;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(234, 179, 8, 0.15);
+            box-shadow: 0 4px 15px rgba(100, 116, 139, 0.15);
         }
 
         /* 섹션 번호 배지 */
@@ -395,7 +415,7 @@
             position: absolute;
             top: -12px;
             left: 25px;
-            background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
             padding: 8px 40px;
             font-weight: 600;
@@ -450,12 +470,12 @@
         /* 총 금액 행 스타일 */
         .total-row {
             font-weight: 600;
-            background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+            background: #dbeafe;
         }
 
         .total-row td {
             font-size: 15px;
-            color: #333;
+            color: #1e3a5f;
         }
 
         /* 인쇄 시 스타일 */
@@ -986,7 +1006,7 @@
                         <td><input type="tel" id="ordererPhone" placeholder="전화번호 입력" required></td>
                         <td>
                             <div class="postal-input-wrapper">
-                                <input type="text" id="ordererPostal" placeholder="우편번호검색" maxlength="5" required readonly>
+                                <input type="text" id="ordererPostal" placeholder="우편번호" maxlength="5" required readonly>
                                 <button type="button" class="postal-search-btn no-print" onclick="searchOrdererAddress()">검색</button>
                             </div>
                         </td>
@@ -1006,7 +1026,7 @@
                 <div class="section-number">주문 #1</div>
                 
                 <!-- 보내는 분 정보 테이블 (별도 분리) -->
-                <div class="section-header">
+                <div class="section-header send-section">
                     <span>보내는 분</span>
                     <div class="header-checkbox-area no-print">
                         <label class="checkbox-label">
@@ -1016,7 +1036,7 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table>
+                    <table class="send-section">
                         <tr>
                             <th style="width: 90px;">성명</th>
                             <th style="width: 150px;">전화번호</th>
@@ -1028,7 +1048,7 @@
                             <td><input type="tel" class="sender-phone" placeholder="전화번호 입력" required></td>
                             <td>
                                 <div class="postal-input-wrapper">
-                                    <input type="text" class="sender-postal" placeholder="우편번호 검색" maxlength="5" required readonly>
+                                    <input type="text" class="sender-postal" placeholder="우편번호" maxlength="5" required readonly>
                                     <button type="button" class="postal-search-btn no-print" onclick="searchSenderAddress(this)">검색</button>
                                 </div>
                             </td>
@@ -1067,7 +1087,7 @@
                             <td><input type="tel" class="receiver-phone" placeholder="전화번호입력" required></td>
                             <td>
                                 <div class="postal-input-wrapper">
-                                    <input type="text" class="receiver-postal" placeholder="우편번호 검색" maxlength="5" required readonly>
+                                    <input type="text" class="receiver-postal" placeholder="우편번호" maxlength="5" required readonly>
                                     <button type="button" class="postal-search-btn no-print" onclick="searchReceiverAddress(this)">검색</button>
                                 </div>
                             </td>
