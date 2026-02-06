@@ -110,6 +110,24 @@
             border-radius: 8px;
             color: #fff;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 헤더 내 체크박스 영역 */
+        .header-checkbox-area {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .header-checkbox-area .checkbox-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #fff;
+            text-shadow: none;
+            gap: 4px;
         }
 
         /* 주문자 정보 섹션 헤더 - 보라색 */
@@ -166,9 +184,26 @@
             background-color: #fafafa;
         }
 
-        /* 주소 필드는 왼쪽 정렬 */
+        /* 주소 필드는 왼쪽 정렬, 한 줄 배치 */
+        .address-field {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
         .address-field input {
             text-align: left;
+            min-width: 0;
+        }
+
+        /* 기본주소: 넓게 */
+        .address-field input:first-child {
+            flex: 1 1 calc(50% + 75px);
+        }
+
+        /* 상세주소: 기본주소보다 150px 작게 */
+        .address-field input:last-child {
+            flex: 1 1 calc(50% - 75px);
         }
 
         /* 입력 필드 포커스 시 그라데이션 테두리 */
@@ -551,7 +586,6 @@
             /* 컬럼 너비 최적화 - A4에 맞춘 인쇄용 */
             th[style*="width: 90px"] { width: 36px !important; }
             th[style*="width: 150px"] { width: 60px !important; }
-            th[style*="width: 250px"] { width: 110px !important; }
 
             /* 인쇄 시 입력 필드 테두리 제거 */
             input[type="text"],
@@ -945,20 +979,20 @@
                         <th style="width: 90px;">성명</th>
                         <th style="width: 150px;">전화번호</th>
                         <th style="width: 150px;">우편번호</th>
-                        <th style="width: 250px;">주소</th>
+                        <th>주소</th>
                     </tr>
                     <tr>
-                        <td><input type="text" id="ordererName" placeholder="______" required></td>
-                        <td><input type="tel" id="ordererPhone" placeholder="010-0000-0000" required></td>
+                        <td><input type="text" id="ordererName" placeholder="성명 입력" required></td>
+                        <td><input type="tel" id="ordererPhone" placeholder="전화번호 입력" required></td>
                         <td>
                             <div class="postal-input-wrapper">
-                                <input type="text" id="ordererPostal" placeholder="00000" maxlength="5" required readonly>
+                                <input type="text" id="ordererPostal" placeholder="우편번호검색" maxlength="5" required readonly>
                                 <button type="button" class="postal-search-btn no-print" onclick="searchOrdererAddress()">검색</button>
                             </div>
                         </td>
                         <td class="address-field">
                             <input type="text" id="ordererAddress" placeholder="기본주소" required readonly>
-                            <input type="text" id="ordererAddressDetail" placeholder="상세주소 입력" style="margin-top: 4px;">
+                            <input type="text" id="ordererAddressDetail" placeholder="상세주소 입력">
                         </td>
                     </tr>
                 </table>
@@ -972,74 +1006,74 @@
                 <div class="section-number">주문 #1</div>
                 
                 <!-- 보내는 분 정보 테이블 (별도 분리) -->
-                <div class="section-header">보내는 분</div>
+                <div class="section-header">
+                    <span>보내는 분</span>
+                    <div class="header-checkbox-area no-print">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
+                            <span>주문자 정보와 동일</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <tr>
                             <th style="width: 90px;">성명</th>
                             <th style="width: 150px;">전화번호</th>
                             <th style="width: 150px;">우편번호</th>
-                            <th style="width: 250px;">주소</th>
-                            <th class="checkbox-cell no-print">자동 입력</th>
+                            <th>주소</th>
                         </tr>
                         <tr>
-                            <td><input type="text" class="sender-name" placeholder="______" required></td>
-                            <td><input type="tel" class="sender-phone" placeholder="010-0000-0000" required></td>
+                            <td><input type="text" class="sender-name" placeholder="성명 입력" required></td>
+                            <td><input type="tel" class="sender-phone" placeholder="전화번호 입력" required></td>
                             <td>
                                 <div class="postal-input-wrapper">
-                                    <input type="text" class="sender-postal" placeholder="00000" maxlength="5" required readonly>
+                                    <input type="text" class="sender-postal" placeholder="우편번호 검색" maxlength="5" required readonly>
                                     <button type="button" class="postal-search-btn no-print" onclick="searchSenderAddress(this)">검색</button>
                                 </div>
                             </td>
                             <td class="address-field">
                                 <input type="text" class="sender-address" placeholder="기본주소" required readonly>
-                                <input type="text" class="sender-address-detail" placeholder="상세주소 입력" style="margin-top: 4px;">
-                            </td>
-                            <td class="checkbox-cell no-print">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
-                                    <span>주문자 정보와 동일</span>
-                                </label>
+                                <input type="text" class="sender-address-detail" placeholder="상세주소 입력">
                             </td>
                         </tr>
                     </table>
                 </div>
 
                 <!-- 받는 분 정보 테이블 (분리됨) -->
-                <div class="section-header receiver-section">받는 분</div>
+                <div class="section-header receiver-section">
+                    <span>받는 분</span>
+                    <div class="header-checkbox-area no-print">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="copy-orderer-to-receiver" onchange="toggleReceiverInfoCopy(this, 'orderer')">
+                            <span>주문자 정보와 동일</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="copy-sender-to-receiver" onchange="toggleReceiverInfoCopy(this, 'sender')">
+                            <span>보내는 분 정보와 동일</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="receiver-section">
                         <tr>
                             <th style="width: 90px;">성명</th>
                             <th style="width: 150px;">전화번호</th>
                             <th style="width: 150px;">우편번호</th>
-                            <th style="width: 250px;">주소</th>
-                            <th class="checkbox-cell no-print">자동 입력</th>
+                            <th>주소</th>
                         </tr>
                         <tr>
-                            <td><input type="text" class="receiver-name" placeholder="______" required></td>
-                            <td><input type="tel" class="receiver-phone" placeholder="010-0000-0000" required></td>
+                            <td><input type="text" class="receiver-name" placeholder="성명 입력" required></td>
+                            <td><input type="tel" class="receiver-phone" placeholder="전화번호입력" required></td>
                             <td>
                                 <div class="postal-input-wrapper">
-                                    <input type="text" class="receiver-postal" placeholder="00000" maxlength="5" required readonly>
+                                    <input type="text" class="receiver-postal" placeholder="우편번호 검색" maxlength="5" required readonly>
                                     <button type="button" class="postal-search-btn no-print" onclick="searchReceiverAddress(this)">검색</button>
                                 </div>
                             </td>
                             <td class="address-field">
                                 <input type="text" class="receiver-address" placeholder="기본주소" required readonly>
-                                <input type="text" class="receiver-address-detail" placeholder="상세주소 입력" style="margin-top: 4px;">
-                            </td>
-                            <td class="checkbox-cell no-print">
-                                <div style="display: flex; flex-direction: column; gap: 5px;">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" class="copy-orderer-to-receiver" onchange="toggleReceiverInfoCopy(this, 'orderer')">
-                                        <span>주문자 정보와 동일</span>
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" class="copy-sender-to-receiver" onchange="toggleReceiverInfoCopy(this, 'sender')">
-                                        <span>보내는 분 정보와 동일</span>
-                                    </label>
-                                </div>
+                                <input type="text" class="receiver-address-detail" placeholder="상세주소 입력">
                             </td>
                         </tr>
                     </table>
@@ -1424,15 +1458,22 @@
                 <button type="button" class="section-delete-btn no-print" onclick="removeSection(this)">🗑️ 섹션 삭제</button>
 
                 <!-- 보내는 분 정보 -->
-                <div class="section-header">보내는 분</div>
+                <div class="section-header">
+                    <span>보내는 분</span>
+                    <div class="header-checkbox-area no-print">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
+                            <span>주문자 정보와 동일</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <tr>
                             <th style="width: 90px;">성명</th>
                             <th style="width: 150px;">전화번호</th>
                             <th style="width: 150px;">우편번호</th>
-                            <th style="width: 250px;">주소</th>
-                            <th class="checkbox-cell no-print">자동 입력</th>
+                            <th>주소</th>
                         </tr>
                         <tr>
                             <td><input type="text" class="sender-name" placeholder="______" required></td>
@@ -1445,28 +1486,33 @@
                             </td>
                             <td class="address-field">
                                 <input type="text" class="sender-address" placeholder="기본주소" required readonly>
-                                <input type="text" class="sender-address-detail" placeholder="상세주소 입력" style="margin-top: 4px;">
-                            </td>
-                            <td class="checkbox-cell no-print">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
-                                    <span>주문자 정보와 동일</span>
-                                </label>
+                                <input type="text" class="sender-address-detail" placeholder="상세주소 입력">
                             </td>
                         </tr>
                     </table>
                 </div>
 
                 <!-- 받는 분 정보 -->
-                <div class="section-header receiver-section">받는 분</div>
+                <div class="section-header receiver-section">
+                    <span>받는 분</span>
+                    <div class="header-checkbox-area no-print">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="copy-orderer-to-receiver" onchange="toggleReceiverInfoCopy(this, 'orderer')">
+                            <span>주문자 정보와 동일</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="copy-sender-to-receiver" onchange="toggleReceiverInfoCopy(this, 'sender')">
+                            <span>보내는 분 정보와 동일</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="receiver-section">
                         <tr>
                             <th style="width: 90px;">성명</th>
                             <th style="width: 150px;">전화번호</th>
                             <th style="width: 150px;">우편번호</th>
-                            <th style="width: 250px;">주소</th>
-                            <th class="checkbox-cell no-print">자동 입력</th>
+                            <th>주소</th>
                         </tr>
                         <tr>
                             <td><input type="text" class="receiver-name" placeholder="______" required></td>
@@ -1479,19 +1525,7 @@
                             </td>
                             <td class="address-field">
                                 <input type="text" class="receiver-address" placeholder="기본주소" required readonly>
-                                <input type="text" class="receiver-address-detail" placeholder="상세주소 입력" style="margin-top: 4px;">
-                            </td>
-                            <td class="checkbox-cell no-print">
-                                <div style="display: flex; flex-direction: column; gap: 5px;">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" class="copy-orderer-to-receiver" onchange="toggleReceiverInfoCopy(this, 'orderer')">
-                                        <span>주문자 정보와 동일</span>
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" class="copy-sender-to-receiver" onchange="toggleReceiverInfoCopy(this, 'sender')">
-                                        <span>보내는 분 정보와 동일</span>
-                                    </label>
-                                </div>
+                                <input type="text" class="receiver-address-detail" placeholder="상세주소 입력">
                             </td>
                         </tr>
                     </table>
