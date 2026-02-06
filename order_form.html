@@ -77,8 +77,9 @@
         /* 주문자 정보 컨테이너 - 시안색 */
         .orderer-info-container {
             border: none;
-            margin-bottom: 30px;
-            padding: 0px;
+            margin-bottom: 40px;
+            padding: 10px;
+            padding-top: 10px;
             background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
             position: relative;
             border-radius: 12px;
@@ -88,15 +89,18 @@
         /* 주문자 정보 배지 */
         .orderer-info-badge {
             position: absolute;
-            top: -40px;
+            top: -25px;
             left: 25px;
             background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
             color: white;
-            padding: 8px 25px;
+            width: 120px;
+            padding: 8px 0;
+            text-align: center;
             font-weight: 600;
             border-radius: 20px;
             font-size: 14px;
             box-shadow: 0 4px 10px rgba(6, 182, 212, 0.3);
+            margin-bottom: 0px;
         }
 
         /* 섹션 헤더 - 보내는 분/받는 분 제목 */
@@ -402,7 +406,7 @@
         /* 섹션 구분선 */
         .order-section {
             border: none;
-            padding: 25px;
+            padding: 10px;
             margin-bottom: 30px;
             background: #f1f5f9;
             position: relative;
@@ -413,15 +417,17 @@
         /* 섹션 번호 배지 */
         .section-number {
             position: absolute;
-            top: -12px;
+            top: -25px;
             left: 25px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
             color: white;
-            padding: 8px 40px;
+            width: 120px;
+            padding: 8px 0;
+            text-align: center;
             font-weight: 600;
             border-radius: 20px;
             font-size: 14px;
-            box-shadow: 0 4px 10px rgba(234, 179, 8, 0.3);
+            box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
         }
 
         /* 섹션 삭제 버튼 */
@@ -471,7 +477,7 @@
         .grand-total-container {
             border: none;
             margin-bottom: 30px;
-            padding: 25px;
+            padding: 10px;
             background: #eff6ff;
             position: relative;
             border-radius: 12px;
@@ -480,11 +486,13 @@
 
         .grand-total-badge {
             position: absolute;
-            top: -12px;
+            top: -25px;
             left: 25px;
-            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
             color: white;
-            padding: 8px 20px;
+            width: 120px;
+            padding: 8px 0;
+            text-align: center;
             font-weight: 600;
             border-radius: 20px;
             font-size: 14px;
@@ -494,15 +502,15 @@
         .grand-total-container th {
             background: #2563eb;
             color: white;
-            font-size: 14px;
-            padding: 12px;
+            font-size: 13px;
+            padding: 5px 5px;
         }
 
         .grand-total-container td {
-            font-size: 18px;
+            font-size: inherit;
             font-weight: 700;
             color: #1e3a5f;
-            padding: 15px;
+            padding: 5px 5px;
             background: white;
         }
 
@@ -554,7 +562,7 @@
             /* 헤더 크기 조정 */
             .header {
                 padding: 6px;
-                margin-bottom: 8px;
+                margin-bottom: 4px;
                 border-radius: 0;
                 background: #667eea !important;
             }
@@ -567,7 +575,7 @@
             /* 상단 정보 크기 조정 */
             .top-info {
                 padding: 4px 8px;
-                margin-bottom: 8px;
+                margin-bottom: 4px;
                 font-size: 8pt;
                 border-radius: 0;
                 background: #f8f9fa !important;
@@ -579,33 +587,45 @@
 
             /* 주문자 정보 컨테이너 크기 조정 */
             .orderer-info-container {
-                padding: 5px;
+                border: 2px solid #999;
+                padding: 8px;
+                padding-top: 5px;
                 margin-bottom: 5px;
-                border-radius: 0;
+                border-radius: 5px;
                 background: #f3e5f5 !important;
+                position: relative;
             }
 
             .orderer-info-badge {
-                font-size: 10px;
+                position: static;
+                display: inline-block;
+                font-size: 12px;
                 padding: 3px 8px;
+                margin-bottom: 4px;
                 border-radius: 10px;
                 background: #9C27B0 !important;
             }
 
             /* 섹션 헤더 간격 조정 */
             .section-header {
-                padding: 4px 8px;
-                font-size: 10pt;
-                margin-top: 3px;
+                padding: 2px 8px 3px;
+                font-size: 12pt;
+                margin-top: 0px;
                 margin-bottom: 0;
                 border-radius: 0;
             }
 
-            /* 테이블 간격 및 레이아웃 고정 */
+            /* 테이블 감싸는 div 스크롤 제거 */
+            .table-responsive {
+                overflow: visible;
+            }
+
+            /* 테이블 간격 및 레이아웃 - 내용에 맞게 자동 조정 */
             table {
                 margin-bottom: 3px;
-                table-layout: fixed;
+                table-layout: auto;
                 width: 100%;
+                min-width: 0 !important;
                 border-radius: 0;
                 border-spacing: 0;
                 border-collapse: collapse;
@@ -614,47 +634,69 @@
             /* 인쇄 시 섹션 구분선 */
             .order-section {
                 border: 2px solid #999;
-                page-break-after: always;
+                page-break-after: auto;
+                page-break-inside: avoid;
                 padding: 8px;
-                margin-bottom: 0;
-                border-radius: 0;
+                padding-top: 5px;
+                margin-bottom: 5px;
+                border-radius: 5px;
                 background: #fff3e0 !important;
+                position: relative;
             }
 
             .section-number {
-                font-size: 10px;
+                position: static;
+                display: inline-block;
+                font-size: 12px;
                 padding: 3px 8px;
+                margin-bottom: 4px;
                 border-radius: 10px;
-                background: #ff9800 !important;
+                background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important;
+            }
+
+            /* 섹션 삭제 버튼 숨김 */
+            .section-delete-btn {
+                display: none !important;
             }
 
             /* 인쇄 시 테두리 및 패딩 조정 */
             th, td {
                 border: 1px solid #666;
-                padding: 2px 2px;
+                padding: 1px 2px;
                 font-size: 7pt;
                 word-wrap: break-word;
                 overflow-wrap: break-word;
-                line-height: 1.3;
+                line-height: 1.1;
             }
 
             th {
                 font-size: 7pt;
+                padding-top: 0px;
+                padding-bottom: 0px;
             }
 
-            /* 컬럼 너비 최적화 - A4에 맞춘 인쇄용 */
-            th[style*="width: 90px"] { width: 36px !important; }
-            th[style*="width: 150px"] { width: 60px !important; }
+            /* 인적사항 테이블 컬럼 너비 (성명/전화번호/우편번호/주소) */
+            th[style*="width: 90px"] { width: 80px !important; white-space: nowrap; }
+            th[style*="width: 150px"]:nth-child(2) { width: 120px !important; white-space: nowrap; }
+            th[style*="width: 150px"]:nth-child(3) { width: 80px !important; white-space: nowrap; }
 
             /* 인쇄 시 입력 필드 테두리 제거 */
             input[type="text"],
             input[type="tel"],
             input[type="number"] {
-                border: none;
-                background: transparent;
-                padding: 0;
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
                 font-size: 7pt;
+                line-height: 1.1 !important;
+                height: 10pt !important;
+                min-height: 0 !important;
+                max-height: 10pt !important;
+                box-sizing: border-box;
                 width: 100%;
+                -webkit-appearance: none;
+                appearance: none;
             }
 
             /* 주소 필드 폰트 크기 */
@@ -680,31 +722,54 @@
                 display: block;
             }
 
-            /* 상품 정보 테이블 최적화 */
-            .product-section th[style*="width: 50px"] { width: 20px !important; }
-            .product-section th[style*="width: 120px"] { width: 60px !important; }
-            .product-section th[style*="width: 200px"] { width: 100px !important; }
-            .product-section th[style*="width: 80px"] { width: 35px !important; }
+            /* 상품 정보 테이블 컬럼 너비 (인쇄 시 No, 작업은 no-print로 숨김) */
+            /* 보이는 컬럼: 상품코드 / 상품이름 / 수량 / 단가 / 금액 */
+            .product-section th:nth-child(2) { width: 80px !important; }
+            .product-section th:nth-child(3) { width: auto !important; }
+            .product-section th:nth-child(4) { width: 60px !important; }
+            .product-section th:nth-child(5) { width: 100px !important; }
+            .product-section th:nth-child(6) { width: 100px !important; }
+
+            /* 인쇄 시 모든 th, td 내용 한 줄 유지 */
+            th {
+                white-space: nowrap;
+            }
 
             /* 전체 합계 인쇄 스타일 */
             .grand-total-container {
+                border: 2px solid #999;
                 padding: 8px;
+                padding-top: 5px;
+                margin-top: 5px;
                 margin-bottom: 8px;
-                border-radius: 0;
+                border-radius: 5px;
                 background: #eff6ff !important;
                 page-break-before: avoid;
+                page-break-inside: avoid;
+                position: relative;
             }
 
             .grand-total-badge {
+                position: static;
+                display: inline-block;
                 font-size: 10px;
                 padding: 3px 8px;
+                margin-bottom: 4px;
                 border-radius: 10px;
-                background: #2563eb !important;
+                background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%) !important;
+            }
+
+            .grand-total-container th {
+                font-size: 14px;
+                padding: 6px 2px !important;
+                line-height: 1.1;
             }
 
             .grand-total-container td {
-                font-size: 10pt;
+                font-size: 17px;
                 font-weight: bold;
+                padding: 4px 2px !important;
+                line-height: 1.1;
             }
         }
 
@@ -1004,34 +1069,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- 구글 설문지 설정 패널 (인쇄 시 숨김) -->
-        <div class="settings-panel no-print">
-            <h3>⚙️ 설정</h3>
-            
-            <!-- 상품 데이터 로드 상태 표시 -->
-            <div id="productDataStatus" style="padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-                <strong>📦 상품 데이터:</strong> <span id="productDataStatusText">로딩 중...</span>
-            </div>
-            
-            <!-- 구글 폼 설정 안내 -->
-            <div style="padding: 15px; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 5px;">
-                <h4 style="color: #856404; margin-bottom: 10px;">📋 구글 폼 설정</h4>
-                <p class="help-text" style="color: #856404; margin-bottom: 10px;">
-                    <strong>구글 폼 URL과 Entry ID는 config.js 파일에서 설정됩니다.</strong>
-                </p>
-                <p class="help-text" style="color: #856404;">
-                    💡 <strong>설정 방법:</strong><br>
-                    1. <strong>config.js</strong> 파일을 메모장이나 편집기로 엽니다<br>
-                    2. <strong>formUrl</strong>에 구글 폼의 formResponse URL을 입력합니다<br>
-                    3. <strong>entries</strong>에 각 필드의 Entry ID를 입력합니다<br>
-                    4. 파일을 저장하고 페이지를 새로고침합니다
-                </p>
-                <div id="configStatus" style="margin-top: 15px; padding: 10px; border-radius: 5px;">
-                    <strong>현재 설정 상태:</strong> <span id="configStatusText">확인 중...</span>
-                </div>
-            </div>
-        </div>
-
         <!-- 알림 메시지 영역 (인쇄 시 숨김) -->
         <div id="alertBox" class="alert"></div>
 
@@ -1165,12 +1202,12 @@
                     <table class="product-section">
                         <thead>
                             <tr>
-                                <th style="width: 50px;" class="no-print">No.</th>
-                                <th style="width: 120px;">상품 코드</th>
-                                <th style="width: 200px;">상품이름</th>
-                                <th style="width: 80px;">수량</th>
-                                <th style="width: 120px;">단가</th>
-                                <th style="width: 120px;">금액</th>
+                                <th style="width: 40px;" class="no-print">No.</th>
+                                <th style="width: 80px;">상품 코드</th>
+                                <th>상품이름</th>
+                                <th style="width: 60px;">수량</th>
+                                <th style="width: 100px;">단가</th>
+                                <th style="width: 100px;">금액</th>
                                 <th style="width: 100px;" class="no-print">작업</th>
                             </tr>
                         </thead>
@@ -1199,10 +1236,12 @@
                             </tr>
                             <!-- 합계 행 -->
                             <tr class="total-row">
-                                <td colspan="3">총 수량</td>
+                                <td class="no-print"></td>
+                                <td colspan="2">총 수량</td>
                                 <td class="section-total-quantity">0</td>
                                 <td>총 금액</td>
-                                <td colspan="2" class="section-grand-total">0원</td>
+                                <td class="section-grand-total">0원</td>
+                                <td class="no-print"></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -1252,7 +1291,16 @@
         function checkProductsDataLoaded() {
             const statusDiv = document.getElementById('productDataStatus');
             const statusText = document.getElementById('productDataStatusText');
-            
+
+            if (!statusDiv || !statusText) {
+                // 설정 패널이 제거된 경우 콘솔 로그만 출력
+                if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA) {
+                    console.log('상품 데이터 로드 완료:', PRODUCTS_DATA);
+                    return true;
+                }
+                return false;
+            }
+
             if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA) {
                 const productCount = Object.keys(PRODUCTS_DATA).length;
                 statusDiv.style.backgroundColor = '#d4edda';
@@ -1634,12 +1682,12 @@
                     <table class="product-section">
                         <thead>
                             <tr>
-                                <th style="width: 50px;" class="no-print">No.</th>
-                                <th style="width: 120px;">상품 코드</th>
-                                <th style="width: 200px;">상품이름</th>
-                                <th style="width: 80px;">수량</th>
-                                <th style="width: 120px;">단가</th>
-                                <th style="width: 120px;">금액</th>
+                                <th style="width: 40px;" class="no-print">No.</th>
+                                <th style="width: 80px;">상품 코드</th>
+                                <th>상품이름</th>
+                                <th style="width: 60px;">수량</th>
+                                <th style="width: 100px;">단가</th>
+                                <th style="width: 100px;">금액</th>
                                 <th style="width: 100px;" class="no-print">작업</th>
                             </tr>
                         </thead>
@@ -1665,10 +1713,12 @@
                                 </td>
                             </tr>
                             <tr class="total-row">
-                                <td colspan="3">총 수량</td>
+                                <td class="no-print"></td>
+                                <td colspan="2">총 수량</td>
                                 <td class="section-total-quantity">0</td>
                                 <td>총 금액</td>
-                                <td colspan="2" class="section-grand-total">0원</td>
+                                <td class="section-grand-total">0원</td>
+                                <td class="no-print"></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -2262,12 +2312,13 @@
             if (!validateAllInputs()) {
                 return;
             }
-            
+
             // 구글 폼 제출
             const submitted = await submitToGoogleForm();
-            
+
             if (submitted) {
                 // 인쇄 대화상자 표시
+                // (합계 행은 이미 No/작업 컬럼에 no-print 셀이 포함되어 있으므로 별도 조정 불필요)
                 window.print();
             }
         }
@@ -2588,7 +2639,9 @@
         function checkConfigStatus() {
             const statusDiv = document.getElementById('configStatus');
             const statusText = document.getElementById('configStatusText');
-            
+
+            if (!statusDiv || !statusText) return;
+
             if (typeof GOOGLE_FORM_CONFIG === 'undefined') {
                 statusDiv.style.backgroundColor = '#f8d7da';
                 statusDiv.style.border = '2px solid #f5c6cb';
