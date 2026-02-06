@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -53,7 +53,7 @@
         .top-info {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 25px;
+            margin-bottom: 70px;
             padding: 15px 20px;
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border: none;
@@ -78,7 +78,7 @@
         .orderer-info-container {
             border: none;
             margin-bottom: 30px;
-            padding: 25px;
+            padding: 0px;
             background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
             position: relative;
             border-radius: 12px;
@@ -88,11 +88,11 @@
         /* 주문자 정보 배지 */
         .orderer-info-badge {
             position: absolute;
-            top: -12px;
+            top: -40px;
             left: 25px;
             background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
             color: white;
-            padding: 8px 20px;
+            padding: 8px 25px;
             font-weight: 600;
             border-radius: 20px;
             font-size: 14px;
@@ -101,7 +101,7 @@
 
         /* 섹션 헤더 - 보내는 분/받는 분 제목 */
         .section-header {
-            background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+            background: #f97316;
             padding: 12px 15px;
             font-weight: 600;
             font-size: 14px;
@@ -139,7 +139,7 @@
         }
 
         th {
-            background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+            background: #fb923c;
             font-weight: 600;
             color: #fff;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
@@ -148,7 +148,7 @@
 
         /* 주문자 정보 테이블 헤더 - 시안색 */
         .orderer-info-container th {
-            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            background: #06b6d4;
             color: white;
         }
 
@@ -227,21 +227,31 @@
 
         /* 받는 분 섹션 스타일 - 보라색 배경 */
         .receiver-section {
-            background: linear-gradient(135deg, #fae8ff 0%, #f3e8ff 100%);
+            background: #fae8ff;
+        }
+
+        /* 받는 분 제목 행 - 연한 보라색 */
+        .section-header.receiver-section {
+            background: #9333ea;
         }
 
         .receiver-section th {
-            background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+            background: #a855f7;
             color: white;
         }
 
         /* 상품 정보 섹션 스타일 - 녹색 배경 */
         .product-section {
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            background: #f0fdf4;
+        }
+
+        /* 상품 정보 제목 행 - 연한 녹색 */
+        .section-header.product-section {
+            background: #16a34a;
         }
 
         .product-section th {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            background: #22c55e;
             color: white;
         }
 
@@ -352,7 +362,7 @@
             left: 25px;
             background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
             color: white;
-            padding: 8px 20px;
+            padding: 8px 40px;
             font-weight: 600;
             border-radius: 20px;
             font-size: 14px;
@@ -475,8 +485,8 @@
 
             /* 주문자 정보 컨테이너 크기 조정 */
             .orderer-info-container {
-                padding: 8px;
-                margin-bottom: 8px;
+                padding: 5px;
+                margin-bottom: 5px;
                 border-radius: 0;
                 background: #f3e5f5 !important;
             }
@@ -538,12 +548,10 @@
                 font-size: 7pt;
             }
 
-            /* 컬럼 너비 최적화 - A4에 맞춤 (더 작게) */
-            th[style*="width: 70px"] { width: 38px !important; }
-            th[style*="width: 110px"] { width: 55px !important; }
-            th[style*="width: 130px"] { width: 65px !important; }
-            th[style*="width: 180px"] { width: 95px !important; }
-            th[style*="width: 140px"] { width: 75px !important; }
+            /* 컬럼 너비 최적화 - A4에 맞춘 인쇄용 */
+            th[style*="width: 90px"] { width: 36px !important; }
+            th[style*="width: 150px"] { width: 60px !important; }
+            th[style*="width: 250px"] { width: 110px !important; }
 
             /* 인쇄 시 입력 필드 테두리 제거 */
             input[type="text"],
@@ -934,11 +942,10 @@
             <div class="table-responsive">
                 <table>
                     <tr>
-                        <th style="width: 70px;">성명</th>
-                        <th style="width: 110px;">전화번호</th>
-                        <th style="width: 130px;">우편번호</th>
-                        <th style="width: 180px;">기본주소</th>
-                        <th>상세주소</th>
+                        <th style="width: 90px;">성명</th>
+                        <th style="width: 150px;">전화번호</th>
+                        <th style="width: 150px;">우편번호</th>
+                        <th style="width: 250px;">주소</th>
                     </tr>
                     <tr>
                         <td><input type="text" id="ordererName" placeholder="______" required></td>
@@ -949,8 +956,10 @@
                                 <button type="button" class="postal-search-btn no-print" onclick="searchOrdererAddress()">검색</button>
                             </div>
                         </td>
-                        <td class="address-field"><input type="text" id="ordererAddress" placeholder="기본주소" required readonly></td>
-                        <td class="address-field"><input type="text" id="ordererAddressDetail" placeholder="상세주소 입력"></td>
+                        <td class="address-field">
+                            <input type="text" id="ordererAddress" placeholder="기본주소" required readonly>
+                            <input type="text" id="ordererAddressDetail" placeholder="상세주소 입력" style="margin-top: 4px;">
+                        </td>
                     </tr>
                 </table>
             </div>
@@ -967,11 +976,10 @@
                 <div class="table-responsive">
                     <table>
                         <tr>
-                            <th style="width: 70px;">성명</th>
-                            <th style="width: 110px;">전화번호</th>
-                            <th style="width: 130px;">우편번호</th>
-                            <th style="width: 180px;">기본주소</th>
-                            <th style="width: 140px;">상세주소</th>
+                            <th style="width: 90px;">성명</th>
+                            <th style="width: 150px;">전화번호</th>
+                            <th style="width: 150px;">우편번호</th>
+                            <th style="width: 250px;">주소</th>
                             <th class="checkbox-cell no-print">자동 입력</th>
                         </tr>
                         <tr>
@@ -983,8 +991,10 @@
                                     <button type="button" class="postal-search-btn no-print" onclick="searchSenderAddress(this)">검색</button>
                                 </div>
                             </td>
-                            <td class="address-field"><input type="text" class="sender-address" placeholder="기본주소" required readonly></td>
-                            <td class="address-field"><input type="text" class="sender-address-detail" placeholder="상세주소 입력"></td>
+                            <td class="address-field">
+                                <input type="text" class="sender-address" placeholder="기본주소" required readonly>
+                                <input type="text" class="sender-address-detail" placeholder="상세주소 입력" style="margin-top: 4px;">
+                            </td>
                             <td class="checkbox-cell no-print">
                                 <label class="checkbox-label">
                                     <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
@@ -1000,11 +1010,10 @@
                 <div class="table-responsive">
                     <table class="receiver-section">
                         <tr>
-                            <th style="width: 70px;">성명</th>
-                            <th style="width: 110px;">전화번호</th>
-                            <th style="width: 130px;">우편번호</th>
-                            <th style="width: 180px;">기본주소</th>
-                            <th style="width: 140px;">상세주소</th>
+                            <th style="width: 90px;">성명</th>
+                            <th style="width: 150px;">전화번호</th>
+                            <th style="width: 150px;">우편번호</th>
+                            <th style="width: 250px;">주소</th>
                             <th class="checkbox-cell no-print">자동 입력</th>
                         </tr>
                         <tr>
@@ -1016,8 +1025,10 @@
                                     <button type="button" class="postal-search-btn no-print" onclick="searchReceiverAddress(this)">검색</button>
                                 </div>
                             </td>
-                            <td class="address-field"><input type="text" class="receiver-address" placeholder="기본주소" required readonly></td>
-                            <td class="address-field"><input type="text" class="receiver-address-detail" placeholder="상세주소 입력"></td>
+                            <td class="address-field">
+                                <input type="text" class="receiver-address" placeholder="기본주소" required readonly>
+                                <input type="text" class="receiver-address-detail" placeholder="상세주소 입력" style="margin-top: 4px;">
+                            </td>
                             <td class="checkbox-cell no-print">
                                 <div style="display: flex; flex-direction: column; gap: 5px;">
                                     <label class="checkbox-label">
@@ -1417,11 +1428,10 @@
                 <div class="table-responsive">
                     <table>
                         <tr>
-                            <th style="width: 70px;">성명</th>
-                            <th style="width: 110px;">전화번호</th>
-                            <th style="width: 130px;">우편번호</th>
-                            <th style="width: 180px;">기본주소</th>
-                            <th style="width: 140px;">상세주소</th>
+                            <th style="width: 90px;">성명</th>
+                            <th style="width: 150px;">전화번호</th>
+                            <th style="width: 150px;">우편번호</th>
+                            <th style="width: 250px;">주소</th>
                             <th class="checkbox-cell no-print">자동 입력</th>
                         </tr>
                         <tr>
@@ -1433,8 +1443,10 @@
                                     <button type="button" class="postal-search-btn no-print" onclick="searchSenderAddress(this)">검색</button>
                                 </div>
                             </td>
-                            <td class="address-field"><input type="text" class="sender-address" placeholder="기본주소" required readonly></td>
-                            <td class="address-field"><input type="text" class="sender-address-detail" placeholder="상세주소 입력"></td>
+                            <td class="address-field">
+                                <input type="text" class="sender-address" placeholder="기본주소" required readonly>
+                                <input type="text" class="sender-address-detail" placeholder="상세주소 입력" style="margin-top: 4px;">
+                            </td>
                             <td class="checkbox-cell no-print">
                                 <label class="checkbox-label">
                                     <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
@@ -1450,11 +1462,10 @@
                 <div class="table-responsive">
                     <table class="receiver-section">
                         <tr>
-                            <th style="width: 70px;">성명</th>
-                            <th style="width: 110px;">전화번호</th>
-                            <th style="width: 130px;">우편번호</th>
-                            <th style="width: 180px;">기본주소</th>
-                            <th style="width: 140px;">상세주소</th>
+                            <th style="width: 90px;">성명</th>
+                            <th style="width: 150px;">전화번호</th>
+                            <th style="width: 150px;">우편번호</th>
+                            <th style="width: 250px;">주소</th>
                             <th class="checkbox-cell no-print">자동 입력</th>
                         </tr>
                         <tr>
@@ -1466,8 +1477,10 @@
                                     <button type="button" class="postal-search-btn no-print" onclick="searchReceiverAddress(this)">검색</button>
                                 </div>
                             </td>
-                            <td class="address-field"><input type="text" class="receiver-address" placeholder="기본주소" required readonly></td>
-                            <td class="address-field"><input type="text" class="receiver-address-detail" placeholder="상세주소 입력"></td>
+                            <td class="address-field">
+                                <input type="text" class="receiver-address" placeholder="기본주소" required readonly>
+                                <input type="text" class="receiver-address-detail" placeholder="상세주소 입력" style="margin-top: 4px;">
+                            </td>
                             <td class="checkbox-cell no-print">
                                 <div style="display: flex; flex-direction: column; gap: 5px;">
                                     <label class="checkbox-label">
