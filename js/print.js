@@ -96,6 +96,7 @@
 
         /**
          * 상품 정보 테이블 전용: thead/tbody/tfoot 통합 후 전체 세로 병합
+         * - innerHTML 대신 DOM 노드를 직접 이동하여 input 값 보존
          */
         function addProductPrintTitleColumn(table) {
             // thead/tbody/tfoot의 인쇄 가능한 모든 행 수집
@@ -106,21 +107,28 @@
             });
             if (printableRows.length === 0) return;
 
-            // thead/tbody/tfoot 제거 → 행들을 table 직속으로 이동
+            // thead/tbody/tfoot 참조 저장
             const thead = table.querySelector('thead');
             const tbody = table.querySelector('tbody');
             const tfoot = table.querySelector('tfoot');
-            const allRowsCopy = Array.from(allRows);
 
-            // 원본 구조 백업 (afterprint 복원용)
+            // 원본 구조 백업: DOM 노드 참조와 각 행의 소속 정보를 저장
             table.setAttribute('data-print-restructured', 'true');
-            table._origHTML = table.innerHTML;
+            table._origStructure = {
+                thead: thead,
+                tbody: tbody,
+                tfoot: tfoot,
+                theadRows: thead ? Array.from(thead.querySelectorAll('tr')) : [],
+                tbodyRows: tbody ? Array.from(tbody.querySelectorAll('tr')) : [],
+                tfootRows: tfoot ? Array.from(tfoot.querySelectorAll('tr')) : []
+            };
 
-            // 모든 행을 table 직속으로 이동
+            // 모든 행을 table 직속으로 이동 (DOM 노드 이동이므로 input 값 보존)
+            const allRowsList = Array.from(allRows);
             if (thead) thead.remove();
             if (tbody) tbody.remove();
             if (tfoot) tfoot.remove();
-            allRowsCopy.forEach(row => table.appendChild(row));
+            allRowsList.forEach(row => table.appendChild(row));
 
             // 첫 번째 인쇄 행에 전체 rowspan 셀 추가
             const titleCell = document.createElement('td');
@@ -190,12 +198,32 @@
             const titleCells = document.querySelectorAll('[data-print-title="true"]');
             titleCells.forEach(cell => cell.remove());
 
-            // 상품 테이블 구조 복원
+            // 상품 테이블 구조 복원 (DOM 노드를 원래 thead/tbody/tfoot로 되돌림)
             const restructured = document.querySelectorAll('[data-print-restructured="true"]');
             restructured.forEach(table => {
-                table.innerHTML = table._origHTML;
+                const orig = table._origStructure;
+                if (!orig) return;
+
+                // table 직속의 모든 행을 임시로 분리
+                const currentRows = Array.from(table.querySelectorAll(':scope > tr'));
+                currentRows.forEach(row => row.remove());
+
+                // 원래 구조로 복원: thead/tbody/tfoot에 행을 다시 넣고 table에 추가
+                if (orig.thead) {
+                    orig.theadRows.forEach(row => orig.thead.appendChild(row));
+                    table.appendChild(orig.thead);
+                }
+                if (orig.tbody) {
+                    orig.tbodyRows.forEach(row => orig.tbody.appendChild(row));
+                    table.appendChild(orig.tbody);
+                }
+                if (orig.tfoot) {
+                    orig.tfootRows.forEach(row => orig.tfoot.appendChild(row));
+                    table.appendChild(orig.tfoot);
+                }
+
                 table.removeAttribute('data-print-restructured');
-                delete table._origHTML;
+                delete table._origStructure;
 
                 // 이벤트 리스너 재연결
                 const rows = table.querySelectorAll('.product-row');

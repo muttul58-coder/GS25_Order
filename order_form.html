@@ -195,7 +195,7 @@
             display: flex;
             gap: 8px;
             align-items: center;
-            padding: 0;
+            padding: 5px;
         }
 
         .address-field input {
@@ -1939,7 +1939,12 @@
             const firstRow = newSection.querySelector('.product-row');
             attachRowEventListeners(firstRow);
             attachProductCodeFormatting(firstRow);
-            
+
+            // 새 섹션의 전화번호 필드에 하이픈 포맷팅 적용
+            newSection.querySelectorAll('.sender-phone, .receiver-phone').forEach(input => {
+                attachPhoneFormatting(input);
+            });
+
             // 전체 합계 업데이트
             updateGrandTotals();
 
@@ -2584,6 +2589,7 @@
 
         /**
          * 상품 정보 테이블 전용: thead/tbody/tfoot 통합 후 전체 세로 병합
+         * - DOM 노드를 직접 이동하여 input 값 보존
          */
         function addProductPrintTitleColumn(table) {
             // thead/tbody/tfoot의 인쇄 가능한 모든 행 수집
@@ -2594,21 +2600,27 @@
             });
             if (printableRows.length === 0) return;
 
-            // thead/tbody/tfoot 제거 → 행들을 table 직속으로 이동
             const thead = table.querySelector('thead');
             const tbody = table.querySelector('tbody');
             const tfoot = table.querySelector('tfoot');
-            const allRowsCopy = Array.from(allRows);
 
-            // 원본 구조 백업 (afterprint 복원용)
+            // 원본 구조 백업: DOM 노드 참조와 각 행의 소속 정보를 저장
             table.setAttribute('data-print-restructured', 'true');
-            table._origHTML = table.innerHTML;
+            table._origStructure = {
+                thead: thead,
+                tbody: tbody,
+                tfoot: tfoot,
+                theadRows: thead ? Array.from(thead.querySelectorAll('tr')) : [],
+                tbodyRows: tbody ? Array.from(tbody.querySelectorAll('tr')) : [],
+                tfootRows: tfoot ? Array.from(tfoot.querySelectorAll('tr')) : []
+            };
 
-            // 모든 행을 table 직속으로 이동
+            // 모든 행을 table 직속으로 이동 (DOM 노드 이동이므로 input 값 보존)
+            const allRowsList = Array.from(allRows);
             if (thead) thead.remove();
             if (tbody) tbody.remove();
             if (tfoot) tfoot.remove();
-            allRowsCopy.forEach(row => table.appendChild(row));
+            allRowsList.forEach(row => table.appendChild(row));
 
             // 첫 번째 인쇄 행에 전체 rowspan 셀 추가
             const titleCell = document.createElement('td');
@@ -2678,12 +2690,32 @@
             const titleCells = document.querySelectorAll('[data-print-title="true"]');
             titleCells.forEach(cell => cell.remove());
 
-            // 상품 테이블 구조 복원
+            // 상품 테이블 구조 복원 (DOM 노드를 원래 thead/tbody/tfoot로 되돌림)
             const restructured = document.querySelectorAll('[data-print-restructured="true"]');
             restructured.forEach(table => {
-                table.innerHTML = table._origHTML;
+                const orig = table._origStructure;
+                if (!orig) return;
+
+                // table 직속의 모든 행을 분리
+                const currentRows = Array.from(table.querySelectorAll(':scope > tr'));
+                currentRows.forEach(row => row.remove());
+
+                // 원래 구조로 복원: thead/tbody/tfoot에 행을 다시 넣고 table에 추가
+                if (orig.thead) {
+                    orig.theadRows.forEach(row => orig.thead.appendChild(row));
+                    table.appendChild(orig.thead);
+                }
+                if (orig.tbody) {
+                    orig.tbodyRows.forEach(row => orig.tbody.appendChild(row));
+                    table.appendChild(orig.tbody);
+                }
+                if (orig.tfoot) {
+                    orig.tfootRows.forEach(row => orig.tfoot.appendChild(row));
+                    table.appendChild(orig.tfoot);
+                }
+
                 table.removeAttribute('data-print-restructured');
-                delete table._origHTML;
+                delete table._origStructure;
 
                 // 이벤트 리스너 재연결
                 const rows = table.querySelectorAll('.product-row');
@@ -3423,31 +3455,92 @@
         }
 
         // ========================================
+        // 전화번호 하이픈 자동 포맷팅
+        // ========================================
+
+        /**
+         * 전화번호에 하이픈 자동 추가
+         * 지원 형식: 02-000-0000, 0X0-000-0000, 0X0-0000-0000, 000-0000-0000
+         * @param {string} value - 입력된 전화번호
+         * @returns {string} - 하이픈이 추가된 전화번호
+         */
+        function formatPhoneNumber(value) {
+            // 숫자만 추출
+            const numbers = value.replace(/[^\d]/g, '');
+
+            if (numbers.length === 0) return '';
+
+            // 02 지역번호 (02-XXX-XXXX 또는 02-XXXX-XXXX)
+            if (numbers.startsWith('02')) {
+                if (numbers.length <= 2) return numbers;
+                if (numbers.length <= 5) return numbers.slice(0, 2) + '-' + numbers.slice(2);
+                if (numbers.length <= 9) return numbers.slice(0, 2) + '-' + numbers.slice(2, 5) + '-' + numbers.slice(5);
+                return numbers.slice(0, 2) + '-' + numbers.slice(2, 6) + '-' + numbers.slice(6, 10);
+            }
+
+            // 그 외 (0X0-XXX-XXXX 또는 0X0-XXXX-XXXX)
+            if (numbers.length <= 3) return numbers;
+            if (numbers.length <= 7) return numbers.slice(0, 3) + '-' + numbers.slice(3);
+            if (numbers.length <= 10) return numbers.slice(0, 3) + '-' + numbers.slice(3, 6) + '-' + numbers.slice(6);
+            return numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7, 11);
+        }
+
+        /**
+         * 전화번호 input에 하이픈 자동 포맷팅 이벤트 리스너 추가
+         * @param {HTMLInputElement} input - 전화번호 입력 필드
+         */
+        function attachPhoneFormatting(input) {
+            input.addEventListener('input', function() {
+                const formatted = formatPhoneNumber(this.value);
+                if (formatted !== this.value) {
+                    this.value = formatted;
+                }
+            });
+        }
+
+        /**
+         * 페이지 내 모든 전화번호 필드에 포맷팅 적용
+         */
+        function initPhoneFormatting() {
+            // 주문자 전화번호
+            const ordererPhone = document.getElementById('ordererPhone');
+            if (ordererPhone) attachPhoneFormatting(ordererPhone);
+
+            // 모든 섹션의 보내는 분 / 받는 분 전화번호
+            document.querySelectorAll('.sender-phone, .receiver-phone').forEach(input => {
+                attachPhoneFormatting(input);
+            });
+        }
+
+        // ========================================
         // 초기화 함수
         // ========================================
-        
+
         /**
          * 페이지 로드 시 초기화 작업 수행
          */
         function initializePage() {
             // products.js 파일 로드 상태 확인
             checkProductsDataLoaded();
-            
+
             // 현재 날짜/시간 표시
             updateDateTime();
             // 매 분마다 날짜/시간 업데이트
             setInterval(updateDateTime, 60000);
-            
+
             // 첫 번째 섹션의 첫 번째 행에 이벤트 리스너 추가
             const firstRow = document.querySelector('.product-row');
             if (firstRow) {
                 attachRowEventListeners(firstRow);
                 attachProductCodeFormatting(firstRow);
             }
-            
+
+            // 전화번호 하이픈 자동 포맷팅 초기화
+            initPhoneFormatting();
+
             // 순차적 입력 가이드 이벤트 추가
             attachSequentialInputGuide();
-            
+
             // 로컬 스토리지에서 모든 설정 불러오기
             loadAllSettings();
         }
