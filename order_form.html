@@ -19,7 +19,7 @@
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
         }
-
+        
         /* 메인 컨테이너 */
         .container {
             max-width: 1024px;
@@ -317,6 +317,97 @@
             color: white;
         }
 
+        /* 행사 콤보박스 스타일 */
+        .event-type {
+            width: 100%;
+            padding: 4px 2px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: inherit;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* 배송 상품 섹션 스타일 - 청록색 계열 */
+        .delivery-product-section {
+            background: #f0fdfa;
+        }
+
+        .section-header.delivery-product-section {
+            background: #14b8a6;
+        }
+
+        .delivery-product-section th {
+            background: #2dd4bf;
+            color: white;
+        }
+
+        /* 배송 희망 일 영역 */
+        .delivery-date-area {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .delivery-date-area label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #000;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .delivery-date {
+            padding: 4px 8px;
+            border: 1px solid #fff;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            background: white;
+            color: #333;
+            cursor: pointer;
+        }
+
+        /* 배송 상품 콤보박스 스타일 */
+        .delivery-product-code-select {
+            width: 100%;
+            padding: 4px 2px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: inherit;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* 배송 상품 수량 불일치 경고 메시지 */
+        .quantity-mismatch-warning {
+            color: #dc2626;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 10px;
+            margin-top: 5px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        /* 배송 상품 수량 일치 OK 메시지 */
+        .quantity-match-ok {
+            color: #16a34a;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 10px;
+            margin-top: 5px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            text-align: center;
+        }
+
         /* 버튼 공통 스타일 */
         .button-container {
             text-align: center;
@@ -442,6 +533,13 @@
         }
 
         /* 섹션 번호 배지 */
+        .section-number-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0;
+        }
+
         .section-number {
             position: absolute;
             top: -25px;
@@ -457,11 +555,17 @@
             box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
         }
 
+        .section-number-row .delivery-date-area {
+            position: absolute;
+            top: -15px;
+            right: 25px;
+        }
+
         /* 섹션 삭제 버튼 */
         .section-delete-btn {
             position: absolute;
-            top: -12px;
-            right: 25px;
+            top: -25px;
+            left: 155px;
             background: linear-gradient(135deg, #ef5350 0%, #f44336 100%);
             color: white;
             padding: 8px 16px;
@@ -500,45 +604,6 @@
             cursor: pointer;
         }
 
-        /* 전체 합계 컨테이너 */
-        .grand-total-container {
-            border: none;
-            margin-bottom: 30px;
-            padding: 10px;
-            background: #eff6ff;
-            position: relative;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15);
-        }
-
-        .grand-total-badge {
-            position: absolute;
-            top: -25px;
-            left: 25px;
-            background: linear-gradient(135deg, #3b82f6 0%, #93c5fd 100%);
-            color: white;
-            width: 120px;
-            padding: 8px 0;
-            text-align: center;
-            font-weight: 600;
-            border-radius: 20px;
-            font-size: 14px;
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-        }
-
-        .grand-total-container th {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .grand-total-container td {
-            font-size: inherit;
-            font-weight: 700;
-            color: #1e3a5f;
-            padding: 5px 5px;
-            background: white;
-        }
-
         /* 총 금액 행 스타일 */
         .total-row {
             font-weight: 600;
@@ -569,6 +634,7 @@
                 margin: 0;
                 font-size: 9pt;
                 width: 210mm;
+                overflow: hidden;
             }
 
             .container {
@@ -650,6 +716,8 @@
             /* 테이블 감싸는 div 스크롤 제거 */
             .table-responsive {
                 overflow: visible;
+                overflow-x: hidden;
+                overflow-y: hidden;
             }
 
             /* 테이블 간격 및 레이아웃 - 내용에 맞게 자동 조정 */
@@ -707,6 +775,80 @@
                 padding-bottom: 0px;
             }
 
+            /* 모든 테이블 데이터행 글자 크기 통일 */
+            .orderer-info-container table td,
+            table.send-section td,
+            table.receiver-section td,
+            table.product-section td,
+            table.delivery-product-section td {
+                font-size: 10pt;
+            }
+
+            .orderer-info-container table td input,
+            table.send-section td input,
+            table.receiver-section td input,
+            table.product-section td input,
+            table.delivery-product-section td input,
+            table.delivery-product-section td select {
+                font-size: 10pt;
+            }
+
+            /* 인적사항 테이블 (주문정보/보내는 분/받는 분/배송 상품) 행 높이 */
+            .orderer-info-container table tr:first-child,
+            table.send-section tr:first-child,
+            table.receiver-section tr:first-child,
+            table.delivery-product-section thead tr {
+                height: 10px !important;
+            }
+
+            .orderer-info-container table th,
+            table.send-section th,
+            table.receiver-section th,
+            table.delivery-product-section th {
+                height: 10px !important;
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+                line-height: 1.0;
+            }
+
+            .orderer-info-container table tr:last-child,
+            table.send-section tr:last-child,
+            table.receiver-section tr:last-child,
+            table.delivery-product-section tbody tr {
+                height: 22px !important;
+            }
+
+            .orderer-info-container table td,
+            table.send-section td,
+            table.receiver-section td,
+            table.delivery-product-section td {
+                height: 22px !important;
+            }
+
+            .orderer-info-container table td input,
+            table.send-section td input,
+            table.receiver-section td input,
+            table.delivery-product-section td input {
+                height: 20px !important;
+                max-height: 20px !important;
+            }
+
+            /* 상품 정보 테이블 데이터행 높이 */
+            table.product-section tbody tr {
+                height: 16px !important;
+            }
+
+            table.product-section td {
+                height: 16px !important;
+                padding-top: 0px !important;
+                padding-bottom: 0px !important;
+            }
+
+            table.product-section td input {
+                height: 14px !important;
+                max-height: 14px !important;
+            }
+
             /* 인적사항 테이블 컬럼 너비 (타이틀셀/성명/전화번호/우편번호/주소) */
             th[style*="width: 90px"] { width: 80px !important; white-space: nowrap; }
             th[style*="width: 150px"]:nth-child(3) { width: 120px !important; white-space: nowrap; }
@@ -720,7 +862,7 @@
                 background: transparent !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                font-size: 7pt;
+                font-size: 10pt;
                 line-height: 1.1 !important;
                 height: 10pt !important;
                 min-height: 0 !important;
@@ -739,7 +881,7 @@
 
             .address-field input {
                 display: inline-block !important;
-                font-size: 6.5pt;
+                font-size: 10pt;
                 vertical-align: middle;
             }
 
@@ -761,7 +903,7 @@
             .print-address-text.print-address-full {
                 display: block !important;
                 width: 100% !important;
-                font-size: 9.5pt;
+                font-size: 10pt;
                 line-height: 1.0;
                 word-break: break-all;
                 white-space: normal;
@@ -771,8 +913,21 @@
 
             /* 총 금액 행 */
             .total-row td {
-                font-size: 8pt;
+                font-size: 10pt;
                 font-weight: bold;
+            }
+
+            /* 바코드 이미지 영역 인쇄 스타일 */
+            .barcode-row td.barcode-container {
+                border: none !important;
+                background: transparent !important;
+                padding: 2px 0 !important;
+            }
+
+            .barcode-slot img {
+                height: 90px;
+                width: auto;
+                object-fit: contain;
             }
 
             /* 우편번호 검색 버튼 숨김 */
@@ -786,66 +941,57 @@
             }
 
             /* 상품 정보 테이블 컬럼 너비 (인쇄 시) */
-            /* 보이는 컬럼: 상품정보(병합) / No / 상품코드 / 상품이름 / 수량 / 단가 / 금액 */
+            /* 보이는 컬럼: 상품정보(병합) / No / 상품코드 / 상품이름 / 행사 / 수량 / 단가 / 금액 */
             .product-section th:nth-child(2) { width: 20px !important; }
             .product-section th:nth-child(3) { width: 80px !important; }
             .product-section th:nth-child(4) { width: auto !important; }
-            .product-section th:nth-child(5) { width: 60px !important; }
-            .product-section th:nth-child(6) { width: 100px !important; }
-            .product-section th:nth-child(7) { width: 100px !important; }
+            .product-section th:nth-child(5) { width: 80px !important; }
+            .product-section th:nth-child(6) { width: 70px !important; text-align: center !important; }
+            .product-section th:nth-child(7) { width: 80px !important; }
+            .product-section th:nth-child(8) { width: 90px !important; }
 
             /* 인쇄 시 모든 th, td 내용 한 줄 유지 */
             th {
                 white-space: nowrap;
             }
 
-            /* 전체 합계 인쇄 스타일 */
-            .grand-total-container {
-                border: 2px solid #999;
-                padding: 8px;
-                padding-top: 5px;
-                margin-top: 5px;
-                margin-bottom: 8px;
-                border-radius: 5px;
-                background: #eff6ff !important;
-                page-break-before: avoid;
-                page-break-inside: avoid;
-                position: relative;
-            }
-
-            .grand-total-badge {
-                position: static;
-                display: inline-block;
-                font-size: 10px;
-                padding: 3px 8px;
-                margin-bottom: 4px;
-                border-radius: 10px;
-                background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%) !important;
-            }
-
-            .grand-total-container th {
-                padding: 1px 2px !important;
-                line-height: 1.1;
-            }
-
-            .grand-total-container td {
-                font-size: 17px;
-                font-weight: bold;
-                padding: 4px 2px !important;
-                line-height: 1.1;
-            }
-
             /* 인쇄 시 섹션 헤더(타이틀 바) 숨김 - 테이블 첫 컬럼으로 대체 */
             .section-header.send-section,
             .section-header.receiver-section,
             .section-header.product-section,
-            .section-header:not(.send-section):not(.receiver-section):not(.product-section) {
+            .section-header.delivery-product-section,
+            .section-header:not(.send-section):not(.receiver-section):not(.product-section):not(.delivery-product-section) {
                 display: none !important;
             }
 
+            /* 인쇄 시 배송 정보 헤더 행: 배지 + 배송 희망 일 */
+            .section-number-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+            }
+
+            .section-number-row .delivery-date-area {
+                position: static;
+            }
+
+            .delivery-date-area label {
+                color: #333;
+                font-size: 10pt;
+                font-weight: 700;
+            }
+
+            .delivery-date {
+                border: none;
+                background: transparent;
+                font-size: 10pt;
+                font-weight: 700;
+                padding: 0 2px;
+            }
+
             /* 인쇄 시 배지 숨김 */
-            .orderer-info-badge,
-            .grand-total-badge {
+            .orderer-info-badge {
                 display: none !important;
             }
 
@@ -871,11 +1017,13 @@
             .print-title-cell.title-sender {
                 background: #fb923c !important;
                 color: white;
+                font-size: 7pt;
             }
 
             .print-title-cell.title-receiver {
                 background: #a855f7 !important;
                 color: white;
+                font-size: 7pt;
             }
 
             .print-title-cell.title-product {
@@ -883,11 +1031,33 @@
                 color: white;
             }
 
-            .print-title-cell.title-grand-total {
-                background: #3b82f6 !important;
+            .print-title-cell.title-delivery-product {
+                background: #14b8a6 !important;
                 color: white;
-                font-size: 9pt !important;
+                font-size: 7pt;
             }
+
+            /* 인쇄 시 배송 상품 콤보박스 화살표 숨김 */
+            .delivery-product-code-select {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                border: none !important;
+                background: transparent !important;
+            }
+
+            /* 인쇄 시 수량 안내 메시지 숨김 */
+            .quantity-mismatch-warning,
+            .quantity-match-ok {
+                display: none !important;
+            }
+
+            /* 배송 상품 테이블 컬럼 너비 (인쇄 시) */
+            .delivery-product-section th:nth-child(2) { width: 20px !important; }
+            .delivery-product-section th:nth-child(3) { width: 80px !important; }
+            .delivery-product-section th:nth-child(4) { width: auto !important; }
+            .delivery-product-section th:nth-child(5) { width: 60px !important; }
+
         }
 
         /* 상품 행 액션 버튼 컨테이너 */
@@ -1038,6 +1208,30 @@
             background-color: #f0f0f0;
             font-weight: bold;
             color: #333;
+        }
+
+        /* 바코드 이미지 영역 */
+        .barcode-row td.barcode-container {
+            border: none !important;
+            background: transparent !important;
+            padding: 4px 0 !important;
+        }
+
+        .barcode-grid {
+            display: flex;
+            gap: 4px;
+        }
+
+        .barcode-slot {
+            flex: 1;
+            text-align: center;
+            min-height: 10px;
+        }
+
+        .barcode-slot img {
+            height: 100px;
+            width: auto;
+            object-fit: contain;
         }
 
         /* 모바일 반응형 스타일 */
@@ -1206,7 +1400,7 @@
 
         <!-- 주문자 정보 컨테이너 -->
         <div class="orderer-info-container">
-            <div class="orderer-info-badge">주문자 정보</div>
+            <div class="orderer-info-badge">주문 정보</div>
             <div class="table-responsive">
                 <table>
                     <tr>
@@ -1231,21 +1425,137 @@
                     </tr>
                 </table>
             </div>
+
+            <!-- 상품 정보 테이블 -->
+            <div class="section-header product-section">상품 정보</div>
+            <div class="table-responsive">
+                <table class="product-section" id="productTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 20px;">No.</th>
+                            <th style="width: 80px;">상품 코드</th>
+                            <th>상품이름</th>
+                            <th style="width: 70px;">행사</th>
+                            <th style="width: 70px;">수량</th>
+                            <th style="width: 100px;">단가</th>
+                            <th style="width: 100px;">금액</th>
+                            <th style="width: 100px;" class="no-print">작업</th>
+                        </tr>
+                    </thead>
+                    <tbody class="product-table-body" id="productTableBody">
+                        <!-- 첫 번째 상품 행 -->
+                        <tr class="product-row" data-row="1">
+                            <td class="row-number">1</td>
+                            <td><input type="text" class="product-code" placeholder="00-00" required></td>
+                            <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
+                            <td>
+                                <select class="event-type">
+                                    <option value="">없음</option>
+                                    <option value="1+1">1+1</option>
+                                    <option value="2+1">2+1</option>
+                                    <option value="3+1">3+1</option>
+                                    <option value="4+1">4+1</option>
+                                    <option value="5+1">5+1</option>
+                                    <option value="6+1">6+1</option>
+                                    <option value="7+1">7+1</option>
+                                    <option value="8+1">8+1</option>
+                                    <option value="9+1">9+1</option>
+                                    <option value="10+1">10+1</option>
+                                    <option value="11+1">11+1</option>
+                                    <option value="12+1">12+1</option>
+                                    <option value="13+1">13+1</option>
+                                    <option value="14+1">14+1</option>
+                                    <option value="15+1">15+1</option>
+                                    <option value="16+1">16+1</option>
+                                    <option value="17+1">17+1</option>
+                                    <option value="18+1">18+1</option>
+                                    <option value="19+1">19+1</option>
+                                    <option value="20+1">20+1</option>
+                                </select>
+                            </td>
+                            <td><input type="number" class="quantity" value="1" min="1" required></td>
+                            <td><input type="text" class="unit-price" placeholder="______" required></td>
+                            <td><input type="text" class="total-price" readonly></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button type="button" class="remove-btn" onclick="removeProductRow(this)">삭제</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <!-- 행 추가 버튼 -->
+                        <tr class="no-print">
+                            <td colspan="8" class="add-row-container">
+                                <button type="button" class="add-btn" onclick="addProductRow()">+ 상품 추가</button>
+                            </td>
+                        </tr>
+                        <!-- 합계 행 -->
+                        <tr class="total-row">
+                            <td colspan="4">총 수량</td>
+                            <td class="section-total-quantity" id="totalQuantity">0</td>
+                            <td>총 금액</td>
+                            <td class="section-grand-total" id="totalAmount">0</td>
+                            <td class="no-print"></td>
+                        </tr>
+                        <!-- 바코드 이미지 1줄 -->
+                        <tr class="barcode-row barcode-row-1">
+                            <td colspan="12" class="barcode-container">
+                                <div class="barcode-grid">
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 바코드 이미지 2줄 (기본 숨김) -->
+                        <tr class="barcode-row barcode-row-2" style="display:none;">
+                            <td colspan="12" class="barcode-container">
+                                <div class="barcode-grid">
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 바코드 이미지 3줄 (기본 숨김) -->
+                        <tr class="barcode-row barcode-row-3" style="display:none;">
+                            <td colspan="12" class="barcode-container">
+                                <div class="barcode-grid">
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                    <div class="barcode-slot"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
 
         <!-- 주문 섹션들을 담는 컨테이너 -->
         <div id="orderSectionsContainer">
             <!-- 첫 번째 섹션 (기본) -->
             <div class="order-section" data-section="1">
-                <div class="section-number">주문 #1</div>
-                
-                <!-- 보내는 분 정보 테이블 (별도 분리) -->
+                <div class="section-number-row">
+                    <div class="section-number">배송 정보 #1</div>
+                    <div class="delivery-date-area">
+                        <label>배송 희망 일 :
+                            <input type="date" class="delivery-date" value="2026-02-09" lang="ko">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 보내는 분 정보 테이블 -->
                 <div class="section-header send-section">
                     <span>보내는 분</span>
                     <div class="header-checkbox-area no-print">
                         <label class="checkbox-label">
                             <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
-                            <span>주문자 정보와 동일</span>
+                            <span>주문 정보와 동일</span>
                         </label>
                     </div>
                 </div>
@@ -1274,13 +1584,13 @@
                     </table>
                 </div>
 
-                <!-- 받는 분 정보 테이블 (분리됨) -->
+                <!-- 받는 분 정보 테이블 -->
                 <div class="section-header receiver-section">
                     <span>받는 분</span>
                     <div class="header-checkbox-area no-print">
                         <label class="checkbox-label">
                             <input type="checkbox" class="copy-orderer-to-receiver" onchange="toggleReceiverInfoCopy(this, 'orderer')">
-                            <span>주문자 정보와 동일</span>
+                            <span>주문 정보와 동일</span>
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" class="copy-sender-to-receiver" onchange="toggleReceiverInfoCopy(this, 'sender')">
@@ -1313,80 +1623,53 @@
                     </table>
                 </div>
 
-                <!-- 상품 정보 테이블 (별도 분리) -->
-                <div class="section-header product-section">상품 정보</div>
+                <!-- 배송 상품 테이블 -->
+                <div class="section-header delivery-product-section">
+                    <span>배송 상품</span>
+                </div>
                 <div class="table-responsive">
-                    <table class="product-section">
+                    <table class="delivery-product-section">
                         <thead>
                             <tr>
-                                <th style="width: 20px;">No.</th>
-                                <th style="width: 80px;">상품 코드</th>
+                                <th style="width: 40px;">No.</th>
+                                <th style="width: 100px;">상품코드</th>
                                 <th>상품이름</th>
-                                <th style="width: 60px;">수량</th>
-                                <th style="width: 100px;">단가</th>
-                                <th style="width: 100px;">금액</th>
+                                <th style="width: 70px;">수량</th>
                                 <th style="width: 100px;" class="no-print">작업</th>
                             </tr>
                         </thead>
-                        <tbody class="product-table-body">
-                            <!-- 첫 번째 상품 행 -->
-                            <tr class="product-row" data-row="1">
+                        <tbody class="delivery-product-body">
+                            <tr class="delivery-product-row" data-row="1">
                                 <td class="row-number">1</td>
-                                <td><input type="text" class="product-code" placeholder="00-00" required></td>
-                                <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
-                                <td><input type="number" class="quantity" value="1" min="1" required></td>
-                                <td><input type="text" class="unit-price" placeholder="______" required></td>
-                                <td><input type="text" class="total-price" readonly></td>
+                                <td>
+                                    <select class="delivery-product-code-select" onchange="onDeliveryProductCodeChange(this)">
+                                        <option value="">-- 선택 --</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" class="delivery-product-name" placeholder="상품이름" readonly></td>
+                                <td><input type="number" class="delivery-product-qty" value="0" min="0" onchange="validateDeliveryQuantities()" oninput="validateDeliveryQuantities()"></td>
                                 <td class="no-print">
                                     <div class="action-buttons">
-                                        <button type="button" class="remove-btn" onclick="removeProductRow(this)">삭제</button>
+                                        <button type="button" class="remove-btn" onclick="removeDeliveryProductRow(this)">삭제</button>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
-                        <tfoot>
-                            <!-- 행 추가 버튼 -->
-                            <tr class="no-print">
-                                <td colspan="7" class="add-row-container">
-                                    <button type="button" class="add-btn" onclick="addProductRowInSection(this)">+ 상품 추가</button>
-                                </td>
-                            </tr>
-                            <!-- 합계 행 -->
-                            <tr class="total-row">
-                                <td colspan="3">총 수량</td>
-                                <td class="section-total-quantity">0</td>
-                                <td>총 금액</td>
-                                <td class="section-grand-total">0원</td>
-                                <td class="no-print"></td>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
+                <div class="add-row-container no-print">
+                    <button type="button" class="add-btn" onclick="addDeliveryProductRow(this)">+ 상품 추가</button>
+                </div>
+                <div class="delivery-quantity-message"></div>
             </div>
             <!-- 첫 번째 섹션 끝 -->
         </div>
         <!-- orderSectionsContainer 끝 -->
 
         <!-- 전체 합계 영역 -->
-        <div class="grand-total-container" id="grandTotalContainer">
-            <div class="grand-total-badge">전체 합계</div>
-            <table>
-                <tr>
-                    <th style="width: 200px;">총 주문 건수</th>
-                    <th style="width: 200px;">총 수량</th>
-                    <th style="width: 200px;">총 금액</th>
-                </tr>
-                <tr>
-                    <td id="grandTotalSections">0건</td>
-                    <td id="grandTotalQuantity">0</td>
-                    <td id="grandTotalAmount">0원</td>
-                </tr>
-            </table>
-        </div>
-
         <!-- 하단 버튼 영역 (인쇄 시 숨김) -->
         <div class="button-container no-print">
-            <button type="button" class="add-section-btn" onclick="addSection()">➕ 주문 섹션 추가</button>
+            <button type="button" class="add-section-btn" onclick="addSection()">➕ 배송 정보 추가</button>
             <button type="button" class="print-only-btn" onclick="printOnly()">🖨️ 인쇄</button>
             <button type="button" class="submit-only-btn" onclick="submitOnly()">📤 주문 전송</button>
             <button type="button" class="print-btn" onclick="printOrder()">🖨️ 인쇄 및 주문 전송</button>
@@ -1594,7 +1877,7 @@
                 senderAddress.style.backgroundColor = '#f0f0f0';
                 senderAddressDetail.style.backgroundColor = '#f0f0f0';
 
-                showAlert('✅ 주문자 정보가 보내는 분 필드로 복사되었습니다.', 'success');
+                showAlert('✅ 주문 정보가 보내는 분 필드로 복사되었습니다.', 'success');
             } else {
                 // 필드 초기화 및 편집 가능하게 설정
                 senderName.value = '';
@@ -1649,7 +1932,7 @@
                     receiverPostal.value = document.getElementById('ordererPostal').value;
                     receiverAddress.value = document.getElementById('ordererAddress').value;
                     receiverAddressDetail.value = document.getElementById('ordererAddressDetail').value;
-                    showAlert('✅ 주문자 정보가 받는 분 필드로 복사되었습니다.', 'success');
+                    showAlert('✅ 주문 정보가 받는 분 필드로 복사되었습니다.', 'success');
                 } else if (sourceType === 'sender') {
                     // 보내는 분 정보 복사
                     const senderName = section.querySelector('.sender-name');
@@ -1804,8 +2087,15 @@
             
             // 섹션 HTML 구조 생성
             newSection.innerHTML = `
-                <div class="section-number">주문 #${sectionCounter}</div>
-                <button type="button" class="section-delete-btn no-print" onclick="removeSection(this)">🗑️ 섹션 삭제</button>
+                <div class="section-number-row">
+                    <div class="section-number">배송 정보 #${sectionCounter}</div>
+                    <button type="button" class="section-delete-btn no-print" onclick="removeSection(this)">🗑️ 섹션 삭제</button>
+                    <div class="delivery-date-area">
+                        <label>배송 희망 일 :
+                            <input type="date" class="delivery-date" value="${getTodayDate()}" lang="ko">
+                        </label>
+                    </div>
+                </div>
 
                 <!-- 보내는 분 정보 -->
                 <div class="section-header">
@@ -1813,7 +2103,7 @@
                     <div class="header-checkbox-area no-print">
                         <label class="checkbox-label">
                             <input type="checkbox" class="copy-orderer-info" onchange="toggleOrdererInfoCopy(this)">
-                            <span>주문자 정보와 동일</span>
+                            <span>주문 정보와 동일</span>
                         </label>
                     </div>
                 </div>
@@ -1848,7 +2138,7 @@
                     <div class="header-checkbox-area no-print">
                         <label class="checkbox-label">
                             <input type="checkbox" class="copy-orderer-to-receiver" onchange="toggleReceiverInfoCopy(this, 'orderer')">
-                            <span>주문자 정보와 동일</span>
+                            <span>주문 정보와 동일</span>
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" class="copy-sender-to-receiver" onchange="toggleReceiverInfoCopy(this, 'sender')">
@@ -1881,52 +2171,44 @@
                     </table>
                 </div>
 
-                <!-- 상품 정보 -->
-                <div class="section-header product-section">상품 정보</div>
+                <!-- 배송 상품 -->
+                <div class="section-header delivery-product-section">
+                    <span>배송 상품</span>
+                </div>
                 <div class="table-responsive">
-                    <table class="product-section">
+                    <table class="delivery-product-section">
                         <thead>
                             <tr>
-                                <th style="width: 20px;">No.</th>
-                                <th style="width: 80px;">상품 코드</th>
+                                <th style="width: 40px;">No.</th>
+                                <th style="width: 100px;">상품코드</th>
                                 <th>상품이름</th>
-                                <th style="width: 60px;">수량</th>
-                                <th style="width: 100px;">단가</th>
-                                <th style="width: 100px;">금액</th>
+                                <th style="width: 70px;">수량</th>
                                 <th style="width: 100px;" class="no-print">작업</th>
                             </tr>
                         </thead>
-                        <tbody class="product-table-body">
-                            <tr class="product-row" data-row="1">
+                        <tbody class="delivery-product-body">
+                            <tr class="delivery-product-row" data-row="1">
                                 <td class="row-number">1</td>
-                                <td><input type="text" class="product-code" placeholder="00-00" required></td>
-                                <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
-                                <td><input type="number" class="quantity" value="0" min="0" required></td>
-                                <td><input type="text" class="unit-price" placeholder="______" required></td>
-                                <td><input type="text" class="total-price" readonly></td>
+                                <td>
+                                    <select class="delivery-product-code-select" onchange="onDeliveryProductCodeChange(this)">
+                                        <option value="">-- 선택 --</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" class="delivery-product-name" placeholder="상품이름" readonly></td>
+                                <td><input type="number" class="delivery-product-qty" value="0" min="0" onchange="validateDeliveryQuantities()" oninput="validateDeliveryQuantities()"></td>
                                 <td class="no-print">
                                     <div class="action-buttons">
-                                        <button type="button" class="remove-btn" onclick="removeProductRow(this)">삭제</button>
+                                        <button type="button" class="remove-btn" onclick="removeDeliveryProductRow(this)">삭제</button>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
-                        <tfoot>
-                            <tr class="no-print">
-                                <td colspan="7" class="add-row-container">
-                                    <button type="button" class="add-btn" onclick="addProductRowInSection(this)">+ 상품 추가</button>
-                                </td>
-                            </tr>
-                            <tr class="total-row">
-                                <td colspan="3">총 수량</td>
-                                <td class="section-total-quantity">0</td>
-                                <td>총 금액</td>
-                                <td class="section-grand-total">0원</td>
-                                <td class="no-print"></td>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
+                <div class="add-row-container no-print">
+                    <button type="button" class="add-btn" onclick="addDeliveryProductRow(this)">+ 상품 추가</button>
+                </div>
+                <div class="delivery-quantity-message"></div>
             `;
 
             // 컨테이너에 새 섹션 추가
@@ -1935,21 +2217,16 @@
             // 새 섹션의 보내는 분 → 받는 분 동기화 리스너 등록
             attachSenderSyncListeners(newSection);
 
-            // 새 섹션의 첫 번째 상품 행에 이벤트 리스너 및 포맷팅 적용
-            const firstRow = newSection.querySelector('.product-row');
-            attachRowEventListeners(firstRow);
-            attachProductCodeFormatting(firstRow);
-
             // 새 섹션의 전화번호 필드에 하이픈 포맷팅 적용
             newSection.querySelectorAll('.sender-phone, .receiver-phone').forEach(input => {
                 attachPhoneFormatting(input);
             });
 
-            // 전체 합계 업데이트
-            updateGrandTotals();
+            // 새 섹션의 배송 상품 콤보박스 초기화
+            refreshDeliveryProductSelects(newSection);
 
             // 성공 메시지 표시
-            showAlert('✅ 새로운 주문 섹션이 추가되었습니다.', 'success');
+            showAlert('✅ 새로운 배송 정보가 추가되었습니다.', 'success');
 
             // 새 섹션으로 부드럽게 스크롤
             newSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1964,7 +2241,7 @@
             
             // 최소 1개의 섹션은 유지해야 함
             if (sections.length <= 1) {
-                showAlert('⚠️ 최소 1개의 주문 섹션은 있어야 합니다.', 'warning');
+                showAlert('⚠️ 최소 1개의 배송 정보는 있어야 합니다.', 'warning');
                 return;
             }
             
@@ -1977,7 +2254,7 @@
             const sectionNumber = section.querySelector('.section-number').textContent;
             
             // 삭제 확인
-            const confirmDelete = confirm(`${sectionNumber} 섹션 전체를 삭제하시겠습니까?\n(보내는 분, 받는 분, 상품 정보가 모두 삭제됩니다)`);
+            const confirmDelete = confirm(`${sectionNumber}을(를) 삭제하시겠습니까?\n(보내는 분, 받는 분, 배송 상품 정보가 삭제됩니다)`);
             if (!confirmDelete) {
                 return;
             }
@@ -1988,10 +2265,10 @@
             // 섹션 번호 재정렬
             renumberSections();
 
-            // 전체 합계 업데이트
-            updateGrandTotals();
+            // 배송 상품 수량 검증
+            validateDeliveryQuantities();
 
-            showAlert('✅ 주문 섹션이 삭제되었습니다.', 'success');
+            showAlert('✅ 배송 정보가 삭제되었습니다.', 'success');
         }
 
         /**
@@ -2001,7 +2278,7 @@
             const sections = document.querySelectorAll('.order-section');
             sections.forEach((section, index) => {
                 const sectionNumber = section.querySelector('.section-number');
-                sectionNumber.textContent = `주문 #${index + 1}`;
+                sectionNumber.textContent = `배송 정보 #${index + 1}`;
                 section.setAttribute('data-section', index + 1);
             });
             sectionCounter = sections.length;
@@ -2015,18 +2292,17 @@
          * 섹션 내에 새로운 상품 행 추가
          * @param {HTMLElement} button - 상품 추가 버튼 요소
          */
-        function addProductRowInSection(button) {
-            const section = button.closest('.order-section');
-            const tbody = section.querySelector('.product-table-body');
+        function addProductRow() {
+            const tbody = document.getElementById('productTableBody');
             const rows = tbody.querySelectorAll('.product-row');
-            
+
             // 현재 마지막 행이 완료되었는지 확인
             if (rows.length > 0) {
                 const lastRow = rows[rows.length - 1];
                 const productCode = lastRow.querySelector('.product-code');
                 const quantity = lastRow.querySelector('.quantity');
                 const unitPrice = lastRow.querySelector('.unit-price');
-                
+
                 if (!productCode.value.trim()) {
                     productCode.focus();
                     productCode.classList.add('error');
@@ -2049,19 +2325,44 @@
                     return;
                 }
             }
-            
+
             const nextRowNumber = rows.length + 1;
-            
+
             // 새 행 생성
             const newRow = document.createElement('tr');
             newRow.className = 'product-row';
             newRow.setAttribute('data-row', nextRowNumber);
-            
+
             // 행 HTML 구조 생성
             newRow.innerHTML = `
                 <td class="row-number">${nextRowNumber}</td>
                 <td><input type="text" class="product-code" placeholder="00-00" required></td>
                 <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
+                <td>
+                    <select class="event-type">
+                        <option value="">없음</option>
+                        <option value="1+1">1+1</option>
+                        <option value="2+1">2+1</option>
+                        <option value="3+1">3+1</option>
+                        <option value="4+1">4+1</option>
+                        <option value="5+1">5+1</option>
+                        <option value="6+1">6+1</option>
+                        <option value="7+1">7+1</option>
+                        <option value="8+1">8+1</option>
+                        <option value="9+1">9+1</option>
+                        <option value="10+1">10+1</option>
+                        <option value="11+1">11+1</option>
+                        <option value="12+1">12+1</option>
+                        <option value="13+1">13+1</option>
+                        <option value="14+1">14+1</option>
+                        <option value="15+1">15+1</option>
+                        <option value="16+1">16+1</option>
+                        <option value="17+1">17+1</option>
+                        <option value="18+1">18+1</option>
+                        <option value="19+1">19+1</option>
+                        <option value="20+1">20+1</option>
+                    </select>
+                </td>
                 <td><input type="number" class="quantity" value="0" min="0" required></td>
                 <td><input type="text" class="unit-price" placeholder="______" required></td>
                 <td><input type="text" class="total-price" readonly></td>
@@ -2071,17 +2372,22 @@
                     </div>
                 </td>
             `;
-            
+
             // tbody에 새 행 추가
             tbody.appendChild(newRow);
-            
+
             // 새로 추가된 행에 이벤트 리스너 및 포맷팅 적용
             attachRowEventListeners(newRow);
             attachProductCodeFormatting(newRow);
-            
-            // 해당 섹션의 합계 업데이트
-            updateSectionTotals(section);
-            
+
+            // 합계 업데이트
+            updateProductTotals();
+
+            // 배송 상품 콤보박스 동기화
+            refreshAllDeliveryProductSelects();
+            // 바코드 이미지 업데이트
+            updateBarcodeImages();
+
             showAlert('✅ 새로운 상품 행이 추가되었습니다.', 'success');
         }
 
@@ -2090,33 +2396,38 @@
          * @param {HTMLElement} button - 삭제 버튼 요소
          */
         function removeProductRow(button) {
-            const section = button.closest('.order-section');
-            const rows = section.querySelectorAll('.product-row');
-            
+            const tbody = document.getElementById('productTableBody');
+            const rows = tbody.querySelectorAll('.product-row');
+
             // 최소 1개의 행은 유지해야 함
             if (rows.length <= 1) {
                 showAlert('⚠️ 최소 1개의 상품은 있어야 합니다.', 'warning');
                 return;
             }
-            
+
             const row = button.closest('.product-row');
             row.remove();
-            
-            // 해당 섹션의 행 번호 재정렬
-            renumberRowsInSection(section);
-            
-            // 해당 섹션의 합계 업데이트
-            updateSectionTotals(section);
-            
+
+            // 행 번호 재정렬
+            renumberProductRows();
+
+            // 합계 업데이트
+            updateProductTotals();
+
+            // 배송 상품 콤보박스 동기화
+            refreshAllDeliveryProductSelects();
+            // 바코드 이미지 업데이트
+            updateBarcodeImages();
+
             showAlert('✅ 상품 행이 삭제되었습니다.', 'success');
         }
 
         /**
-         * 섹션 내 모든 행의 번호를 재정렬
-         * @param {HTMLElement} section - 대상 섹션 요소
+         * 상품 테이블 내 모든 행의 번호를 재정렬
          */
-        function renumberRowsInSection(section) {
-            const rows = section.querySelectorAll('.product-row');
+        function renumberProductRows() {
+            const tbody = document.getElementById('productTableBody');
+            const rows = tbody.querySelectorAll('.product-row');
             rows.forEach((row, index) => {
                 const rowNumber = row.querySelector('.row-number');
                 if (rowNumber) {
@@ -2127,9 +2438,283 @@
         }
 
         // ========================================
+        // 배송 상품 관리 함수
+        // ========================================
+
+        /**
+         * 주문 상품 테이블에서 유효한 상품 목록 추출
+         * @returns {Array} - [{code, name}, ...]
+         */
+        function getOrderProductList() {
+            const rows = document.getElementById('productTableBody').querySelectorAll('.product-row');
+            const list = [];
+            rows.forEach(row => {
+                const code = row.querySelector('.product-code').value.trim();
+                const name = row.querySelector('.product-name').value.trim();
+                if (code && name) {
+                    list.push({ code, name });
+                }
+            });
+            return list;
+        }
+
+        /**
+         * 모든 배송 정보 섹션의 배송 상품 콤보박스 옵션 갱신
+         */
+        function refreshAllDeliveryProductSelects() {
+            document.querySelectorAll('.order-section').forEach(section => {
+                refreshDeliveryProductSelects(section);
+            });
+            validateDeliveryQuantities();
+        }
+
+        /**
+         * 특정 섹션의 배송 상품 콤보박스 옵션 갱신
+         * @param {HTMLElement} section - order-section 요소
+         */
+        function refreshDeliveryProductSelects(section) {
+            const products = getOrderProductList();
+            const selects = section.querySelectorAll('.delivery-product-code-select');
+            selects.forEach(select => {
+                const currentValue = select.value;
+                // 기존 옵션 제거 (첫 번째 "-- 선택 --" 제외)
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                // 주문 상품 목록으로 옵션 추가
+                products.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.code;
+                    option.textContent = p.code;
+                    select.appendChild(option);
+                });
+                // 기존 선택값 복원 (해당 상품이 아직 존재하면)
+                if (currentValue && products.some(p => p.code === currentValue)) {
+                    select.value = currentValue;
+                } else {
+                    select.value = '';
+                    // 상품이름 필드도 초기화
+                    const row = select.closest('.delivery-product-row');
+                    if (row) {
+                        row.querySelector('.delivery-product-name').value = '';
+                    }
+                }
+            });
+        }
+
+        /**
+         * 배송 상품 콤보박스 변경 시 상품이름 자동 표시
+         * @param {HTMLSelectElement} select - 콤보박스 요소
+         */
+        function onDeliveryProductCodeChange(select) {
+            const row = select.closest('.delivery-product-row');
+            const nameInput = row.querySelector('.delivery-product-name');
+            const selectedCode = select.value;
+
+            if (!selectedCode) {
+                nameInput.value = '';
+                return;
+            }
+
+            // 주문 상품 목록에서 해당 상품 이름 찾기
+            const products = getOrderProductList();
+            const found = products.find(p => p.code === selectedCode);
+            nameInput.value = found ? found.name : '';
+
+            validateDeliveryQuantities();
+        }
+
+        /**
+         * 배송 상품 행 추가
+         * @param {HTMLElement} button - 추가 버튼 요소
+         */
+        function addDeliveryProductRow(button) {
+            const section = button.closest('.order-section');
+            const tbody = section.querySelector('.delivery-product-body');
+            const rows = tbody.querySelectorAll('.delivery-product-row');
+            const nextRowNumber = rows.length + 1;
+
+            const newRow = document.createElement('tr');
+            newRow.className = 'delivery-product-row';
+            newRow.setAttribute('data-row', nextRowNumber);
+            newRow.innerHTML = `
+                <td class="row-number">${nextRowNumber}</td>
+                <td>
+                    <select class="delivery-product-code-select" onchange="onDeliveryProductCodeChange(this)">
+                        <option value="">-- 선택 --</option>
+                    </select>
+                </td>
+                <td><input type="text" class="delivery-product-name" placeholder="상품이름" readonly></td>
+                <td><input type="number" class="delivery-product-qty" value="0" min="0" onchange="validateDeliveryQuantities()" oninput="validateDeliveryQuantities()"></td>
+                <td class="no-print">
+                    <div class="action-buttons">
+                        <button type="button" class="remove-btn" onclick="removeDeliveryProductRow(this)">삭제</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(newRow);
+
+            // 콤보박스 옵션 갱신
+            refreshDeliveryProductSelects(section);
+        }
+
+        /**
+         * 배송 상품 행 삭제
+         * @param {HTMLElement} button - 삭제 버튼 요소
+         */
+        function removeDeliveryProductRow(button) {
+            const section = button.closest('.order-section');
+            const tbody = section.querySelector('.delivery-product-body');
+            const rows = tbody.querySelectorAll('.delivery-product-row');
+
+            if (rows.length <= 1) {
+                showAlert('⚠️ 최소 1개의 배송 상품은 있어야 합니다.', 'warning');
+                return;
+            }
+
+            const row = button.closest('.delivery-product-row');
+            row.remove();
+
+            renumberDeliveryProductRows(section);
+            validateDeliveryQuantities();
+        }
+
+        /**
+         * 배송 상품 행 번호 재정렬
+         * @param {HTMLElement} section - order-section 요소
+         */
+        function renumberDeliveryProductRows(section) {
+            const rows = section.querySelectorAll('.delivery-product-row');
+            rows.forEach((row, index) => {
+                const rowNumber = row.querySelector('.row-number');
+                if (rowNumber) {
+                    rowNumber.textContent = index + 1;
+                }
+                row.setAttribute('data-row', index + 1);
+            });
+        }
+
+        /**
+         * 배송 상품 수량 합산 검증 및 안내 메시지 표시
+         * 각 상품코드별로 주문 수량과 배송 수량 합계를 비교
+         */
+        function validateDeliveryQuantities() {
+            // 주문 상품별 수량 수집
+            const orderProducts = {};
+            const productRows = document.getElementById('productTableBody').querySelectorAll('.product-row');
+            productRows.forEach(row => {
+                const code = row.querySelector('.product-code').value.trim();
+                const qty = parseInt(row.querySelector('.quantity').value) || 0;
+                if (code) {
+                    orderProducts[code] = (orderProducts[code] || 0) + qty;
+                }
+            });
+
+            // 배송 상품별 수량 합산
+            const deliveryProducts = {};
+            document.querySelectorAll('.order-section').forEach(section => {
+                section.querySelectorAll('.delivery-product-row').forEach(row => {
+                    const code = row.querySelector('.delivery-product-code-select').value;
+                    const qty = parseInt(row.querySelector('.delivery-product-qty').value) || 0;
+                    if (code) {
+                        deliveryProducts[code] = (deliveryProducts[code] || 0) + qty;
+                    }
+                });
+            });
+
+            // 불일치 확인
+            let hasIssue = false;
+            let allMatch = true;
+            const messages = [];
+
+            for (const code in orderProducts) {
+                const orderQty = orderProducts[code];
+                const deliveryQty = deliveryProducts[code] || 0;
+                if (deliveryQty !== orderQty) {
+                    allMatch = false;
+                    if (deliveryQty > orderQty) {
+                        hasIssue = true;
+                        messages.push(`⚠️ [${code}] 배송 수량(${deliveryQty})이 주문 수량(${orderQty})을 초과합니다.`);
+                    } else if (deliveryQty > 0 && deliveryQty < orderQty) {
+                        messages.push(`ℹ️ [${code}] 배송 수량(${deliveryQty}) / 주문 수량(${orderQty})`);
+                    }
+                }
+            }
+
+            // 배송에만 있고 주문에 없는 상품 체크
+            for (const code in deliveryProducts) {
+                if (!orderProducts[code] && deliveryProducts[code] > 0) {
+                    hasIssue = true;
+                    messages.push(`⚠️ [${code}] 주문 목록에 없는 상품입니다.`);
+                }
+            }
+
+            // 메시지 표시 (모든 섹션에)
+            document.querySelectorAll('.delivery-quantity-message').forEach(msgDiv => {
+                if (hasIssue) {
+                    msgDiv.className = 'delivery-quantity-message quantity-mismatch-warning';
+                    msgDiv.innerHTML = messages.join('<br>');
+                } else if (allMatch && Object.keys(orderProducts).length > 0 && Object.keys(deliveryProducts).length > 0) {
+                    msgDiv.className = 'delivery-quantity-message quantity-match-ok';
+                    msgDiv.textContent = '✅ 모든 상품의 배송 수량이 주문 수량과 일치합니다.';
+                } else if (messages.length > 0) {
+                    msgDiv.className = 'delivery-quantity-message quantity-mismatch-warning';
+                    msgDiv.innerHTML = messages.join('<br>');
+                } else {
+                    msgDiv.className = 'delivery-quantity-message';
+                    msgDiv.textContent = '';
+                }
+            });
+
+            return !hasIssue && allMatch;
+        }
+
+        /**
+         * 배송 상품 테이블 인쇄용 세로 타이틀 컬럼 추가
+         * - DOM 노드를 직접 이동하여 input 값 보존
+         * @param {HTMLElement} table - delivery-product-section 테이블
+         */
+        function addDeliveryProductPrintTitleColumn(table) {
+            const allRows = table.querySelectorAll('tr');
+            const printableRows = [];
+            allRows.forEach(row => {
+                if (!row.classList.contains('no-print')) printableRows.push(row);
+            });
+            if (printableRows.length === 0) return;
+
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+
+            // 원본 구조 백업
+            table.setAttribute('data-print-restructured', 'true');
+            table._origStructure = {
+                thead: thead,
+                tbody: tbody,
+                tfoot: null,
+                theadRows: thead ? Array.from(thead.querySelectorAll('tr')) : [],
+                tbodyRows: tbody ? Array.from(tbody.querySelectorAll('tr')) : [],
+                tfootRows: []
+            };
+
+            // 모든 행을 table 직속으로 이동
+            const allRowsList = Array.from(allRows);
+            if (thead) thead.remove();
+            if (tbody) tbody.remove();
+            allRowsList.forEach(row => table.appendChild(row));
+
+            // 첫 번째 인쇄 행에 전체 rowspan 셀 추가
+            const titleCell = document.createElement('td');
+            titleCell.className = 'print-title-cell title-delivery-product';
+            titleCell.setAttribute('rowspan', printableRows.length);
+            titleCell.textContent = '배송상품';
+            titleCell.setAttribute('data-print-title', 'true');
+            printableRows[0].insertBefore(titleCell, printableRows[0].firstChild);
+        }
+
+        // ========================================
         // 이벤트 리스너 및 계산 함수
         // ========================================
-        
+
         /**
          * 상품 행에 이벤트 리스너 추가 (수량, 단가 변경 시 금액 자동 계산)
          * @param {HTMLElement} row - 대상 행 요소
@@ -2137,9 +2722,18 @@
         function attachRowEventListeners(row) {
             const quantity = row.querySelector('.quantity');
             const unitPrice = row.querySelector('.unit-price');
-            
-            // 수량 변경 시 금액 재계산
-            quantity.addEventListener('input', () => calculateRowTotal(row));
+            const eventType = row.querySelector('.event-type');
+
+            // 수량 변경 시 금액 재계산 및 배송 수량 검증
+            quantity.addEventListener('input', () => {
+                calculateRowTotal(row);
+                validateDeliveryQuantities();
+            });
+
+            // 행사 변경 시 금액 재계산
+            if (eventType) {
+                eventType.addEventListener('change', () => calculateRowTotal(row));
+            }
             
             // 단가 입력 시 천단위 쉼표 자동 포맷팅 및 금액 재계산
             unitPrice.addEventListener('input', function() {
@@ -2188,77 +2782,136 @@
             const quantityInput = row.querySelector('.quantity');
             const unitPriceInput = row.querySelector('.unit-price');
             const totalPriceInput = row.querySelector('.total-price');
-            
+            const eventTypeSelect = row.querySelector('.event-type');
+
             const quantity = parseInt(quantityInput.value) || 0;
             const unitPrice = parseFormattedNumber(unitPriceInput.value) || 0;
-            const total = quantity * unitPrice;
-            
+            const eventValue = eventTypeSelect ? eventTypeSelect.value : '';
+
+            let total = 0;
+
+            if (eventValue && quantity > 0 && unitPrice > 0) {
+                // 행사 적용: "N+1" → (N+1)개 묶음당 N개만 결제
+                const n = parseInt(eventValue.split('+')[0]);
+                const bundleSize = n + 1;       // 묶음 크기 (예: 2+1 → 3개)
+                const bundles = Math.floor(quantity / bundleSize); // 완성된 묶음 수
+                const remainder = quantity % bundleSize;           // 나머지 개수
+                const paidQuantity = (bundles * n) + remainder;    // 실제 결제 수량
+                total = paidQuantity * unitPrice;
+            } else {
+                total = quantity * unitPrice;
+            }
+
             // 금액 필드에 천단위 쉼표가 포함된 값 설정
             totalPriceInput.value = formatNumberWithCommas(total);
-            
-            // 해당 섹션의 합계 업데이트
-            const section = row.closest('.order-section');
-            updateSectionTotals(section);
+
+            // 합계 업데이트
+            updateProductTotals();
         }
 
         /**
-         * 섹션별 총 수량과 총 금액 계산 및 업데이트
-         * @param {HTMLElement} section - 대상 섹션 요소
+         * 상품 테이블의 총 수량과 총 금액 계산 및 업데이트
          */
-        function updateSectionTotals(section) {
-            const rows = section.querySelectorAll('.product-row');
+        function updateProductTotals() {
+            const tbody = document.getElementById('productTableBody');
+            const rows = tbody.querySelectorAll('.product-row');
             let totalQuantity = 0;
             let grandTotal = 0;
-            
+
             // 모든 행의 수량과 금액을 합산
             rows.forEach(row => {
                 const quantity = parseInt(row.querySelector('.quantity').value) || 0;
                 const totalPriceValue = row.querySelector('.total-price').value;
                 const totalPrice = parseFormattedNumber(totalPriceValue) || 0;
-                
+
                 totalQuantity += quantity;
                 grandTotal += totalPrice;
             });
-            
-            // 합계 필드 업데이트 (천단위 쉼표 포함)
-            const totalQuantityEl = section.querySelector('.section-total-quantity');
-            const grandTotalEl = section.querySelector('.section-grand-total');
-            
-            if (totalQuantityEl) totalQuantityEl.textContent = totalQuantity;
-            if (grandTotalEl) grandTotalEl.textContent = formatNumberWithCommas(grandTotal) + '원';
 
-            // 전체 합계 업데이트
-            updateGrandTotals();
+            // 합계 필드 업데이트 (천단위 쉼표 포함)
+            const totalQuantityEl = document.getElementById('totalQuantity');
+            const grandTotalEl = document.getElementById('totalAmount');
+
+            if (totalQuantityEl) totalQuantityEl.textContent = totalQuantity;
+            if (grandTotalEl) grandTotalEl.textContent = formatNumberWithCommas(grandTotal);
         }
 
         /**
-         * 모든 섹션의 합계를 합산하여 전체 합계 업데이트
+         * 바코드 이미지 영역 업데이트
+         * 상품 행의 상품코드를 수집하여 바코드 이미지를 표시
          */
-        function updateGrandTotals() {
-            const sections = document.querySelectorAll('.order-section');
-            let totalSections = sections.length;
-            let totalQuantity = 0;
-            let totalAmount = 0;
+        function updateBarcodeImages() {
+            const tbody = document.getElementById('productTableBody');
+            const rows = tbody.querySelectorAll('.product-row');
+            const row1 = document.querySelector('.barcode-row-1 .barcode-grid');
+            const row2 = document.querySelector('.barcode-row-2 .barcode-grid');
+            const row3 = document.querySelector('.barcode-row-3 .barcode-grid');
+            const row2Tr = document.querySelector('.barcode-row-2');
+            const row3Tr = document.querySelector('.barcode-row-3');
 
-            sections.forEach(section => {
-                const rows = section.querySelectorAll('.product-row');
-                rows.forEach(row => {
-                    const quantity = parseInt(row.querySelector('.quantity').value) || 0;
-                    const totalPriceValue = row.querySelector('.total-price').value;
-                    const totalPrice = parseFormattedNumber(totalPriceValue) || 0;
+            if (!row1 || !row2 || !row3) return;
 
-                    totalQuantity += quantity;
-                    totalAmount += totalPrice;
-                });
+            // 유효한 상품코드 수집
+            const codes = [];
+            rows.forEach(row => {
+                const code = row.querySelector('.product-code').value.trim();
+                if (code && code.includes('-')) {
+                    codes.push(code);
+                }
             });
 
-            const sectionsEl = document.getElementById('grandTotalSections');
-            const quantityEl = document.getElementById('grandTotalQuantity');
-            const amountEl = document.getElementById('grandTotalAmount');
+            // 1줄 슬롯 (0~3)
+            const slots1 = row1.querySelectorAll('.barcode-slot');
+            // 2줄 슬롯 (4~7)
+            const slots2 = row2.querySelectorAll('.barcode-slot');
+            // 3줄 슬롯 (8~11)
+            const slots3 = row3.querySelectorAll('.barcode-slot');
 
-            if (sectionsEl) sectionsEl.textContent = totalSections + '건';
-            if (quantityEl) quantityEl.textContent = totalQuantity;
-            if (amountEl) amountEl.textContent = formatNumberWithCommas(totalAmount) + '원';
+            // 1줄 업데이트
+            slots1.forEach((slot, i) => {
+                slot.innerHTML = '';
+                if (codes[i]) {
+                    const img = document.createElement('img');
+                    img.src = 'BarcodeImgs/' + codes[i] + '.jpg';
+                    img.alt = codes[i];
+                    img.onerror = function () { this.style.display = 'none'; };
+                    slot.appendChild(img);
+                }
+            });
+
+            // 2줄 업데이트
+            let hasRow2 = false;
+            slots2.forEach((slot, i) => {
+                slot.innerHTML = '';
+                const idx = i + 4;
+                if (codes[idx]) {
+                    const img = document.createElement('img');
+                    img.src = 'BarcodeImgs/' + codes[idx] + '.jpg';
+                    img.alt = codes[idx];
+                    img.onerror = function () { this.style.display = 'none'; };
+                    slot.appendChild(img);
+                    hasRow2 = true;
+                }
+            });
+
+            // 3줄 업데이트
+            let hasRow3 = false;
+            slots3.forEach((slot, i) => {
+                slot.innerHTML = '';
+                const idx = i + 8;
+                if (codes[idx]) {
+                    const img = document.createElement('img');
+                    img.src = 'BarcodeImgs/' + codes[idx] + '.jpg';
+                    img.alt = codes[idx];
+                    img.onerror = function () { this.style.display = 'none'; };
+                    slot.appendChild(img);
+                    hasRow3 = true;
+                }
+            });
+
+            // 2줄, 3줄 표시/숨김
+            row2Tr.style.display = hasRow2 ? '' : 'none';
+            row3Tr.style.display = hasRow3 ? '' : 'none';
         }
 
         // ========================================
@@ -2270,6 +2923,17 @@
          * @param {number} num - 변환할 숫자
          * @returns {string} - 천단위 쉼표가 추가된 문자열
          */
+        /**
+         * 오늘 날짜를 YYYY-MM-DD 형식으로 반환
+         */
+        function getTodayDate() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
         function formatNumberWithCommas(num) {
             if (!num && num !== 0) return '';
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -2294,15 +2958,15 @@
             const productNameInput = row.querySelector('.product-name');
             const quantityInput = row.querySelector('.quantity');
             const unitPriceInput = row.querySelector('.unit-price');
-            
+
             // Enter 키 입력 시 Tab 키처럼 동작
             productCodeInput.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
                     event.preventDefault(); // 기본 Enter 동작 방지
-                    
+
                     // blur 이벤트를 트리거하여 포맷팅 및 자동완성 실행
                     this.blur();
-                    
+
                     // 다음 필드(수량)로 포커스 이동
                     if (quantityInput) {
                         setTimeout(() => {
@@ -2312,37 +2976,37 @@
                     }
                 }
             });
-            
+
             // 상품 코드 입력 시 포맷팅 및 자동완성
             productCodeInput.addEventListener('blur', function() {
                 const code = this.value.trim();
-                
+
                 // 상품 코드가 비어있으면 상품이름과 필드 초기화
                 if (!code) {
 					productNameInput.value = '';
 					productNameInput.placeholder = '※ 상품 코드 형식 오류';
-					quantityInput.value = '1'; // 수량은 1로 초기화
+					quantityInput.value = '1';
 					unitPriceInput.value = '';
 					row.querySelector('.total-price').value = '';
                     return;
                 }
-                
+
                 // 상품 코드 포맷팅
                 const formatSuccess = formatProductCode(this);
-                
+
                 // 포맷팅이 실패하면 상품이름, 단가, 금액 지우기
 				if (!formatSuccess) {
 					productNameInput.value = '';
 					productNameInput.placeholder = '※ 상품 코드 형식 오류';
-					quantityInput.value = '1'; // 수량은 1로 초기화
+					quantityInput.value = '1';
 					unitPriceInput.value = '';
 					row.querySelector('.total-price').value = '';
 					return;
 				}
-                
+
                 // 포맷팅된 코드로 상품 정보 검색
                 const formattedCode = this.value.trim();
-                
+
                 if (formattedCode) {
                     // products.js 파일이 로드되었는지 확인
                     if (typeof PRODUCTS_DATA === 'undefined' || !PRODUCTS_DATA) {
@@ -2351,35 +3015,35 @@
                         console.error('products.js 파일이 로드되지 않았습니다.');
                         return;
                     }
-                    
+
                     const productInfo = getProductInfo(formattedCode);
-                    
+
                     if (productInfo) {
                         // 상품이름 자동 입력
                         productNameInput.value = productInfo.name;
                         productNameInput.placeholder = '상품이름';
-                        
+
                         // 수량을 상품 정보의 기본 수량으로 설정 (있는 경우), 없으면 1로 유지
                         if (productInfo.quantity) {
-                            quantityInput.value = productInfo.quantity;
+                            quantityInput.value = '0';
                         }
-                        
-                        // 단가를 상품 정보의 가격으로 자동 입력
-                        unitPriceInput.value = productInfo.price;
-                        
+
+                        // 단가를 상품 정보의 가격으로 자동 입력 (천단위 쉼표 포함)
+                        unitPriceInput.value = formatNumberWithCommas(productInfo.price);
+
                         // 금액 재계산 (천단위 쉼표 포함)
                         calculateRowTotal(row);
-                        
+
                         console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.price}원)`);
                     } else {
                         // 상품을 찾지 못한 경우 - 상품이름 지우기
                         productNameInput.value = '';
-						quantityInput.value = '1'; // 수량은 1로 초기화
+						quantityInput.value = '0';
 						unitPriceInput.value = '';
                         row.querySelector('.total-price').value = '';
 						productNameInput.placeholder = '※ 상품을 찾을 수 없음';
                         console.log(`상품 코드 "${formattedCode}"에 해당하는 상품을 찾을 수 없습니다.`);
-						
+
 						// 상품코드로 포커스 이동 및 전체 선택
 						setTimeout(() => {
 							productCodeInput.focus();
@@ -2387,38 +3051,42 @@
 						}, 100);
 						}
                 }
+
+                // 배송 상품 콤보박스 동기화
+                refreshAllDeliveryProductSelects();
+                // 바코드 이미지 업데이트
+                updateBarcodeImages();
             });
-            
+
             // 실시간으로도 확인 (입력 중)
             productCodeInput.addEventListener('input', function() {
                 const code = this.value.trim();
-                
+
                 // 코드가 비어있으면 상품이름 지우기
                 if (!code) {
                     productNameInput.value = '';
                     productNameInput.placeholder = '상품이름';
                     return;
                 }
-                
+
                 // products.js가 로드되어 있고, 코드에 하이픈이 있을 때만 실시간 검색
                 if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA && code && code.includes('-')) {
                     const productInfo = getProductInfo(code);
                     if (productInfo) {
                         productNameInput.value = productInfo.name;
                         productNameInput.placeholder = '상품이름';
-                        
+
                         // 수량을 상품 정보의 기본 수량으로 설정 (있는 경우)
                         if (productInfo.quantity) {
                             quantityInput.value = productInfo.quantity;
                         }
-                        
-                        // 단가를 상품 정보의 가격으로 자동 입력
-                        unitPriceInput.value = productInfo.price;
-                        
+
+                        // 단가를 상품 정보의 가격으로 자동 입력 (천단위 쉼표 포함)
+                        unitPriceInput.value = formatNumberWithCommas(productInfo.price);
+
                         // 금액 재계산 (천단위 쉼표 포함)
                         calculateRowTotal(row);
                     } else {
-                        // 상품을 찾지 못하면 상품이름 지우기
                         productNameInput.value = '';
                         productNameInput.placeholder = '상품이름';
                     }
@@ -2523,14 +3191,20 @@
             // 1. 주문자 정보 테이블
             const ordererTable = document.querySelector('.orderer-info-container table');
             if (ordererTable) {
-                addPrintTitleColumn(ordererTable, '주문자', 'title-orderer');
+                addPrintTitleColumn(ordererTable, '주문 정보', 'title-orderer');
             }
 
-            // 2. 각 주문 섹션의 보내는 분 / 받는 분 / 상품 정보 테이블
+            // 2. 상품 정보 테이블 (orderer-info-container 안)
+            const productTable = document.getElementById('productTable');
+            if (productTable) {
+                addProductPrintTitleColumn(productTable);
+            }
+
+            // 3. 각 주문 섹션의 보내는 분 / 받는 분 / 배송 상품 테이블
             const sections = document.querySelectorAll('.order-section');
             sections.forEach(section => {
                 const tableWrappers = section.querySelectorAll('.table-responsive');
-                // 순서: 0=보내는 분, 1=받는 분, 2=상품 정보
+                // 순서: 0=보내는 분, 1=받는 분, 2=배송 상품
                 if (tableWrappers[0]) {
                     const senderTable = tableWrappers[0].querySelector('table');
                     if (senderTable) addPrintTitleColumn(senderTable, '보내는 분', 'title-sender');
@@ -2540,16 +3214,10 @@
                     if (receiverTable) addPrintTitleColumn(receiverTable, '받는 분', 'title-receiver');
                 }
                 if (tableWrappers[2]) {
-                    const productTable = tableWrappers[2].querySelector('table');
-                    if (productTable) addProductPrintTitleColumn(productTable);
+                    const deliveryProductTable = tableWrappers[2].querySelector('table.delivery-product-section');
+                    if (deliveryProductTable) addDeliveryProductPrintTitleColumn(deliveryProductTable);
                 }
             });
-
-            // 3. 전체 합계 테이블
-            const grandTotalTable = document.querySelector('.grand-total-container table');
-            if (grandTotalTable) {
-                addPrintTitleColumn(grandTotalTable, '전체 합계', 'title-grand-total');
-            }
 
             // 4. 주소 input 텍스트 넘침 시 폰트 축소
             adjustAddressFontSize();
@@ -2814,12 +3482,49 @@
                 return false;
             }
             
-            // 2. 각 섹션별 검증
+            // 2. 상품 정보 검증
+            const productRows = document.getElementById('productTableBody').querySelectorAll('.product-row');
+            for (let j = 0; j < productRows.length; j++) {
+                const row = productRows[j];
+                const rowNum = j + 1;
+                const productCode = row.querySelector('.product-code');
+                const quantity = row.querySelector('.quantity');
+                const unitPrice = row.querySelector('.unit-price');
+
+                if (!productCode.value.trim()) {
+                    productCode.focus();
+                    productCode.classList.add('error');
+                    showAlert(`⚠️ [상품 ${rowNum}] 상품 코드를 입력해주세요.`, 'warning');
+                    document.querySelector('.orderer-info-container').scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    setTimeout(() => productCode.classList.remove('error'), 3000);
+                    return false;
+                }
+
+                if (!quantity.value || parseInt(quantity.value) <= 0) {
+                    quantity.focus();
+                    quantity.classList.add('error');
+                    showAlert(`⚠️ [상품 ${rowNum}] 수량을 입력해주세요.`, 'warning');
+                    document.querySelector('.orderer-info-container').scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    setTimeout(() => quantity.classList.remove('error'), 3000);
+                    return false;
+                }
+
+                if (!unitPrice.value || parseFormattedNumber(unitPrice.value) <= 0) {
+                    unitPrice.focus();
+                    unitPrice.classList.add('error');
+                    showAlert(`⚠️ [상품 ${rowNum}] 단가를 입력해주세요.`, 'warning');
+                    document.querySelector('.orderer-info-container').scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    setTimeout(() => unitPrice.classList.remove('error'), 3000);
+                    return false;
+                }
+            }
+
+            // 3. 각 섹션별 검증
             const sections = document.querySelectorAll('.order-section');
             for (let i = 0; i < sections.length; i++) {
                 const section = sections[i];
                 const sectionNum = i + 1;
-                
+
                 // 보내는 분 정보 검증
                 const senderName = section.querySelector('.sender-name');
                 const senderPhone = section.querySelector('.sender-phone');
@@ -2829,7 +3534,7 @@
                 if (!senderName.value.trim()) {
                     senderName.focus();
                     senderName.classList.add('error');
-                    showAlert(`⚠️ [주문 #${sectionNum}] 보내는 분 성명을 입력해주세요.`, 'warning');
+                    showAlert(`⚠️ [배송 정보 #${sectionNum}] 보내는 분 성명을 입력해주세요.`, 'warning');
                     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => senderName.classList.remove('error'), 3000);
                     return false;
@@ -2838,7 +3543,7 @@
                 if (!senderPhone.value.trim()) {
                     senderPhone.focus();
                     senderPhone.classList.add('error');
-                    showAlert(`⚠️ [주문 #${sectionNum}] 보내는 분 전화번호를 입력해주세요.`, 'warning');
+                    showAlert(`⚠️ [배송 정보 #${sectionNum}] 보내는 분 전화번호를 입력해주세요.`, 'warning');
                     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => senderPhone.classList.remove('error'), 3000);
                     return false;
@@ -2847,7 +3552,7 @@
                 if (!senderPostal.value.trim()) {
                     senderPostal.focus();
                     senderPostal.classList.add('error');
-                    showAlert(`⚠️ [주문 #${sectionNum}] 보내는 분 우편번호를 입력해주세요.`, 'warning');
+                    showAlert(`⚠️ [배송 정보 #${sectionNum}] 보내는 분 우편번호를 입력해주세요.`, 'warning');
                     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => senderPostal.classList.remove('error'), 3000);
                     return false;
@@ -2856,7 +3561,7 @@
                 if (!senderAddress.value.trim()) {
                     senderAddress.focus();
                     senderAddress.classList.add('error');
-                    showAlert(`⚠️ [주문 #${sectionNum}] 보내는 분 주소를 입력해주세요.`, 'warning');
+                    showAlert(`⚠️ [배송 정보 #${sectionNum}] 보내는 분 주소를 입력해주세요.`, 'warning');
                     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => senderAddress.classList.remove('error'), 3000);
                     return false;
@@ -2871,7 +3576,7 @@
                 if (!receiverName.value.trim()) {
                     receiverName.focus();
                     receiverName.classList.add('error');
-                    showAlert(`⚠️ [주문 #${sectionNum}] 받는 분 성명을 입력해주세요.`, 'warning');
+                    showAlert(`⚠️ [배송 정보 #${sectionNum}] 받는 분 성명을 입력해주세요.`, 'warning');
                     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => receiverName.classList.remove('error'), 3000);
                     return false;
@@ -2880,7 +3585,7 @@
                 if (!receiverPhone.value.trim()) {
                     receiverPhone.focus();
                     receiverPhone.classList.add('error');
-                    showAlert(`⚠️ [주문 #${sectionNum}] 받는 분 전화번호를 입력해주세요.`, 'warning');
+                    showAlert(`⚠️ [배송 정보 #${sectionNum}] 받는 분 전화번호를 입력해주세요.`, 'warning');
                     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => receiverPhone.classList.remove('error'), 3000);
                     return false;
@@ -2889,7 +3594,7 @@
                 if (!receiverPostal.value.trim()) {
                     receiverPostal.focus();
                     receiverPostal.classList.add('error');
-                    showAlert(`⚠️ [주문 #${sectionNum}] 받는 분 우편번호를 입력해주세요.`, 'warning');
+                    showAlert(`⚠️ [배송 정보 #${sectionNum}] 받는 분 우편번호를 입력해주세요.`, 'warning');
                     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => receiverPostal.classList.remove('error'), 3000);
                     return false;
@@ -2898,50 +3603,46 @@
                 if (!receiverAddress.value.trim()) {
                     receiverAddress.focus();
                     receiverAddress.classList.add('error');
-                    showAlert(`⚠️ [주문 #${sectionNum}] 받는 분 주소를 입력해주세요.`, 'warning');
+                    showAlert(`⚠️ [배송 정보 #${sectionNum}] 받는 분 주소를 입력해주세요.`, 'warning');
                     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => receiverAddress.classList.remove('error'), 3000);
                     return false;
                 }
-                
-                // 상품 정보 검증
-                const rows = section.querySelectorAll('.product-row');
-                for (let j = 0; j < rows.length; j++) {
-                    const row = rows[j];
-                    const rowNum = j + 1;
-                    const productCode = row.querySelector('.product-code');
-                    const quantity = row.querySelector('.quantity');
-                    const unitPrice = row.querySelector('.unit-price');
-                    
-                    if (!productCode.value.trim()) {
-                        productCode.focus();
-                        productCode.classList.add('error');
-                        showAlert(`⚠️ [주문 #${sectionNum} - 상품 ${rowNum}] 상품 코드를 입력해주세요.`, 'warning');
-                        section.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                        setTimeout(() => productCode.classList.remove('error'), 3000);
+
+                // 배송 상품 검증
+                const deliveryRows = section.querySelectorAll('.delivery-product-row');
+                for (let k = 0; k < deliveryRows.length; k++) {
+                    const dRow = deliveryRows[k];
+                    const dRowNum = k + 1;
+                    const dSelect = dRow.querySelector('.delivery-product-code-select');
+                    const dQty = dRow.querySelector('.delivery-product-qty');
+
+                    if (!dSelect.value) {
+                        dSelect.focus();
+                        dSelect.classList.add('error');
+                        showAlert(`⚠️ [배송 정보 #${sectionNum}] 배송 상품 ${dRowNum}번의 상품을 선택해주세요.`, 'warning');
+                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => dSelect.classList.remove('error'), 3000);
                         return false;
                     }
-                    
-                    if (!quantity.value || parseInt(quantity.value) <= 0) {
-                        quantity.focus();
-                        quantity.classList.add('error');
-                        showAlert(`⚠️ [주문 #${sectionNum} - 상품 ${rowNum}] 수량을 입력해주세요.`, 'warning');
-                        section.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                        setTimeout(() => quantity.classList.remove('error'), 3000);
-                        return false;
-                    }
-                    
-                    if (!unitPrice.value || parseFormattedNumber(unitPrice.value) <= 0) {
-                        unitPrice.focus();
-                        unitPrice.classList.add('error');
-                        showAlert(`⚠️ [주문 #${sectionNum} - 상품 ${rowNum}] 단가를 입력해주세요.`, 'warning');
-                        section.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                        setTimeout(() => unitPrice.classList.remove('error'), 3000);
+
+                    if (!dQty.value || parseInt(dQty.value) <= 0) {
+                        dQty.focus();
+                        dQty.classList.add('error');
+                        showAlert(`⚠️ [배송 정보 #${sectionNum}] 배송 상품 ${dRowNum}번의 수량을 입력해주세요.`, 'warning');
+                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => dQty.classList.remove('error'), 3000);
                         return false;
                     }
                 }
             }
-            
+
+            // 4. 배송 상품 수량 일치 검증
+            if (!validateDeliveryQuantities()) {
+                showAlert('⚠️ 배송 상품 수량이 주문 수량과 일치하지 않습니다. 확인해주세요.', 'warning');
+                return false;
+            }
+
             return true;
         }
 
@@ -3009,6 +3710,29 @@
          * @returns {Object} - 주문 데이터 객체
          */
         function collectOrderData() {
+            // 상품 목록 수집
+            const productList = [];
+            const productRows = document.getElementById('productTableBody').querySelectorAll('.product-row');
+            let allTotalQuantity = 0;
+            let allGrandTotal = 0;
+            productRows.forEach(row => {
+                const unitPriceValue = row.querySelector('.unit-price').value;
+                const totalPriceValue = row.querySelector('.total-price').value;
+                const qty = Number(row.querySelector('.quantity').value) || 0;
+                const amt = parseFormattedNumber(totalPriceValue) || 0;
+
+                productList.push({
+                    상품코드: row.querySelector('.product-code').value,
+                    상품이름: row.querySelector('.product-name').value,
+                    행사: row.querySelector('.event-type').value || '없음',
+                    수량: row.querySelector('.quantity').value,
+                    단가: parseFormattedNumber(unitPriceValue),
+                    금액: amt
+                });
+                allTotalQuantity += qty;
+                allGrandTotal += amt;
+            });
+
             const data = {
                 주문자정보: {
                     성명: document.getElementById('ordererName').value,
@@ -3017,11 +3741,27 @@
                     기본주소: document.getElementById('ordererAddress').value,
                     상세주소: document.getElementById('ordererAddressDetail').value
                 },
+                상품목록: productList,
                 주문목록: []
             };
 
             const sections = document.querySelectorAll('.order-section');
             sections.forEach((section, index) => {
+                // 배송 상품 목록 수집
+                const deliveryProductList = [];
+                section.querySelectorAll('.delivery-product-row').forEach(dRow => {
+                    const dCode = dRow.querySelector('.delivery-product-code-select').value;
+                    const dName = dRow.querySelector('.delivery-product-name').value;
+                    const dQty = parseInt(dRow.querySelector('.delivery-product-qty').value) || 0;
+                    if (dCode) {
+                        deliveryProductList.push({
+                            상품코드: dCode,
+                            상품이름: dName,
+                            수량: dQty
+                        });
+                    }
+                });
+
                 const sectionData = {
                     주문번호: index + 1,
                     보내는분: {
@@ -3038,34 +3778,10 @@
                         기본주소: section.querySelector('.receiver-address').value,
                         상세주소: section.querySelector('.receiver-address-detail').value
                     },
-                    상품목록: []
+                    배송상품목록: deliveryProductList
                 };
-                
-                const rows = section.querySelectorAll('.product-row');
-                rows.forEach(row => {
-                    const unitPriceValue = row.querySelector('.unit-price').value;
-                    const totalPriceValue = row.querySelector('.total-price').value;
-                    
-                    sectionData.상품목록.push({
-                        상품코드: row.querySelector('.product-code').value,
-                        상품이름: row.querySelector('.product-name').value,
-                        수량: row.querySelector('.quantity').value,
-                        단가: parseFormattedNumber(unitPriceValue),
-                        금액: parseFormattedNumber(totalPriceValue)
-                    });
-                });
-                
-                data.주문목록.push(sectionData);
-            });
 
-            // 전체 합계 계산
-            let allTotalQuantity = 0;
-            let allGrandTotal = 0;
-            data.주문목록.forEach(section => {
-                section.상품목록.forEach(product => {
-                    allTotalQuantity += Number(product.수량) || 0;
-                    allGrandTotal += Number(product.금액) || 0;
-                });
+                data.주문목록.push(sectionData);
             });
 
             data.전체합계 = {
@@ -3233,10 +3949,10 @@
          * @returns {Object} - {complete: boolean, missingField: HTMLElement, fieldName: string}
          */
         function checkProductInfoComplete() {
-            const firstSection = document.querySelector('.order-section[data-section="1"]');
-            if (!firstSection) return { complete: true };
-            
-            const firstRow = firstSection.querySelector('.product-row');
+            const tbody = document.getElementById('productTableBody');
+            if (!tbody) return { complete: true };
+
+            const firstRow = tbody.querySelector('.product-row');
             if (!firstRow) return { complete: true };
             
             const productCode = firstRow.querySelector('.product-code');
@@ -3266,60 +3982,59 @@
             if (!ordererCheck.complete) {
                 ordererCheck.missingField.focus();
                 ordererCheck.missingField.classList.add('error');
-                showAlert(`⚠️ [주문자 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                showAlert(`⚠️ [주문 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
                 setTimeout(() => {
                     ordererCheck.missingField.classList.remove('error');
                 }, 3000);
                 return false;
             }
             
-            // 2. 주문 #1 보내는 분 정보 확인
+            // 2. 상품 정보 확인
+            const productCheck = checkProductInfoComplete();
+            if (!productCheck.complete) {
+                productCheck.missingField.focus();
+                productCheck.missingField.classList.add('error');
+                showAlert(`⚠️ [상품 정보] ${productCheck.fieldName}을(를) 입력해주세요.`, 'warning');
+
+                // 상품 테이블로 스크롤
+                document.querySelector('.orderer-info-container').scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+                setTimeout(() => {
+                    productCheck.missingField.classList.remove('error');
+                }, 3000);
+                return false;
+            }
+
+            // 3. 주문 #1 보내는 분 정보 확인
             const senderCheck = checkSenderInfoComplete();
             if (!senderCheck.complete) {
                 senderCheck.missingField.focus();
                 senderCheck.missingField.classList.add('error');
-                showAlert(`⚠️ [주문 #1 - 보내는 분] ${senderCheck.fieldName}을(를) 입력해주세요.`, 'warning');
-                
+                showAlert(`⚠️ [배송 정보 #1 - 보내는 분] ${senderCheck.fieldName}을(를) 입력해주세요.`, 'warning');
+
                 // 해당 섹션으로 스크롤
                 const firstSection = document.querySelector('.order-section[data-section="1"]');
                 firstSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                
+
                 setTimeout(() => {
                     senderCheck.missingField.classList.remove('error');
                 }, 3000);
                 return false;
             }
-            
-            // 3. 주문 #1 받는 분 정보 확인
+
+            // 4. 주문 #1 받는 분 정보 확인
             const receiverCheck = checkReceiverInfoComplete();
             if (!receiverCheck.complete) {
                 receiverCheck.missingField.focus();
                 receiverCheck.missingField.classList.add('error');
-                showAlert(`⚠️ [주문 #1 - 받는 분] ${receiverCheck.fieldName}을(를) 입력해주세요.`, 'warning');
-                
+                showAlert(`⚠️ [배송 정보 #1 - 받는 분] ${receiverCheck.fieldName}을(를) 입력해주세요.`, 'warning');
+
                 // 해당 섹션으로 스크롤
                 const firstSection = document.querySelector('.order-section[data-section="1"]');
                 firstSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
+
                 setTimeout(() => {
                     receiverCheck.missingField.classList.remove('error');
-                }, 3000);
-                return false;
-            }
-            
-            // 4. 주문 #1 상품 정보 확인
-            const productCheck = checkProductInfoComplete();
-            if (!productCheck.complete) {
-                productCheck.missingField.focus();
-                productCheck.missingField.classList.add('error');
-                showAlert(`⚠️ [주문 #1 - 상품 정보] ${productCheck.fieldName}을(를) 입력해주세요.`, 'warning');
-                
-                // 해당 섹션으로 스크롤
-                const firstSection = document.querySelector('.order-section[data-section="1"]');
-                firstSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                
-                setTimeout(() => {
-                    productCheck.missingField.classList.remove('error');
                 }, 3000);
                 return false;
             }
@@ -3333,15 +4048,44 @@
         function attachSequentialInputGuide() {
             const firstSection = document.querySelector('.order-section[data-section="1"]');
             if (!firstSection) return;
-            
-            // 보내는 분 필드들에 포커스 이벤트 추가
+
+            // 상품 정보 필드들에 포커스 이벤트 추가 (주문자 정보 다음)
+            const productTbody = document.getElementById('productTableBody');
+            const firstRow = productTbody ? productTbody.querySelector('.product-row') : null;
+            if (firstRow) {
+                const productFields = [
+                    firstRow.querySelector('.product-code'),
+                    firstRow.querySelector('.quantity'),
+                    firstRow.querySelector('.unit-price')
+                ];
+
+                productFields.forEach(field => {
+                    if (field) {
+                        field.addEventListener('focus', function() {
+                            const ordererCheck = checkOrdererInfoComplete();
+                            if (!ordererCheck.complete) {
+                                setTimeout(() => {
+                                    ordererCheck.missingField.focus();
+                                    ordererCheck.missingField.classList.add('error');
+                                    showAlert(`⚠️ [주문 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                    setTimeout(() => {
+                                        ordererCheck.missingField.classList.remove('error');
+                                    }, 3000);
+                                }, 100);
+                            }
+                        });
+                    }
+                });
+            }
+
+            // 보내는 분 필드들에 포커스 이벤트 추가 (주문자 정보 + 상품 정보 다음)
             const senderFields = [
                 firstSection.querySelector('.sender-name'),
                 firstSection.querySelector('.sender-phone'),
                 firstSection.querySelector('.sender-postal'),
                 firstSection.querySelector('.sender-address')
             ];
-            
+
             senderFields.forEach(field => {
                 if (field) {
                     field.addEventListener('focus', function() {
@@ -3350,24 +4094,37 @@
                             setTimeout(() => {
                                 ordererCheck.missingField.focus();
                                 ordererCheck.missingField.classList.add('error');
-                                showAlert(`⚠️ [주문자 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                showAlert(`⚠️ [주문 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
                                 setTimeout(() => {
                                     ordererCheck.missingField.classList.remove('error');
+                                }, 3000);
+                            }, 100);
+                            return;
+                        }
+
+                        const productCheck = checkProductInfoComplete();
+                        if (!productCheck.complete) {
+                            setTimeout(() => {
+                                productCheck.missingField.focus();
+                                productCheck.missingField.classList.add('error');
+                                showAlert(`⚠️ [상품 정보] ${productCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                setTimeout(() => {
+                                    productCheck.missingField.classList.remove('error');
                                 }, 3000);
                             }, 100);
                         }
                     });
                 }
             });
-            
-            // 받는 분 필드들에 포커스 이벤트 추가
+
+            // 받는 분 필드들에 포커스 이벤트 추가 (주문자 정보 + 상품 정보 + 보내는 분 다음)
             const receiverFields = [
                 firstSection.querySelector('.receiver-name'),
                 firstSection.querySelector('.receiver-phone'),
                 firstSection.querySelector('.receiver-postal'),
                 firstSection.querySelector('.receiver-address')
             ];
-            
+
             receiverFields.forEach(field => {
                 if (field) {
                     field.addEventListener('focus', function() {
@@ -3376,14 +4133,27 @@
                             setTimeout(() => {
                                 ordererCheck.missingField.focus();
                                 ordererCheck.missingField.classList.add('error');
-                                showAlert(`⚠️ [주문자 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                showAlert(`⚠️ [주문 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
                                 setTimeout(() => {
                                     ordererCheck.missingField.classList.remove('error');
                                 }, 3000);
                             }, 100);
                             return;
                         }
-                        
+
+                        const productCheck = checkProductInfoComplete();
+                        if (!productCheck.complete) {
+                            setTimeout(() => {
+                                productCheck.missingField.focus();
+                                productCheck.missingField.classList.add('error');
+                                showAlert(`⚠️ [상품 정보] ${productCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
+                                setTimeout(() => {
+                                    productCheck.missingField.classList.remove('error');
+                                }, 3000);
+                            }, 100);
+                            return;
+                        }
+
                         const senderCheck = checkSenderInfoComplete();
                         if (!senderCheck.complete) {
                             setTimeout(() => {
@@ -3398,60 +4168,6 @@
                     });
                 }
             });
-            
-            // 상품 정보 필드들에 포커스 이벤트 추가
-            const firstRow = firstSection.querySelector('.product-row');
-            if (firstRow) {
-                const productFields = [
-                    firstRow.querySelector('.product-code'),
-                    firstRow.querySelector('.quantity'),
-                    firstRow.querySelector('.unit-price')
-                ];
-                
-                productFields.forEach(field => {
-                    if (field) {
-                        field.addEventListener('focus', function() {
-                            const ordererCheck = checkOrdererInfoComplete();
-                            if (!ordererCheck.complete) {
-                                setTimeout(() => {
-                                    ordererCheck.missingField.focus();
-                                    ordererCheck.missingField.classList.add('error');
-                                    showAlert(`⚠️ [주문자 정보] ${ordererCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
-                                    setTimeout(() => {
-                                        ordererCheck.missingField.classList.remove('error');
-                                    }, 3000);
-                                }, 100);
-                                return;
-                            }
-                            
-                            const senderCheck = checkSenderInfoComplete();
-                            if (!senderCheck.complete) {
-                                setTimeout(() => {
-                                    senderCheck.missingField.focus();
-                                    senderCheck.missingField.classList.add('error');
-                                    showAlert(`⚠️ [보내는 분] ${senderCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
-                                    setTimeout(() => {
-                                        senderCheck.missingField.classList.remove('error');
-                                    }, 3000);
-                                }, 100);
-                                return;
-                            }
-                            
-                            const receiverCheck = checkReceiverInfoComplete();
-                            if (!receiverCheck.complete) {
-                                setTimeout(() => {
-                                    receiverCheck.missingField.focus();
-                                    receiverCheck.missingField.classList.add('error');
-                                    showAlert(`⚠️ [받는 분] ${receiverCheck.fieldName}을(를) 먼저 입력해주세요.`, 'warning');
-                                    setTimeout(() => {
-                                        receiverCheck.missingField.classList.remove('error');
-                                    }, 3000);
-                                }, 100);
-                            }
-                        });
-                    }
-                });
-            }
         }
 
         // ========================================
@@ -3543,6 +4259,17 @@
 
             // 로컬 스토리지에서 모든 설정 불러오기
             loadAllSettings();
+
+            // 첫 번째 섹션의 배송 상품 콤보박스 초기화
+            const firstSection = document.querySelector('.order-section');
+            if (firstSection) {
+                refreshDeliveryProductSelects(firstSection);
+            }
+
+            // 배송 희망 일 오늘 날짜로 초기화
+            document.querySelectorAll('.delivery-date').forEach(input => {
+                input.value = getTodayDate();
+            });
         }
 
         // ========================================

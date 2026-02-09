@@ -1,6 +1,10 @@
 # 웹 주문서 페이지 링크
 https://muttul58-coder.github.io/GS25_Order/order_form.html
 
+# 주문서 설문지(응답) 시트 링크
+https://docs.google.com/spreadsheets/d/1J_qtVbK5QmU3rDsSq3o_ieaCo4LDOmfE7orWqVzsLPY/edit?gid=1762982959#gid=1762982959
+
+
 
 # 주문서 양식 - 구글 폼 연동 설정 가이드
 
