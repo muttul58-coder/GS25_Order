@@ -418,7 +418,7 @@
             flex-wrap: wrap;
         }
 
-        .submit-btn, .print-btn, .add-section-btn, .print-only-btn, .submit-only-btn {
+        .submit-btn, .print-btn, .add-section-btn, .print-only-btn, .submit-only-btn, .pdf-btn {
             padding: 14px 32px;
             font-size: 16px;
             font-weight: 600;
@@ -472,6 +472,18 @@
             background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(156, 39, 176, 0.4);
+        }
+
+        /* PDF 저장 버튼 - 빨간색 */
+        .pdf-btn {
+            background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+            color: white;
+        }
+
+        .pdf-btn:hover {
+            background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(229, 57, 53, 0.4);
         }
 
         /* 주문 전송만 버튼 - 초록색 */
@@ -1284,7 +1296,7 @@
                 flex-direction: column;
             }
 
-            .submit-btn, .print-btn, .add-section-btn, .print-only-btn, .submit-only-btn {
+            .submit-btn, .print-btn, .add-section-btn, .print-only-btn, .submit-only-btn, .pdf-btn {
                 width: 100%;
                 padding: 12px;
                 font-size: 16px;
@@ -1377,6 +1389,7 @@
     <script src="products.js"></script>
     <!-- 구글 폼 설정 파일 - config.js 파일이 같은 폴더에 있어야 합니다 -->
     <script src="config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1671,6 +1684,7 @@
         <div class="button-container no-print">
             <button type="button" class="add-section-btn" onclick="addSection()">➕ 배송 정보 추가</button>
             <button type="button" class="print-only-btn" onclick="printOnly()">🖨️ 인쇄</button>
+            <button type="button" class="pdf-btn" onclick="savePDF()">📄 PDF 저장</button>
             <button type="button" class="submit-only-btn" onclick="submitOnly()">📤 주문 전송</button>
             <button type="button" class="print-btn" onclick="printOrder()">🖨️ 인쇄 및 주문 전송</button>
         </div>
@@ -2448,8 +2462,8 @@
         // ========================================
 
         /**
-         * 주문 상품 테이블에서 유효한 상품 목록 추출
-         * @returns {Array} - [{code, name}, ...]
+         * 주문 상품 테이블에서 유효한 상품 목록 추출 (수량 포함)
+         * @returns {Array} - [{code, name, qty}, ...]
          */
         function getOrderProductList() {
             const rows = document.getElementById('productTableBody').querySelectorAll('.product-row');
@@ -2457,8 +2471,9 @@
             rows.forEach(row => {
                 const code = row.querySelector('.product-code').value.trim();
                 const name = row.querySelector('.product-name').value.trim();
+                const qty = parseInt(row.querySelector('.quantity').value) || 0;
                 if (code && name) {
-                    list.push({ code, name });
+                    list.push({ code, name, qty });
                 }
             });
             return list;
@@ -2476,26 +2491,64 @@
 
         /**
          * 특정 섹션의 배송 상품 콤보박스 옵션 갱신
+         * - 다른 섹션에서 이미 주문 수량만큼 배분된 상품은 목록에서 제외
          * @param {HTMLElement} section - order-section 요소
          */
         function refreshDeliveryProductSelects(section) {
             const products = getOrderProductList();
+
+            // 다른 섹션에서 이미 배분된 수량 합산
+            const otherAllocated = {};
+            document.querySelectorAll('.order-section').forEach(otherSection => {
+                if (otherSection === section) return; // 현재 섹션은 제외
+                otherSection.querySelectorAll('.delivery-product-row').forEach(row => {
+                    const code = row.querySelector('.delivery-product-code-select').value;
+                    const qty = parseInt(row.querySelector('.delivery-product-qty').value) || 0;
+                    if (code) {
+                        otherAllocated[code] = (otherAllocated[code] || 0) + qty;
+                    }
+                });
+            });
+
+            // 잔량이 남은 상품만 필터링
+            const availableProducts = products.filter(p => {
+                const allocated = otherAllocated[p.code] || 0;
+                return p.qty - allocated > 0;
+            });
+
             const selects = section.querySelectorAll('.delivery-product-code-select');
             selects.forEach(select => {
                 const currentValue = select.value;
+
+                // 같은 섹션 내 다른 콤보박스에서 이미 선택된 상품코드 수집
+                const usedInSection = new Set();
+                section.querySelectorAll('.delivery-product-code-select').forEach(otherSelect => {
+                    if (otherSelect === select) return; // 자기 자신은 제외
+                    if (otherSelect.value) {
+                        usedInSection.add(otherSelect.value);
+                    }
+                });
+
                 // 기존 옵션 제거 (첫 번째 "-- 선택 --" 제외)
                 while (select.options.length > 1) {
                     select.remove(1);
                 }
-                // 주문 상품 목록으로 옵션 추가
-                products.forEach(p => {
+                // 잔량이 남고, 같은 섹션에서 아직 선택되지 않은 상품만 옵션 추가
+                availableProducts.forEach(p => {
+                    if (usedInSection.has(p.code)) return; // 같은 섹션에서 이미 선택됨
                     const option = document.createElement('option');
                     option.value = p.code;
                     option.textContent = p.code;
                     select.appendChild(option);
                 });
-                // 기존 선택값 복원 (해당 상품이 아직 존재하면)
-                if (currentValue && products.some(p => p.code === currentValue)) {
+                // 기존 선택값 복원 (현재 선택된 상품은 항상 유지)
+                if (currentValue) {
+                    if (!select.querySelector('option[value="' + currentValue + '"]') && products.some(p => p.code === currentValue)) {
+                        const option = document.createElement('option');
+                        option.value = currentValue;
+                        option.textContent = currentValue;
+                        select.appendChild(option);
+                    }
                     select.value = currentValue;
                 } else {
                     select.value = '';
@@ -2965,46 +3018,37 @@
             const quantityInput = row.querySelector('.quantity');
             const unitPriceInput = row.querySelector('.unit-price');
 
-            // Enter 키 입력 시 Tab 키처럼 동작
-            productCodeInput.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault(); // 기본 Enter 동작 방지
+            /**
+             * 상품코드 검색 실행 (blur/Enter 공용)
+             */
+            function searchProductCode() {
+                const code = productCodeInput.value.trim();
 
-                    // blur 이벤트를 트리거하여 포맷팅 및 자동완성 실행
-                    // blur 핸들러에서 상품 검색 성공 시 행사 필드로 포커스 이동함
-                    this.blur();
-                }
-            });
-
-            // 상품 코드 입력 시 포맷팅 및 자동완성
-            productCodeInput.addEventListener('blur', function() {
-                const code = this.value.trim();
-
-                // 상품 코드가 비어있으면 상품이름과 필드 초기화
+                // 상품 코드가 비어있으면 필드 초기화
                 if (!code) {
-					productNameInput.value = '';
-					productNameInput.placeholder = '※ 상품 코드 형식 오류';
-					quantityInput.value = '1';
-					unitPriceInput.value = '';
-					row.querySelector('.total-price').value = '';
+                    productNameInput.value = '';
+                    productNameInput.placeholder = '상품이름';
+                    quantityInput.value = '1';
+                    unitPriceInput.value = '';
+                    row.querySelector('.total-price').value = '';
                     return;
                 }
 
                 // 상품 코드 포맷팅
-                const formatSuccess = formatProductCode(this);
+                const formatSuccess = formatProductCode(productCodeInput);
 
                 // 포맷팅이 실패하면 상품이름, 단가, 금액 지우기
-				if (!formatSuccess) {
-					productNameInput.value = '';
-					productNameInput.placeholder = '※ 상품 코드 형식 오류';
-					quantityInput.value = '1';
-					unitPriceInput.value = '';
-					row.querySelector('.total-price').value = '';
-					return;
-				}
+                if (!formatSuccess) {
+                    productNameInput.value = '';
+                    productNameInput.placeholder = '※ 상품 코드 형식 오류';
+                    quantityInput.value = '1';
+                    unitPriceInput.value = '';
+                    row.querySelector('.total-price').value = '';
+                    return;
+                }
 
                 // 포맷팅된 코드로 상품 정보 검색
-                const formattedCode = this.value.trim();
+                const formattedCode = productCodeInput.value.trim();
 
                 if (formattedCode) {
                     // products.js 파일이 로드되었는지 확인
@@ -3039,26 +3083,39 @@
 
                         console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.price}원)`);
                     } else {
-                        // 상품을 찾지 못한 경우 - 상품이름 지우기
+                        // 상품을 찾지 못한 경우
                         productNameInput.value = '';
-						quantityInput.value = '0';
-						unitPriceInput.value = '';
+                        quantityInput.value = '0';
+                        unitPriceInput.value = '';
                         row.querySelector('.total-price').value = '';
-						productNameInput.placeholder = '※ 상품을 찾을 수 없음';
+                        productNameInput.placeholder = '※ 상품을 찾을 수 없음';
                         console.log(`상품 코드 "${formattedCode}"에 해당하는 상품을 찾을 수 없습니다.`);
 
-						// 상품코드로 포커스 이동 및 전체 선택
-						setTimeout(() => {
-							productCodeInput.focus();
-							productCodeInput.select();
-						}, 100);
-						}
+                        // 상품코드로 포커스 이동 및 전체 선택
+                        setTimeout(() => {
+                            productCodeInput.focus();
+                            productCodeInput.select();
+                        }, 100);
+                    }
                 }
 
                 // 배송 상품 콤보박스 동기화
                 refreshAllDeliveryProductSelects();
                 // 바코드 이미지 업데이트
                 updateBarcodeImages();
+            }
+
+            // Enter 키 입력 시 검색 실행
+            productCodeInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    searchProductCode();
+                }
+            });
+
+            // 포커스 아웃 시 검색 실행
+            productCodeInput.addEventListener('blur', function() {
+                searchProductCode();
             });
 
             // 실시간으로도 확인 (입력 중)
@@ -3410,6 +3467,185 @@
                 return;
             }
             window.print();
+        }
+
+        /**
+         * PDF 저장 (인쇄 화면과 동일한 레이아웃)
+         */
+        function savePDF() {
+            if (!validateAllInputs()) return;
+
+            showAlert('PDF 생성 중입니다. 잠시 기다려주세요...', 'warning');
+
+            // input/select의 현재 value를 attribute에 반영 (html2canvas가 읽을 수 있도록)
+            document.querySelectorAll('input').forEach(function(input) {
+                input.setAttribute('value', input.value);
+            });
+            document.querySelectorAll('select').forEach(function(select) {
+                var options = select.querySelectorAll('option');
+                for (var i = 0; i < options.length; i++) {
+                    if (options[i].selected) options[i].setAttribute('selected', 'selected');
+                    else options[i].removeAttribute('selected');
+                }
+            });
+
+            // beforeprint와 동일한 인쇄 레이아웃 적용
+            applyPrintLayout();
+
+            var container = document.querySelector('.container');
+
+            // 컨테이너 원래 스타일 백업 & 고정 너비 적용 (모바일에서도 A4 비율 유지)
+            var origContainerStyle = container.getAttribute('style') || '';
+            container.style.width = '794px';
+            container.style.maxWidth = '794px';
+            container.style.margin = '0';
+            container.style.padding = '0';
+            container.style.boxShadow = 'none';
+            container.style.borderRadius = '0';
+
+            // 인쇄용 스타일을 임시 적용
+            var pdfStyle = document.createElement('style');
+            pdfStyle.id = 'pdf-temp-style';
+            pdfStyle.textContent =
+                '.no-print { display: none !important; }' +
+                'body { background: white !important; background-image: none !important; padding: 0; margin: 0; font-size: 9pt; }' +
+                '.header { padding: 6px; margin-bottom: 4px; border-radius: 0; background: #667eea !important; }' +
+                '.header h1 { font-size: 20px; letter-spacing: 4px; }' +
+                '.top-info { padding: 4px 8px; margin-bottom: 4px; font-size: 8pt; border-radius: 0; background: #f8f9fa !important; }' +
+                '.shop-info, .date-info { font-size: 8pt; }' +
+                '.orderer-info-container { border: 2px solid #999; padding: 8px; padding-top: 5px; margin-bottom: 5px; border-radius: 5px; background: #f3e5f5 !important; }' +
+                '.orderer-info-container td, table.send-section td, table.receiver-section td, table.product-section td { background: white !important; }' +
+                '.orderer-info-badge { position: static; display: inline-block; font-size: 12px; padding: 3px 8px; margin-bottom: 4px; border-radius: 10px; background: #9C27B0 !important; }' +
+                '.section-header { padding: 2px 8px 3px; font-size: 12pt; margin-top: 0; margin-bottom: 0; border-radius: 0; }' +
+                '.table-responsive { overflow: visible !important; overflow-x: visible !important; }' +
+                'table { margin-bottom: 3px; table-layout: auto; width: 100%; min-width: 0 !important; border-radius: 0; border-spacing: 0; border-collapse: collapse; }' +
+                '.order-section { border: 2px solid #999; padding: 8px; padding-top: 5px; margin-bottom: 5px; border-radius: 5px; background: #fff3e0 !important; }' +
+                '.section-number { position: static; display: inline-block; font-size: 12px; padding: 3px 8px; margin-bottom: 4px; border-radius: 10px; }' +
+                '.section-delete-btn { display: none !important; }' +
+                'th, td { border: 1px solid #666; padding: 1px 2px; font-size: 7pt; }' +
+                'input, select { border: none !important; font-size: 7pt; padding: 0; }' +
+                '.print-title-cell { writing-mode: vertical-rl; text-orientation: mixed; text-align: center; font-weight: bold; font-size: 10pt; padding: 2px; letter-spacing: 3px; width: 22px; min-width: 22px; max-width: 22px; }' +
+                '.print-title-cell.title-orderer { background: #CE93D8 !important; color: white; }' +
+                '.print-title-cell.title-sender { background: #FFB74D !important; color: white; }' +
+                '.print-title-cell.title-receiver { background: #4FC3F7 !important; color: white; }' +
+                '.print-title-cell.title-product { background: #81C784 !important; color: white; }' +
+                '.print-title-cell.title-delivery-product { background: #81C784 !important; color: white; }' +
+                '.print-address-text.print-address-full { display: block; font-size: 7pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }';
+            document.head.appendChild(pdfStyle);
+
+            // 파일명: 주문서_주문자명_날짜
+            var dateInfo = document.querySelector('.date-info');
+            var dateStr = dateInfo ? dateInfo.textContent.replace(/[^0-9]/g, '') : new Date().toISOString().slice(0,10).replace(/-/g,'');
+            var ordererNameVal = document.getElementById('ordererName').value.trim() || '주문서';
+            var fileName = '주문서_' + ordererNameVal + '_' + dateStr + '.pdf';
+
+            // 모바일 감지 - 저사양 기기에서는 scale 낮춤
+            var isMobile = window.innerWidth <= 768;
+            var canvasScale = isMobile ? 1.5 : 2;
+
+            // DOM 렌더링을 기다린 후 PDF 생성
+            setTimeout(function() {
+                var opt = {
+                    margin: [8, 3, 8, 3],
+                    filename: fileName,
+                    image: { type: 'jpeg', quality: 0.95 },
+                    html2canvas: {
+                        scale: canvasScale,
+                        useCORS: true,
+                        logging: true,
+                        windowWidth: 794
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                };
+
+                html2pdf().set(opt).from(container).save().then(function() {
+                    showAlert('PDF 파일이 저장되었습니다.', 'success');
+                }).catch(function(e) {
+                    console.error('PDF 생성 오류:', e);
+                    showAlert('PDF 저장 중 오류가 발생했습니다: ' + e.message, 'error');
+                }).then(function() {
+                    // finally 역할 - 항상 실행
+                    var tempStyle = document.getElementById('pdf-temp-style');
+                    if (tempStyle) tempStyle.remove();
+
+                    if (origContainerStyle) container.setAttribute('style', origContainerStyle);
+                    else container.removeAttribute('style');
+
+                    removePrintLayout();
+                });
+            }, 300);
+        }
+
+        /**
+         * 인쇄 레이아웃 적용 (beforeprint 핸들러와 동일)
+         */
+        function applyPrintLayout() {
+            const ordererTable = document.querySelector('.orderer-info-container table');
+            if (ordererTable) addPrintTitleColumn(ordererTable, '주문 정보', 'title-orderer');
+
+            const productTable = document.getElementById('productTable');
+            if (productTable) addProductPrintTitleColumn(productTable);
+
+            const sections = document.querySelectorAll('.order-section');
+            sections.forEach(section => {
+                const tableWrappers = section.querySelectorAll('.table-responsive');
+                if (tableWrappers[0]) {
+                    const senderTable = tableWrappers[0].querySelector('table');
+                    if (senderTable) addPrintTitleColumn(senderTable, '보내는 분', 'title-sender');
+                }
+                if (tableWrappers[1]) {
+                    const receiverTable = tableWrappers[1].querySelector('table');
+                    if (receiverTable) addPrintTitleColumn(receiverTable, '받는 분', 'title-receiver');
+                }
+                if (tableWrappers[2]) {
+                    const deliveryProductTable = tableWrappers[2].querySelector('table.delivery-product-section');
+                    if (deliveryProductTable) addDeliveryProductPrintTitleColumn(deliveryProductTable);
+                }
+            });
+
+            adjustAddressFontSize();
+        }
+
+        /**
+         * 인쇄 레이아웃 제거 (afterprint 핸들러와 동일)
+         */
+        function removePrintLayout() {
+            restoreAddressFontSize();
+
+            const titleCells = document.querySelectorAll('[data-print-title="true"]');
+            titleCells.forEach(cell => cell.remove());
+
+            const restructured = document.querySelectorAll('[data-print-restructured="true"]');
+            restructured.forEach(table => {
+                const orig = table._origStructure;
+                if (!orig) return;
+
+                const currentRows = Array.from(table.querySelectorAll(':scope > tr'));
+                currentRows.forEach(row => row.remove());
+
+                if (orig.thead) {
+                    orig.theadRows.forEach(row => orig.thead.appendChild(row));
+                    table.appendChild(orig.thead);
+                }
+                if (orig.tbody) {
+                    orig.tbodyRows.forEach(row => orig.tbody.appendChild(row));
+                    table.appendChild(orig.tbody);
+                }
+                if (orig.tfoot) {
+                    orig.tfootRows.forEach(row => orig.tfoot.appendChild(row));
+                    table.appendChild(orig.tfoot);
+                }
+
+                table.removeAttribute('data-print-restructured');
+                delete table._origStructure;
+
+                const rows = table.querySelectorAll('.product-row');
+                rows.forEach(row => {
+                    attachRowEventListeners(row);
+                    attachProductCodeFormatting(row);
+                });
+            });
         }
 
         /**
