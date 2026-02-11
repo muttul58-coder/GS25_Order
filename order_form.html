@@ -3475,6 +3475,15 @@
         function savePDF() {
             if (!validateAllInputs()) return;
 
+            // html2pdf 라이브러리 로드 확인
+            if (typeof html2pdf === 'undefined') {
+                showAlert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.', 'warning');
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js';
+                document.head.appendChild(s);
+                return;
+            }
+
             showAlert('PDF 생성 중입니다. 잠시 기다려주세요...', 'warning');
 
             // input/select의 현재 value를 attribute에 반영 (html2canvas가 읽을 수 있도록)
@@ -3543,6 +3552,34 @@
             var isMobile = window.innerWidth <= 768;
             var canvasScale = isMobile ? 1.5 : 2;
 
+            // 바코드 이미지를 Base64 data URL로 변환 (tainted canvas 방지)
+            var imgs = container.querySelectorAll('.barcode-slot img');
+            var removedImgs = []; // 변환 실패 시 DOM에서 제거한 이미지 백업
+            imgs.forEach(function(img) {
+                if (img.src && !img.src.startsWith('data:')) {
+                    if (img.naturalWidth > 0) {
+                        try {
+                            var c = document.createElement('canvas');
+                            c.width = img.naturalWidth;
+                            c.height = img.naturalHeight;
+                            c.getContext('2d').drawImage(img, 0, 0);
+                            img.setAttribute('data-orig-src', img.src);
+                            img.src = c.toDataURL('image/jpeg', 0.95);
+                        } catch(e) {
+                            // 변환 실패 시 DOM에서 완전 제거 (tainted canvas 방지)
+                            var parent = img.parentNode;
+                            removedImgs.push({ parent: parent, img: img, src: img.src });
+                            parent.removeChild(img);
+                        }
+                    } else {
+                        // 이미지가 아직 로드되지 않은 경우 제거
+                        var parent = img.parentNode;
+                        removedImgs.push({ parent: parent, img: img, src: img.src });
+                        parent.removeChild(img);
+                    }
+                }
+            });
+
             // DOM 렌더링을 기다린 후 PDF 생성
             setTimeout(function() {
                 var opt = {
@@ -3551,8 +3588,9 @@
                     image: { type: 'jpeg', quality: 0.95 },
                     html2canvas: {
                         scale: canvasScale,
-                        useCORS: true,
-                        logging: true,
+                        allowTaint: false,
+                        useCORS: false,
+                        logging: false,
                         windowWidth: 794
                     },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -3571,6 +3609,20 @@
 
                     if (origContainerStyle) container.setAttribute('style', origContainerStyle);
                     else container.removeAttribute('style');
+
+                    // 바코드 이미지 원래 src 복원 (Base64 변환 성공한 이미지)
+                    container.querySelectorAll('.barcode-slot img[data-orig-src]').forEach(function(img) {
+                        img.src = img.getAttribute('data-orig-src');
+                        img.removeAttribute('data-orig-src');
+                    });
+
+                    // DOM에서 제거했던 이미지 복원
+                    removedImgs.forEach(function(item) {
+                        var newImg = document.createElement('img');
+                        newImg.src = item.src;
+                        newImg.onerror = function() { this.style.display = 'none'; };
+                        item.parent.appendChild(newImg);
+                    });
 
                     removePrintLayout();
                 });
