@@ -3575,6 +3575,29 @@
             container.style.borderRadius = '0';
             container.style.background = 'white';
 
+            // 3-1. 모바일 대응: 컨테이너를 데스크톱 너비로 확장하여 전체 캡쳐
+            const isMobile = window.innerWidth < 800;
+            const origBodyOverflow = document.body.style.overflow;
+            const tableResponsives = container.querySelectorAll('.table-responsive');
+            const origTableResponsiveStyles = [];
+            if (isMobile) {
+                container.style.width = '1024px';
+                container.style.maxWidth = '1024px';
+                container.style.padding = '25px';
+                document.body.style.overflow = 'hidden';
+                // .table-responsive의 overflow를 visible로 변경하여 잘림 방지
+                tableResponsives.forEach(el => {
+                    origTableResponsiveStyles.push(el.style.cssText);
+                    el.style.overflowX = 'visible';
+                    el.style.overflow = 'visible';
+                });
+                // 테이블 min-width 제거 (컨테이너 너비에 맞게)
+                container.querySelectorAll('table').forEach(t => {
+                    t.style.minWidth = '0';
+                    t.style.width = '100%';
+                });
+            }
+
             // 4. input/select/textarea를 span으로 임시 교체 (html2canvas 텍스트 잘림 방지)
             const replacedElements = [];
             container.querySelectorAll('input, select, textarea').forEach(el => {
@@ -3627,7 +3650,10 @@
                     scale: 2,
                     useCORS: true,
                     allowTaint: true,
-                    backgroundColor: '#ffffff'
+                    backgroundColor: '#ffffff',
+                    windowWidth: isMobile ? 1100 : undefined,
+                    width: container.scrollWidth,
+                    height: container.scrollHeight
                 });
 
                 // PNG 다운로드
@@ -3638,20 +3664,32 @@
                 link.click();
                 document.body.removeChild(link);
 
-                // 복원
-                replacedElements.forEach(el => { el.style.display = ''; });
-                container.querySelectorAll('[data-capture-replacement]').forEach(s => s.remove());
-                noPrintEls.forEach(el => { el.style.display = ''; });
-                container.style.cssText = origStyle;
+                // PNG 다운로드 성공 후 복원
+                restoreAfterCapture();
                 showAlert('이미지가 저장되었습니다! (' + fileName + ')', 'success');
             } catch(e) {
                 console.error('이미지 캡쳐 실패:', e);
-                // 복원
+                restoreAfterCapture();
+                showAlert('이미지 저장에 실패했습니다. 인쇄 버튼으로 PDF 저장을 이용해주세요.', 'error');
+            }
+
+            // 공통 복원 함수
+            function restoreAfterCapture() {
                 replacedElements.forEach(el => { el.style.display = ''; });
                 container.querySelectorAll('[data-capture-replacement]').forEach(s => s.remove());
                 noPrintEls.forEach(el => { el.style.display = ''; });
                 container.style.cssText = origStyle;
-                showAlert('이미지 저장에 실패했습니다. 인쇄 버튼으로 PDF 저장을 이용해주세요.', 'error');
+                // 모바일 스타일 복원
+                if (isMobile) {
+                    document.body.style.overflow = origBodyOverflow;
+                    tableResponsives.forEach((el, i) => {
+                        el.style.cssText = origTableResponsiveStyles[i] || '';
+                    });
+                    container.querySelectorAll('table').forEach(t => {
+                        t.style.minWidth = '';
+                        t.style.width = '';
+                    });
+                }
             }
         }
 
