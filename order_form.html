@@ -645,8 +645,9 @@
                 padding: 0;
                 margin: 0;
                 font-size: 9pt;
-                width: 210mm;
-                overflow: hidden;
+                width: 100%;
+                max-width: 210mm;
+                overflow: visible;
             }
 
             .container {
@@ -733,19 +734,18 @@
                 border-radius: 0;
             }
 
-            /* 테이블 감싸는 div 스크롤 제거 */
+            /* 테이블 감싸는 div 스크롤 제거 - 인쇄 시 overflow 허용 */
             .table-responsive {
-                overflow: visible;
-                overflow-x: hidden;
-                overflow-y: hidden;
+                overflow: visible !important;
             }
 
             /* 테이블 간격 및 레이아웃 - 내용에 맞게 자동 조정 */
             table {
                 margin-bottom: 3px;
-                table-layout: auto;
+                table-layout: fixed;
                 width: 100%;
                 min-width: 0 !important;
+                max-width: 100% !important;
                 border-radius: 0;
                 border-spacing: 0;
                 border-collapse: collapse;
@@ -870,9 +870,11 @@
             }
 
             /* 인적사항 테이블 컬럼 너비 (타이틀셀/성명/전화번호/우편번호/주소) */
-            th[style*="width: 90px"] { width: 80px !important; white-space: nowrap; }
-            th[style*="width: 150px"]:nth-child(3) { width: 120px !important; white-space: nowrap; }
-            th[style*="width: 150px"]:nth-child(4) { width: 80px !important; white-space: nowrap; }
+            /* table-layout:fixed → 첫 행(th)의 width가 전체 컬럼 너비 결정 */
+            /* 타이틀셀(3%) + 성명(10%) + 전화번호(17%) + 우편번호(10%) + 주소(60%) = 100% */
+            th[style*="width: 90px"] { width: 10% !important; white-space: nowrap; }
+            th[style*="width: 150px"]:nth-child(3) { width: 17% !important; white-space: nowrap; }
+            th[style*="width: 150px"]:nth-child(4) { width: 10% !important; white-space: nowrap; }
 
             /* 인쇄 시 입력 필드 테두리 제거 */
             input[type="text"],
@@ -938,16 +940,33 @@
             }
 
             /* 바코드 이미지 영역 인쇄 스타일 */
+            .barcode-row {
+                height: auto !important;
+            }
+
             .barcode-row td.barcode-container {
                 border: none !important;
                 background: transparent !important;
-                padding: 2px 0 !important;
+                padding: 4px 0 !important;
+                overflow: visible !important;
+            }
+
+            .barcode-grid {
+                display: flex;
+                gap: 4px;
+            }
+
+            .barcode-slot {
+                flex: 1;
+                text-align: center;
             }
 
             .barcode-slot img {
                 height: 80px !important;
+                max-width: 100% !important;
                 width: auto !important;
                 object-fit: contain !important;
+                display: inline-block !important;
             }
 
             /* 우편번호 검색 버튼 숨김 */
@@ -960,15 +979,15 @@
                 display: block;
             }
 
-            /* 상품 정보 테이블 컬럼 너비 (인쇄 시) */
-            /* 보이는 컬럼: 상품정보(병합) / No / 상품코드 / 상품이름 / 행사 / 수량 / 단가 / 금액 */
-            .product-section th:nth-child(2) { width: 20px !important; }
-            .product-section th:nth-child(3) { width: 80px !important; }
+            /* 상품 정보 테이블 컬럼 너비 (인쇄 시) - table-layout:fixed 비율 */
+            /* 타이틀(3%) / No(4%) / 상품코드(9%) / 상품이름(auto) / 행사(8%) / 수량(7%) / 단가(10%) / 금액(12%) / 작업(0-hidden) */
+            .product-section th:nth-child(2) { width: 4% !important; }
+            .product-section th:nth-child(3) { width: 9% !important; }
             .product-section th:nth-child(4) { width: auto !important; }
-            .product-section th:nth-child(5) { width: 80px !important; }
-            .product-section th:nth-child(6) { width: 70px !important; text-align: center !important; }
-            .product-section th:nth-child(7) { width: 80px !important; }
-            .product-section th:nth-child(8) { width: 90px !important; }
+            .product-section th:nth-child(5) { width: 8% !important; }
+            .product-section th:nth-child(6) { width: 7% !important; text-align: center !important; }
+            .product-section th:nth-child(7) { width: 10% !important; }
+            .product-section th:nth-child(8) { width: 12% !important; }
 
             /* 인쇄 시 모든 th, td 내용 한 줄 유지 */
             th {
@@ -1021,8 +1040,8 @@
                 padding: 2px 4px !important;
                 white-space: nowrap;
                 letter-spacing: 2px;
-                min-width: 20px;
-                width: 20px !important;
+                min-width: 18px;
+                width: 3% !important;
             }
 
             .print-title-cell.title-orderer {
@@ -1071,11 +1090,12 @@
                 display: none !important;
             }
 
-            /* 배송 상품 테이블 컬럼 너비 (인쇄 시) */
-            .delivery-product-section th:nth-child(2) { width: 20px !important; }
-            .delivery-product-section th:nth-child(3) { width: 80px !important; }
+            /* 배송 상품 테이블 컬럼 너비 (인쇄 시) - table-layout:fixed 비율 */
+            /* 타이틀(3%) / No(5%) / 상품코드(12%) / 상품이름(auto) / 수량(10%) / 작업(0-hidden) */
+            .delivery-product-section th:nth-child(2) { width: 5% !important; }
+            .delivery-product-section th:nth-child(3) { width: 12% !important; }
             .delivery-product-section th:nth-child(4) { width: auto !important; }
-            .delivery-product-section th:nth-child(5) { width: 60px !important; }
+            .delivery-product-section th:nth-child(5) { width: 10% !important; }
 
         }
 
