@@ -3602,12 +3602,12 @@
             const origThWidths = [];
             container.querySelectorAll('th[style*="width: 90px"]').forEach(th => {
                 origThWidths.push({ el: th, orig: th.style.width });
-                th.style.width = '80px';
+                th.style.width = '70px';
             });
             container.querySelectorAll('th[style*="width: 150px"]').forEach(th => {
                 const text = th.textContent.trim();
                 origThWidths.push({ el: th, orig: th.style.width });
-                if (text === '전화번호') th.style.width = '140px';
+                if (text === '전화번호') th.style.width = '120px';
                 else if (text === '우편번호') th.style.width = '70px';
             });
 
