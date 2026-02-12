@@ -3609,7 +3609,8 @@
                 const styles = window.getComputedStyle(el);
 
                 // 원본 input의 스타일을 span에 복사
-                span.style.display = styles.display === 'none' ? 'none' : 'inline-block';
+                span.style.display = styles.display === 'none' ? 'none' : 'inline-flex';
+                span.style.alignItems = 'center';
                 span.style.width = styles.width;
                 span.style.height = styles.height;
                 span.style.padding = styles.padding;
@@ -3622,8 +3623,6 @@
                 span.style.fontWeight = styles.fontWeight;
                 span.style.color = styles.color;
                 span.style.textAlign = styles.textAlign;
-                span.style.lineHeight = styles.height; // 세로 중앙 정렬
-                span.style.verticalAlign = 'middle';
                 span.style.overflow = 'hidden';
                 span.style.whiteSpace = 'nowrap';
                 span.style.boxSizing = 'border-box';
