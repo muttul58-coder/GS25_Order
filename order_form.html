@@ -645,8 +645,9 @@
                 padding: 0;
                 margin: 0;
                 font-size: 9pt;
-                width: 210mm;
-                overflow: hidden;
+                width: 100%;
+                max-width: 210mm;
+                overflow: visible;
             }
 
             .container {
@@ -658,7 +659,8 @@
                 border-radius: 0;
             }
 
-            .no-print {
+            .no-print,
+            .alert {
                 display: none !important;
             }
 
@@ -699,6 +701,13 @@
                 position: relative;
             }
 
+            /* 인적사항 테이블(2행)은 페이지 중간에서 잘리지 않도록 */
+            .orderer-info-container > .table-responsive:first-of-type,
+            table.send-section,
+            table.receiver-section {
+                page-break-inside: avoid;
+            }
+
             .orderer-info-container td,
             table.send-section td,
             table.receiver-section td,
@@ -725,19 +734,18 @@
                 border-radius: 0;
             }
 
-            /* 테이블 감싸는 div 스크롤 제거 */
+            /* 테이블 감싸는 div 스크롤 제거 - 인쇄 시 overflow 허용 */
             .table-responsive {
-                overflow: visible;
-                overflow-x: hidden;
-                overflow-y: hidden;
+                overflow: visible !important;
             }
 
             /* 테이블 간격 및 레이아웃 - 내용에 맞게 자동 조정 */
             table {
                 margin-bottom: 3px;
-                table-layout: auto;
+                table-layout: fixed;
                 width: 100%;
                 min-width: 0 !important;
+                max-width: 100% !important;
                 border-radius: 0;
                 border-spacing: 0;
                 border-collapse: collapse;
@@ -862,9 +870,11 @@
             }
 
             /* 인적사항 테이블 컬럼 너비 (타이틀셀/성명/전화번호/우편번호/주소) */
-            th[style*="width: 90px"] { width: 80px !important; white-space: nowrap; }
-            th[style*="width: 150px"]:nth-child(3) { width: 120px !important; white-space: nowrap; }
-            th[style*="width: 150px"]:nth-child(4) { width: 80px !important; white-space: nowrap; }
+            /* table-layout:fixed → 첫 행(th)의 width가 전체 컬럼 너비 결정 */
+            /* 타이틀셀(3%) + 성명(10%) + 전화번호(17%) + 우편번호(10%) + 주소(60%) = 100% */
+            th[style*="width: 90px"] { width: 10% !important; white-space: nowrap; }
+            th[style*="width: 150px"]:nth-child(3) { width: 17% !important; white-space: nowrap; }
+            th[style*="width: 150px"]:nth-child(4) { width: 10% !important; white-space: nowrap; }
 
             /* 인쇄 시 입력 필드 테두리 제거 */
             input[type="text"],
@@ -930,16 +940,33 @@
             }
 
             /* 바코드 이미지 영역 인쇄 스타일 */
+            .barcode-row {
+                height: auto !important;
+            }
+
             .barcode-row td.barcode-container {
                 border: none !important;
                 background: transparent !important;
-                padding: 2px 0 !important;
+                padding: 4px 0 !important;
+                overflow: visible !important;
+            }
+
+            .barcode-grid {
+                display: flex;
+                gap: 4px;
+            }
+
+            .barcode-slot {
+                flex: 1;
+                text-align: center;
             }
 
             .barcode-slot img {
                 height: 80px !important;
+                max-width: 100% !important;
                 width: auto !important;
                 object-fit: contain !important;
+                display: inline-block !important;
             }
 
             /* 우편번호 검색 버튼 숨김 */
@@ -952,15 +979,15 @@
                 display: block;
             }
 
-            /* 상품 정보 테이블 컬럼 너비 (인쇄 시) */
-            /* 보이는 컬럼: 상품정보(병합) / No / 상품코드 / 상품이름 / 행사 / 수량 / 단가 / 금액 */
-            .product-section th:nth-child(2) { width: 20px !important; }
-            .product-section th:nth-child(3) { width: 80px !important; }
+            /* 상품 정보 테이블 컬럼 너비 (인쇄 시) - table-layout:fixed 비율 */
+            /* 타이틀(3%) / No(4%) / 상품코드(9%) / 상품이름(auto) / 행사(8%) / 수량(7%) / 단가(10%) / 금액(12%) / 작업(0-hidden) */
+            .product-section th:nth-child(2) { width: 4% !important; }
+            .product-section th:nth-child(3) { width: 9% !important; }
             .product-section th:nth-child(4) { width: auto !important; }
-            .product-section th:nth-child(5) { width: 80px !important; }
-            .product-section th:nth-child(6) { width: 70px !important; text-align: center !important; }
-            .product-section th:nth-child(7) { width: 80px !important; }
-            .product-section th:nth-child(8) { width: 90px !important; }
+            .product-section th:nth-child(5) { width: 8% !important; }
+            .product-section th:nth-child(6) { width: 7% !important; text-align: center !important; }
+            .product-section th:nth-child(7) { width: 10% !important; }
+            .product-section th:nth-child(8) { width: 12% !important; }
 
             /* 인쇄 시 모든 th, td 내용 한 줄 유지 */
             th {
@@ -968,11 +995,7 @@
             }
 
             /* 인쇄 시 섹션 헤더(타이틀 바) 숨김 - 테이블 첫 컬럼으로 대체 */
-            .section-header.send-section,
-            .section-header.receiver-section,
-            .section-header.product-section,
-            .section-header.delivery-product-section,
-            .section-header:not(.send-section):not(.receiver-section):not(.product-section):not(.delivery-product-section) {
+            .section-header {
                 display: none !important;
             }
 
@@ -1017,8 +1040,8 @@
                 padding: 2px 4px !important;
                 white-space: nowrap;
                 letter-spacing: 2px;
-                min-width: 20px;
-                width: 20px !important;
+                min-width: 18px;
+                width: 3% !important;
             }
 
             .print-title-cell.title-orderer {
@@ -1049,13 +1072,16 @@
                 font-size: 7pt;
             }
 
-            /* 인쇄 시 배송 상품 콤보박스 화살표 숨김 */
+            /* 인쇄 시 모든 select 요소 화살표 숨김 및 텍스트만 표시 */
+            select,
             .delivery-product-code-select {
                 -webkit-appearance: none;
                 -moz-appearance: none;
                 appearance: none;
                 border: none !important;
                 background: transparent !important;
+                font-size: 10pt;
+                padding: 0 !important;
             }
 
             /* 인쇄 시 수량 안내 메시지 숨김 */
@@ -1064,11 +1090,12 @@
                 display: none !important;
             }
 
-            /* 배송 상품 테이블 컬럼 너비 (인쇄 시) */
-            .delivery-product-section th:nth-child(2) { width: 20px !important; }
-            .delivery-product-section th:nth-child(3) { width: 80px !important; }
+            /* 배송 상품 테이블 컬럼 너비 (인쇄 시) - table-layout:fixed 비율 */
+            /* 타이틀(3%) / No(5%) / 상품코드(12%) / 상품이름(auto) / 수량(10%) / 작업(0-hidden) */
+            .delivery-product-section th:nth-child(2) { width: 5% !important; }
+            .delivery-product-section th:nth-child(3) { width: 12% !important; }
             .delivery-product-section th:nth-child(4) { width: auto !important; }
-            .delivery-product-section th:nth-child(5) { width: 60px !important; }
+            .delivery-product-section th:nth-child(5) { width: 10% !important; }
 
         }
 
@@ -1135,6 +1162,12 @@
             background-color: #f8d7da;
             color: #721c24;
             border: 2px solid #f5c6cb;
+        }
+
+        .alert.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
         }
 
         /* 구글 설문지 설정 패널 스타일 */
@@ -1389,7 +1422,8 @@
     <script src="products.js"></script>
     <!-- 구글 폼 설정 파일 - config.js 파일이 같은 폴더에 있어야 합니다 -->
     <script src="config.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+    <!-- 이미지 캡쳐용 html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1684,7 +1718,7 @@
         <div class="button-container no-print">
             <button type="button" class="add-section-btn" onclick="addSection()">➕ 배송 정보 추가</button>
             <button type="button" class="print-only-btn" onclick="printOnly()">🖨️ 인쇄</button>
-            <button type="button" class="pdf-btn" onclick="savePDF()">📄 PDF 저장</button>
+            <button type="button" class="pdf-btn" onclick="saveAsImage()">📷 이미지 저장</button>
             <button type="button" class="submit-only-btn" onclick="submitOnly()">📤 주문 전송</button>
             <button type="button" class="print-btn" onclick="printOrder()">🖨️ 인쇄 및 주문 전송</button>
         </div>
@@ -2737,7 +2771,7 @@
             const allRows = table.querySelectorAll('tr');
             const printableRows = [];
             allRows.forEach(row => {
-                if (!row.classList.contains('no-print')) printableRows.push(row);
+                if (!row.classList.contains('no-print') && row.style.display !== 'none') printableRows.push(row);
             });
             if (printableRows.length === 0) return;
 
@@ -3248,6 +3282,22 @@
          * 인쇄 전: 각 테이블 왼쪽에 세로 타이틀 컬럼 추가
          */
         window.addEventListener('beforeprint', function() {
+            // 0. PDF 파일명용 페이지 타이틀 변경 (주문서_성명_날짜시간)
+            const ordererNameEl = document.getElementById('ordererName');
+            const ordererName = ordererNameEl ? ordererNameEl.value.trim() : '';
+            const now = new Date();
+            const dateStr = now.getFullYear().toString()
+                + String(now.getMonth() + 1).padStart(2, '0')
+                + String(now.getDate()).padStart(2, '0')
+                + String(now.getHours()).padStart(2, '0')
+                + String(now.getMinutes()).padStart(2, '0');
+            document._origTitle = document.title;
+            if (ordererName) {
+                document.title = '주문서_' + ordererName + '_' + dateStr;
+            } else {
+                document.title = '주문서_' + dateStr;
+            }
+
             // 1. 주문자 정보 테이블
             const ordererTable = document.querySelector('.orderer-info-container table');
             if (ordererTable) {
@@ -3288,10 +3338,10 @@
          */
         function addPrintTitleColumn(table, titleText, titleClass) {
             const allRows = table.querySelectorAll('tr');
-            // no-print 행 제외한 실제 인쇄될 행 수 계산
+            // no-print 행 및 숨겨진 행 제외한 실제 인쇄될 행 수 계산
             let printableRows = [];
             allRows.forEach(row => {
-                if (!row.classList.contains('no-print')) {
+                if (!row.classList.contains('no-print') && row.style.display !== 'none') {
                     printableRows.push(row);
                 }
             });
@@ -3324,7 +3374,7 @@
             const allRows = table.querySelectorAll('tr');
             const printableRows = [];
             allRows.forEach(row => {
-                if (!row.classList.contains('no-print')) printableRows.push(row);
+                if (!row.classList.contains('no-print') && row.style.display !== 'none') printableRows.push(row);
             });
             if (printableRows.length === 0) return;
 
@@ -3411,6 +3461,12 @@
          * 인쇄 후: 추가한 타이틀 컬럼 제거 및 테이블 구조 복원
          */
         window.addEventListener('afterprint', function() {
+            // 페이지 타이틀 복원
+            if (document._origTitle) {
+                document.title = document._origTitle;
+                delete document._origTitle;
+            }
+
             // 주소 폰트 크기 복원
             restoreAddressFontSize();
 
@@ -3468,386 +3524,82 @@
 
         /**
          * 인쇄만 실행 (구글 폼 전송 없이)
-         * PC: window.print() → 브라우저 인쇄 미리보기 (PDF 저장 가능)
-         * 모바일: html2pdf.js로 PDF 직접 생성
+         * PC/모바일 모두 window.print() → 브라우저 인쇄 미리보기
+         * 인쇄 미리보기에서 "PDF로 저장" 선택 가능
          */
         function printOnly() {
             if (!validateAllInputs()) return;
-
-            if (isMobileDevice()) {
-                // 모바일: 인쇄 대화상자 대신 PDF로 생성
-                generatePDF();
-            } else {
-                // PC: 브라우저 인쇄 대화상자 (PDF로 저장 선택 가능)
-                window.print();
-            }
+            window.print();
         }
 
         /**
-         * PDF 저장 (인쇄 미리보기와 동일한 레이아웃)
-         * PC/모바일 모두 html2pdf.js로 PDF 직접 생성 후 다운로드
+         * 이미지로 저장 (html2canvas 캡쳐 방식)
+         * 화면에 보이는 그대로 캡쳐 → PNG 다운로드
+         * @media print CSS는 사용하지 않음 (축소 문제 방지)
          */
-        function savePDF() {
+        async function saveAsImage() {
             if (!validateAllInputs()) return;
-            generatePDF();
-        }
 
-        /**
-         * html2pdf.js를 사용하여 PDF 생성 (공통 로직)
-         * @media print CSS 규칙을 그대로 재현하여 인쇄 미리보기와 동일한 출력
-         */
-        function generatePDF() {
-            // html2pdf 라이브러리 로드 확인
-            if (typeof html2pdf === 'undefined') {
-                showAlert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.', 'warning');
-                var s = document.createElement('script');
-                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js';
-                document.head.appendChild(s);
-                return;
-            }
+            showAlert('이미지를 생성하고 있습니다... 잠시 기다려주세요.', 'info');
+            await new Promise(r => setTimeout(r, 300));
 
-            // 알림 메시지를 숨긴 뒤 PDF 생성 진행
-            var alertBox = document.getElementById('alertBox');
-            alertBox.style.display = 'none';
+            // 1. 파일명 생성
+            const ordererNameEl = document.getElementById('ordererName');
+            const ordererName = ordererNameEl ? ordererNameEl.value.trim() : '';
+            const now = new Date();
+            const dateStr = now.getFullYear().toString()
+                + String(now.getMonth() + 1).padStart(2, '0')
+                + String(now.getDate()).padStart(2, '0')
+                + String(now.getHours()).padStart(2, '0')
+                + String(now.getMinutes()).padStart(2, '0');
+            const fileName = ordererName
+                ? '주문서_' + ordererName + '_' + dateStr + '.png'
+                : '주문서_' + dateStr + '.png';
 
-            // input/select의 현재 value를 attribute에 반영 (html2canvas가 읽을 수 있도록)
-            document.querySelectorAll('input').forEach(function(input) {
-                input.setAttribute('value', input.value);
-            });
-            document.querySelectorAll('select').forEach(function(select) {
-                var options = select.querySelectorAll('option');
-                for (var i = 0; i < options.length; i++) {
-                    if (options[i].selected) options[i].setAttribute('selected', 'selected');
-                    else options[i].removeAttribute('selected');
-                }
-            });
+            // 2. 버튼, 알림 등 불필요한 요소 숨김
+            const noPrintEls = document.querySelectorAll('.no-print');
+            noPrintEls.forEach(el => { el.style.display = 'none'; });
+            const alertBox = document.getElementById('alertBox');
+            if (alertBox) alertBox.style.display = 'none';
 
-            // beforeprint와 동일한 인쇄 레이아웃 적용
-            applyPrintLayout();
-
-            var container = document.querySelector('.container');
-
-            // 컨테이너 원래 스타일 백업 & 고정 너비 적용 (모바일에서도 A4 비율 유지)
-            var origContainerStyle = container.getAttribute('style') || '';
-            container.style.width = '794px';
-            container.style.maxWidth = '794px';
-            container.style.margin = '0';
-            container.style.padding = '0';
+            // 3. 컨테이너 스타일 임시 조정 (그림자, 둥근모서리 제거)
+            const container = document.querySelector('.container');
+            const origStyle = container.style.cssText;
             container.style.boxShadow = 'none';
             container.style.borderRadius = '0';
+            container.style.background = 'white';
 
-            // @media print CSS 규칙을 그대로 재현하는 임시 스타일
-            var pdfStyle = document.createElement('style');
-            pdfStyle.id = 'pdf-temp-style';
-            pdfStyle.textContent = [
-                /* 알림 및 no-print 숨김 */
-                '#alertBox { display: none !important; }',
-                '.no-print { display: none !important; }',
+            // 4. 렌더링 대기 (1초)
+            await new Promise(r => setTimeout(r, 1000));
 
-                /* body */
-                'body { background: white !important; background-image: none !important; padding: 0; margin: 0; font-size: 9pt; overflow: hidden; }',
-
-                /* container */
-                '.container { box-shadow: none; max-width: 100%; width: 100%; padding: 0; margin: 0; border-radius: 0; }',
-
-                /* 헤더 */
-                '.header { padding: 6px; margin-bottom: 4px; border-radius: 0; background: #667eea !important; }',
-                '.header h1 { font-size: 20px; letter-spacing: 4px; }',
-
-                /* 상단 정보 */
-                '.top-info { padding: 4px 8px; margin-bottom: 4px; font-size: 8pt; border-radius: 0; background: #f8f9fa !important; }',
-                '.shop-info, .date-info { font-size: 8pt; }',
-
-                /* 주문자 정보 컨테이너 */
-                '.orderer-info-container { border: 2px solid #999; padding: 8px; padding-top: 5px; margin-bottom: 5px; border-radius: 5px; background: #f3e5f5 !important; position: relative; }',
-                '.orderer-info-container td, table.send-section td, table.receiver-section td, table.product-section td { background: white !important; }',
-
-                /* 배지 숨김 (인쇄 시 세로 타이틀 컬럼으로 대체) */
-                '.orderer-info-badge { display: none !important; }',
-
-                /* 섹션 헤더(타이틀 바) 숨김 */
-                '.section-header.send-section, .section-header.receiver-section, .section-header.product-section, .section-header.delivery-product-section, .section-header:not(.send-section):not(.receiver-section):not(.product-section):not(.delivery-product-section) { display: none !important; }',
-
-                /* 테이블 감싸는 div 스크롤 제거 */
-                '.table-responsive { overflow: visible !important; overflow-x: visible !important; overflow-y: visible !important; }',
-
-                /* 테이블 */
-                'table { margin-bottom: 3px; table-layout: auto; width: 100%; min-width: 0 !important; border-radius: 0; border-spacing: 0; border-collapse: collapse; }',
-
-                /* 섹션 */
-                '.order-section { border: 2px solid #999; padding: 8px; padding-top: 5px; margin-bottom: 5px; border-radius: 5px; background: #fff3e0 !important; position: relative; }',
-                '.section-number { position: static; display: inline-block; font-size: 12px; padding: 3px 8px; margin-bottom: 4px; border-radius: 10px; background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important; }',
-                '.section-delete-btn { display: none !important; }',
-
-                /* 배송 정보 헤더 */
-                '.section-number-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }',
-                '.section-number-row .delivery-date-area { position: static; }',
-                '.delivery-date-area label { color: #333; font-size: 10pt; font-weight: 700; }',
-                '.delivery-date { border: none; background: transparent; font-size: 10pt; font-weight: 700; padding: 0 2px; }',
-
-                /* th, td 기본 */
-                'th, td { border: 1px solid #666; padding: 1px 2px; font-size: 7pt; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.1; }',
-                'th { font-size: 7pt; padding-top: 0px; padding-bottom: 0px; white-space: nowrap; }',
-
-                /* 데이터행 글자 크기 통일 */
-                '.orderer-info-container table td, table.send-section td, table.receiver-section td, table.product-section td, table.delivery-product-section td { font-size: 10pt; }',
-                '.orderer-info-container table td input, table.send-section td input, table.receiver-section td input, table.product-section td input, table.delivery-product-section td input, table.delivery-product-section td select { font-size: 10pt; }',
-
-                /* 인적사항 테이블 행 높이 */
-                '.orderer-info-container table tr:first-child, table.send-section tr:first-child, table.receiver-section tr:first-child, table.delivery-product-section thead tr { height: 10px !important; }',
-                '.orderer-info-container table th, table.send-section th, table.receiver-section th, table.delivery-product-section th { height: 10px !important; padding-top: 4px !important; padding-bottom: 4px !important; line-height: 1.0; }',
-                '.orderer-info-container table tr:last-child, table.send-section tr:last-child, table.receiver-section tr:last-child, table.delivery-product-section tbody tr { height: 22px !important; }',
-                '.orderer-info-container table td, table.send-section td, table.receiver-section td, table.delivery-product-section td { height: 22px !important; }',
-                '.orderer-info-container table td input, table.send-section td input, table.receiver-section td input, table.delivery-product-section td input { height: 20px !important; max-height: 20px !important; }',
-
-                /* 상품 정보 테이블 행 높이 */
-                'table.product-section tbody tr { height: 16px !important; }',
-                'table.product-section td { height: 16px !important; padding-top: 0px !important; padding-bottom: 0px !important; }',
-                'table.product-section td input { height: 14px !important; max-height: 14px !important; }',
-
-                /* 인적사항 컬럼 너비 */
-                'th[style*="width: 90px"] { width: 80px !important; white-space: nowrap; }',
-                'th[style*="width: 150px"]:nth-child(3) { width: 120px !important; white-space: nowrap; }',
-                'th[style*="width: 150px"]:nth-child(4) { width: 80px !important; white-space: nowrap; }',
-
-                /* input 스타일 */
-                'input[type="text"], input[type="tel"], input[type="number"] { border: none !important; background: transparent !important; padding: 0 !important; margin: 0 !important; font-size: 10pt; line-height: 1.1 !important; height: 10pt !important; min-height: 0 !important; max-height: 10pt !important; box-sizing: border-box; width: 100%; -webkit-appearance: none; appearance: none; }',
-
-                /* 주소 필드 */
-                'td.address-field { display: table-cell !important; padding: 0 2px !important; }',
-                '.address-field input { display: inline-block !important; font-size: 10pt; vertical-align: middle; }',
-                '.address-field input[data-print-hidden] { display: none !important; }',
-                '.address-field input:first-child { width: 60% !important; margin-right: 10px !important; }',
-                '.address-field input:last-child { width: 33% !important; }',
-
-                /* 주소 span */
-                '.print-address-text.print-address-full { display: block !important; width: 100% !important; font-size: 10pt; line-height: 1.0; word-break: break-all; white-space: normal; padding: 0; margin: 0; }',
-
-                /* 총 금액 행 */
-                '.total-row td { font-size: 10pt; font-weight: bold; }',
-
-                /* 바코드 영역 */
-                '.barcode-row td.barcode-container { border: none !important; background: transparent !important; padding: 2px 0 !important; }',
-                '.barcode-slot img { height: 80px !important; width: auto !important; object-fit: contain !important; }',
-
-                /* 우편번호 검색 버튼 숨김 */
-                '.postal-search-btn { display: none; }',
-                '.postal-input-wrapper { display: block; }',
-
-                /* 상품 테이블 컬럼 너비 */
-                '.product-section th:nth-child(2) { width: 20px !important; }',
-                '.product-section th:nth-child(3) { width: 80px !important; }',
-                '.product-section th:nth-child(4) { width: auto !important; }',
-                '.product-section th:nth-child(5) { width: 80px !important; }',
-                '.product-section th:nth-child(6) { width: 70px !important; text-align: center !important; }',
-                '.product-section th:nth-child(7) { width: 80px !important; }',
-                '.product-section th:nth-child(8) { width: 90px !important; }',
-
-                /* 세로 타이틀 컬럼 */
-                '.print-title-cell { writing-mode: vertical-rl; text-orientation: mixed; text-align: center; font-weight: 700; font-size: 9pt; padding: 2px 4px !important; white-space: nowrap; letter-spacing: 2px; min-width: 20px; width: 20px !important; }',
-                '.print-title-cell.title-orderer { background: #9C27B0 !important; color: white; }',
-                '.print-title-cell.title-sender { background: #fb923c !important; color: white; font-size: 7pt; }',
-                '.print-title-cell.title-receiver { background: #a855f7 !important; color: white; font-size: 7pt; }',
-                '.print-title-cell.title-product { background: #22c55e !important; color: white; }',
-                '.print-title-cell.title-delivery-product { background: #14b8a6 !important; color: white; font-size: 7pt; }',
-
-                /* 배송 상품 콤보박스 */
-                '.delivery-product-code-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; border: none !important; background: transparent !important; }',
-
-                /* 수량 안내 메시지 숨김 */
-                '.quantity-mismatch-warning, .quantity-match-ok { display: none !important; }',
-
-                /* 배송 상품 테이블 컬럼 너비 */
-                '.delivery-product-section th:nth-child(2) { width: 20px !important; }',
-                '.delivery-product-section th:nth-child(3) { width: 80px !important; }',
-                '.delivery-product-section th:nth-child(4) { width: auto !important; }',
-                '.delivery-product-section th:nth-child(5) { width: 60px !important; }'
-            ].join('\n');
-            document.head.appendChild(pdfStyle);
-
-            // 파일명: 주문서_주문자명_날짜시간
-            var dateInfo = document.querySelector('.date-info');
-            var dateStr = dateInfo ? dateInfo.textContent.replace(/[^0-9]/g, '') : new Date().toISOString().slice(0,10).replace(/-/g,'');
-            var ordererNameVal = document.getElementById('ordererName').value.trim() || '주문서';
-            var fileName = '주문서_' + ordererNameVal + '_' + dateStr + '.pdf';
-
-            // 모바일 감지 - 저사양 기기에서는 scale 낮춤
-            var mobile = isMobileDevice();
-            var canvasScale = mobile ? 1.5 : 2;
-
-            // 바코드 이미지를 Base64 data URL로 변환 (tainted canvas 방지)
-            var imgs = container.querySelectorAll('.barcode-slot img');
-            var removedImgs = []; // 변환 실패 시 DOM에서 제거한 이미지 백업
-            imgs.forEach(function(img) {
-                if (img.src && !img.src.startsWith('data:')) {
-                    if (img.naturalWidth > 0) {
-                        try {
-                            var c = document.createElement('canvas');
-                            c.width = img.naturalWidth;
-                            c.height = img.naturalHeight;
-                            c.getContext('2d').drawImage(img, 0, 0);
-                            img.setAttribute('data-orig-src', img.src);
-                            img.src = c.toDataURL('image/jpeg', 0.95);
-                        } catch(e) {
-                            var parent = img.parentNode;
-                            removedImgs.push({ parent: parent, img: img, src: img.src });
-                            parent.removeChild(img);
-                        }
-                    } else {
-                        var parent = img.parentNode;
-                        removedImgs.push({ parent: parent, img: img, src: img.src });
-                        parent.removeChild(img);
-                    }
-                }
-            });
-
-            // PDF 정리(복원) 공통 함수
-            function cleanupPDF() {
-                var tempStyle = document.getElementById('pdf-temp-style');
-                if (tempStyle) tempStyle.remove();
-
-                if (origContainerStyle) container.setAttribute('style', origContainerStyle);
-                else container.removeAttribute('style');
-
-                container.querySelectorAll('.barcode-slot img[data-orig-src]').forEach(function(img) {
-                    img.src = img.getAttribute('data-orig-src');
-                    img.removeAttribute('data-orig-src');
+            // 5. html2canvas 캡쳐 (화면 그대로)
+            try {
+                const canvas = await html2canvas(container, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
                 });
 
-                removedImgs.forEach(function(item) {
-                    var newImg = document.createElement('img');
-                    newImg.src = item.src;
-                    newImg.onerror = function() { this.style.display = 'none'; };
-                    item.parent.appendChild(newImg);
-                });
+                // PNG 다운로드
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
-                removePrintLayout();
+                // 복원 후 성공 메시지
+                noPrintEls.forEach(el => { el.style.display = ''; });
+                container.style.cssText = origStyle;
+                showAlert('이미지가 저장되었습니다! (' + fileName + ')', 'success');
+            } catch(e) {
+                console.error('이미지 캡쳐 실패:', e);
+                // 복원
+                noPrintEls.forEach(el => { el.style.display = ''; });
+                container.style.cssText = origStyle;
+                showAlert('이미지 저장에 실패했습니다. 인쇄 버튼으로 PDF 저장을 이용해주세요.', 'error');
             }
-
-            // DOM 렌더링을 기다린 후 PDF 생성
-            setTimeout(function() {
-                var opt = {
-                    margin: [8, 3, 8, 3],
-                    filename: fileName,
-                    image: { type: 'jpeg', quality: 0.95 },
-                    html2canvas: {
-                        scale: canvasScale,
-                        allowTaint: false,
-                        useCORS: false,
-                        logging: false,
-                        windowWidth: 794
-                    },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-                };
-
-                // 모바일: Blob URL로 새 탭 열기 (다운로드가 안 되는 환경 대비)
-                if (mobile) {
-                    html2pdf().set(opt).from(container).outputPdf('blob').then(function(blob) {
-                        var url = URL.createObjectURL(blob);
-                        var a = document.createElement('a');
-                        a.href = url;
-                        a.download = fileName;
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        a.click();
-
-                        // iOS Safari 등에서 download 속성이 안 먹힐 수 있으므로 새 탭으로도 열기
-                        setTimeout(function() {
-                            window.open(url, '_blank');
-                            document.body.removeChild(a);
-                        }, 300);
-
-                        showAlert('PDF 파일이 생성되었습니다.', 'success');
-                    }).catch(function(e) {
-                        console.error('PDF 생성 오류:', e);
-                        showAlert('PDF 저장 중 오류가 발생했습니다: ' + e.message, 'error');
-                    }).then(function() {
-                        cleanupPDF();
-                    });
-                } else {
-                    // PC: 직접 다운로드
-                    html2pdf().set(opt).from(container).save().then(function() {
-                        showAlert('PDF 파일이 저장되었습니다.', 'success');
-                    }).catch(function(e) {
-                        console.error('PDF 생성 오류:', e);
-                        showAlert('PDF 저장 중 오류가 발생했습니다: ' + e.message, 'error');
-                    }).then(function() {
-                        cleanupPDF();
-                    });
-                }
-            }, 300);
-        }
-
-        /**
-         * 인쇄 레이아웃 적용 (beforeprint 핸들러와 동일)
-         */
-        function applyPrintLayout() {
-            const ordererTable = document.querySelector('.orderer-info-container table');
-            if (ordererTable) addPrintTitleColumn(ordererTable, '주문 정보', 'title-orderer');
-
-            const productTable = document.getElementById('productTable');
-            if (productTable) addProductPrintTitleColumn(productTable);
-
-            const sections = document.querySelectorAll('.order-section');
-            sections.forEach(section => {
-                const tableWrappers = section.querySelectorAll('.table-responsive');
-                if (tableWrappers[0]) {
-                    const senderTable = tableWrappers[0].querySelector('table');
-                    if (senderTable) addPrintTitleColumn(senderTable, '보내는 분', 'title-sender');
-                }
-                if (tableWrappers[1]) {
-                    const receiverTable = tableWrappers[1].querySelector('table');
-                    if (receiverTable) addPrintTitleColumn(receiverTable, '받는 분', 'title-receiver');
-                }
-                if (tableWrappers[2]) {
-                    const deliveryProductTable = tableWrappers[2].querySelector('table.delivery-product-section');
-                    if (deliveryProductTable) addDeliveryProductPrintTitleColumn(deliveryProductTable);
-                }
-            });
-
-            adjustAddressFontSize();
-        }
-
-        /**
-         * 인쇄 레이아웃 제거 (afterprint 핸들러와 동일)
-         */
-        function removePrintLayout() {
-            restoreAddressFontSize();
-
-            const titleCells = document.querySelectorAll('[data-print-title="true"]');
-            titleCells.forEach(cell => cell.remove());
-
-            const restructured = document.querySelectorAll('[data-print-restructured="true"]');
-            restructured.forEach(table => {
-                const orig = table._origStructure;
-                if (!orig) return;
-
-                const currentRows = Array.from(table.querySelectorAll(':scope > tr'));
-                currentRows.forEach(row => row.remove());
-
-                if (orig.thead) {
-                    orig.theadRows.forEach(row => orig.thead.appendChild(row));
-                    table.appendChild(orig.thead);
-                }
-                if (orig.tbody) {
-                    orig.tbodyRows.forEach(row => orig.tbody.appendChild(row));
-                    table.appendChild(orig.tbody);
-                }
-                if (orig.tfoot) {
-                    orig.tfootRows.forEach(row => orig.tfoot.appendChild(row));
-                    table.appendChild(orig.tfoot);
-                }
-
-                table.removeAttribute('data-print-restructured');
-                delete table._origStructure;
-
-                const rows = table.querySelectorAll('.product-row');
-                rows.forEach(row => {
-                    attachRowEventListeners(row);
-                    attachProductCodeFormatting(row);
-                });
-            });
         }
 
         /**
@@ -3875,13 +3627,8 @@
             const submitted = await submitToGoogleForm();
 
             if (submitted) {
-                if (isMobileDevice()) {
-                    // 모바일: PDF로 생성
-                    generatePDF();
-                } else {
-                    // PC: 인쇄 대화상자 표시
-                    window.print();
-                }
+                // PC/모바일 모두 브라우저 인쇄 대화상자 표시
+                window.print();
             }
         }
 
