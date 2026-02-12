@@ -3569,10 +3569,53 @@
             container.style.borderRadius = '0';
             container.style.background = 'white';
 
-            // 4. 렌더링 대기 (1초)
-            await new Promise(r => setTimeout(r, 1000));
+            // 4. input/select/textarea를 span으로 임시 교체 (html2canvas 텍스트 잘림 방지)
+            const replacedElements = [];
+            container.querySelectorAll('input, select, textarea').forEach(el => {
+                // 숨겨진 요소는 건너뜀
+                if (el.offsetParent === null && el.type !== 'hidden') return;
+                if (el.type === 'hidden') return;
 
-            // 5. html2canvas 캡쳐 (화면 그대로)
+                const span = document.createElement('span');
+                const styles = window.getComputedStyle(el);
+
+                // 원본 input의 스타일을 span에 복사
+                span.style.display = styles.display === 'none' ? 'none' : 'inline-block';
+                span.style.width = styles.width;
+                span.style.height = styles.height;
+                span.style.padding = styles.padding;
+                span.style.margin = styles.margin;
+                span.style.border = styles.border;
+                span.style.borderRadius = styles.borderRadius;
+                span.style.backgroundColor = styles.backgroundColor;
+                span.style.fontSize = styles.fontSize;
+                span.style.fontFamily = styles.fontFamily;
+                span.style.fontWeight = styles.fontWeight;
+                span.style.color = styles.color;
+                span.style.textAlign = styles.textAlign;
+                span.style.lineHeight = styles.height; // 세로 중앙 정렬
+                span.style.verticalAlign = 'middle';
+                span.style.overflow = 'hidden';
+                span.style.whiteSpace = 'nowrap';
+                span.style.boxSizing = 'border-box';
+
+                // 값 설정
+                if (el.tagName === 'SELECT') {
+                    span.textContent = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : '';
+                } else {
+                    span.textContent = el.value;
+                }
+
+                span.setAttribute('data-capture-replacement', 'true');
+                el.style.display = 'none';
+                el.parentNode.insertBefore(span, el.nextSibling);
+                replacedElements.push(el);
+            });
+
+            // 5. 렌더링 대기
+            await new Promise(r => setTimeout(r, 800));
+
+            // 6. html2canvas 캡쳐 (화면 그대로)
             try {
                 const canvas = await html2canvas(container, {
                     scale: 2,
@@ -3589,13 +3632,17 @@
                 link.click();
                 document.body.removeChild(link);
 
-                // 복원 후 성공 메시지
+                // 복원
+                replacedElements.forEach(el => { el.style.display = ''; });
+                container.querySelectorAll('[data-capture-replacement]').forEach(s => s.remove());
                 noPrintEls.forEach(el => { el.style.display = ''; });
                 container.style.cssText = origStyle;
                 showAlert('이미지가 저장되었습니다! (' + fileName + ')', 'success');
             } catch(e) {
                 console.error('이미지 캡쳐 실패:', e);
                 // 복원
+                replacedElements.forEach(el => { el.style.display = ''; });
+                container.querySelectorAll('[data-capture-replacement]').forEach(s => s.remove());
                 noPrintEls.forEach(el => { el.style.display = ''; });
                 container.style.cssText = origStyle;
                 showAlert('이미지 저장에 실패했습니다. 인쇄 버튼으로 PDF 저장을 이용해주세요.', 'error');
