@@ -3598,6 +3598,19 @@
                 });
             }
 
+            // 3-2. 이미지 캡쳐용 인적사항 테이블 컬럼 너비 조정
+            const origThWidths = [];
+            container.querySelectorAll('th[style*="width: 90px"]').forEach(th => {
+                origThWidths.push({ el: th, orig: th.style.width });
+                th.style.width = '80px';
+            });
+            container.querySelectorAll('th[style*="width: 150px"]').forEach(th => {
+                const text = th.textContent.trim();
+                origThWidths.push({ el: th, orig: th.style.width });
+                if (text === '전화번호') th.style.width = '140px';
+                else if (text === '우편번호') th.style.width = '70px';
+            });
+
             // 4. input/select/textarea를 span으로 임시 교체 (html2canvas 텍스트 잘림 방지)
             const replacedElements = [];
             container.querySelectorAll('input, select, textarea').forEach(el => {
@@ -3678,6 +3691,8 @@
                 container.querySelectorAll('[data-capture-replacement]').forEach(s => s.remove());
                 noPrintEls.forEach(el => { el.style.display = ''; });
                 container.style.cssText = origStyle;
+                // 인적사항 테이블 컬럼 너비 복원
+                origThWidths.forEach(({ el, orig }) => { el.style.width = orig; });
                 // 모바일 스타일 복원
                 if (isMobile) {
                     document.body.style.overflow = origBodyOverflow;
