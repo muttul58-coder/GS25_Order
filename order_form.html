@@ -658,7 +658,8 @@
                 border-radius: 0;
             }
 
-            .no-print {
+            .no-print,
+            .alert {
                 display: none !important;
             }
 
@@ -697,6 +698,13 @@
                 border-radius: 5px;
                 background: #f3e5f5 !important;
                 position: relative;
+            }
+
+            /* 인적사항 테이블(2행)은 페이지 중간에서 잘리지 않도록 */
+            .orderer-info-container > .table-responsive:first-of-type,
+            table.send-section,
+            table.receiver-section {
+                page-break-inside: avoid;
             }
 
             .orderer-info-container td,
@@ -968,11 +976,7 @@
             }
 
             /* 인쇄 시 섹션 헤더(타이틀 바) 숨김 - 테이블 첫 컬럼으로 대체 */
-            .section-header.send-section,
-            .section-header.receiver-section,
-            .section-header.product-section,
-            .section-header.delivery-product-section,
-            .section-header:not(.send-section):not(.receiver-section):not(.product-section):not(.delivery-product-section) {
+            .section-header {
                 display: none !important;
             }
 
@@ -1049,13 +1053,16 @@
                 font-size: 7pt;
             }
 
-            /* 인쇄 시 배송 상품 콤보박스 화살표 숨김 */
+            /* 인쇄 시 모든 select 요소 화살표 숨김 및 텍스트만 표시 */
+            select,
             .delivery-product-code-select {
                 -webkit-appearance: none;
                 -moz-appearance: none;
                 appearance: none;
                 border: none !important;
                 background: transparent !important;
+                font-size: 10pt;
+                padding: 0 !important;
             }
 
             /* 인쇄 시 수량 안내 메시지 숨김 */
@@ -1135,6 +1142,12 @@
             background-color: #f8d7da;
             color: #721c24;
             border: 2px solid #f5c6cb;
+        }
+
+        .alert.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
         }
 
         /* 구글 설문지 설정 패널 스타일 */
@@ -2736,7 +2749,7 @@
             const allRows = table.querySelectorAll('tr');
             const printableRows = [];
             allRows.forEach(row => {
-                if (!row.classList.contains('no-print')) printableRows.push(row);
+                if (!row.classList.contains('no-print') && row.style.display !== 'none') printableRows.push(row);
             });
             if (printableRows.length === 0) return;
 
@@ -3247,6 +3260,22 @@
          * 인쇄 전: 각 테이블 왼쪽에 세로 타이틀 컬럼 추가
          */
         window.addEventListener('beforeprint', function() {
+            // 0. PDF 파일명용 페이지 타이틀 변경 (주문서_성명_날짜시간)
+            const ordererNameEl = document.getElementById('ordererName');
+            const ordererName = ordererNameEl ? ordererNameEl.value.trim() : '';
+            const now = new Date();
+            const dateStr = now.getFullYear().toString()
+                + String(now.getMonth() + 1).padStart(2, '0')
+                + String(now.getDate()).padStart(2, '0')
+                + String(now.getHours()).padStart(2, '0')
+                + String(now.getMinutes()).padStart(2, '0');
+            document._origTitle = document.title;
+            if (ordererName) {
+                document.title = '주문서_' + ordererName + '_' + dateStr;
+            } else {
+                document.title = '주문서_' + dateStr;
+            }
+
             // 1. 주문자 정보 테이블
             const ordererTable = document.querySelector('.orderer-info-container table');
             if (ordererTable) {
@@ -3287,10 +3316,10 @@
          */
         function addPrintTitleColumn(table, titleText, titleClass) {
             const allRows = table.querySelectorAll('tr');
-            // no-print 행 제외한 실제 인쇄될 행 수 계산
+            // no-print 행 및 숨겨진 행 제외한 실제 인쇄될 행 수 계산
             let printableRows = [];
             allRows.forEach(row => {
-                if (!row.classList.contains('no-print')) {
+                if (!row.classList.contains('no-print') && row.style.display !== 'none') {
                     printableRows.push(row);
                 }
             });
@@ -3323,7 +3352,7 @@
             const allRows = table.querySelectorAll('tr');
             const printableRows = [];
             allRows.forEach(row => {
-                if (!row.classList.contains('no-print')) printableRows.push(row);
+                if (!row.classList.contains('no-print') && row.style.display !== 'none') printableRows.push(row);
             });
             if (printableRows.length === 0) return;
 
@@ -3410,6 +3439,12 @@
          * 인쇄 후: 추가한 타이틀 컬럼 제거 및 테이블 구조 복원
          */
         window.addEventListener('afterprint', function() {
+            // 페이지 타이틀 복원
+            if (document._origTitle) {
+                document.title = document._origTitle;
+                delete document._origTitle;
+            }
+
             // 주소 폰트 크기 복원
             restoreAddressFontSize();
 
@@ -3489,10 +3524,13 @@
                 showAlert('인쇄 대화상자에서 대상을 "PDF로 저장"으로 선택하세요.', 'info');
             }
 
-            // 짧은 딜레이 후 인쇄 대화상자 표시 (안내 메시지가 보인 후)
+            // 짧은 딜레이 후 알림 숨기고 인쇄 대화상자 표시
             setTimeout(function() {
+                // 알림이 인쇄 미리보기에 표시되지 않도록 숨김
+                const alertBox = document.getElementById('alertBox');
+                if (alertBox) alertBox.style.display = 'none';
                 window.print();
-            }, 500);
+            }, 1500);
         }
 
         /**
