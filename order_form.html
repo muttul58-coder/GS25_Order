@@ -1422,6 +1422,8 @@
     <script src="products.js"></script>
     <!-- 구글 폼 설정 파일 - config.js 파일이 같은 폴더에 있어야 합니다 -->
     <script src="config.js"></script>
+    <!-- 이미지 캡쳐용 html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1716,7 +1718,7 @@
         <div class="button-container no-print">
             <button type="button" class="add-section-btn" onclick="addSection()">➕ 배송 정보 추가</button>
             <button type="button" class="print-only-btn" onclick="printOnly()">🖨️ 인쇄</button>
-            <button type="button" class="pdf-btn" onclick="savePDF()">📄 PDF 저장</button>
+            <button type="button" class="pdf-btn" onclick="saveAsImage()">📷 이미지 저장</button>
             <button type="button" class="submit-only-btn" onclick="submitOnly()">📤 주문 전송</button>
             <button type="button" class="print-btn" onclick="printOrder()">🖨️ 인쇄 및 주문 전송</button>
         </div>
@@ -3531,26 +3533,172 @@
         }
 
         /**
-         * PDF 저장 (인쇄 미리보기와 동일한 레이아웃)
-         * 브라우저의 인쇄 엔진을 활용하여 @media print CSS 그대로 적용
-         * 인쇄 대화상자에서 대상을 "PDF로 저장"으로 선택하면 PDF 파일 생성
+         * 이미지로 저장 (html2canvas 캡쳐 방식)
+         * @media print CSS를 화면에 적용 → html2canvas 캡쳐 → PNG 다운로드
          */
-        function savePDF() {
+        async function saveAsImage() {
             if (!validateAllInputs()) return;
 
-            if (isMobileDevice()) {
-                showAlert('인쇄 화면에서 "PDF로 저장" 또는 공유 버튼을 눌러 PDF로 저장하세요.', 'info');
-            } else {
-                showAlert('인쇄 대화상자에서 대상을 "PDF로 저장"으로 선택하세요.', 'info');
+            showAlert('이미지를 생성하고 있습니다...', 'info');
+
+            // 잠시 대기 (안내 메시지 표시)
+            await new Promise(r => setTimeout(r, 500));
+
+            // 1. @media print CSS 규칙을 추출하여 화면에도 적용
+            let printCSS = '';
+            try {
+                for (const sheet of document.styleSheets) {
+                    try {
+                        for (const rule of sheet.cssRules) {
+                            if (rule instanceof CSSMediaRule && rule.media.mediaText === 'print') {
+                                for (const innerRule of rule.cssRules) {
+                                    printCSS += innerRule.cssText + '\n';
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                }
+            } catch(e) {}
+
+            const tempStyle = document.createElement('style');
+            tempStyle.id = 'capture-print-styles';
+            tempStyle.textContent = printCSS;
+            document.head.appendChild(tempStyle);
+
+            // 2. 파일명 생성 (주문서_성명_날짜시간)
+            const ordererNameEl = document.getElementById('ordererName');
+            const ordererName = ordererNameEl ? ordererNameEl.value.trim() : '';
+            const now = new Date();
+            const dateStr = now.getFullYear().toString()
+                + String(now.getMonth() + 1).padStart(2, '0')
+                + String(now.getDate()).padStart(2, '0')
+                + String(now.getHours()).padStart(2, '0')
+                + String(now.getMinutes()).padStart(2, '0');
+            const fileName = ordererName
+                ? '주문서_' + ordererName + '_' + dateStr + '.png'
+                : '주문서_' + dateStr + '.png';
+
+            // 3. beforeprint와 동일한 레이아웃 적용
+            const ordererTable = document.querySelector('.orderer-info-container table');
+            if (ordererTable) addPrintTitleColumn(ordererTable, '주문 정보', 'title-orderer');
+
+            const productTable = document.getElementById('productTable');
+            if (productTable) addProductPrintTitleColumn(productTable);
+
+            const sections = document.querySelectorAll('.order-section');
+            sections.forEach(section => {
+                const tableWrappers = section.querySelectorAll('.table-responsive');
+                if (tableWrappers[0]) {
+                    const senderTable = tableWrappers[0].querySelector('table');
+                    if (senderTable) addPrintTitleColumn(senderTable, '보내는 분', 'title-sender');
+                }
+                if (tableWrappers[1]) {
+                    const receiverTable = tableWrappers[1].querySelector('table');
+                    if (receiverTable) addPrintTitleColumn(receiverTable, '받는 분', 'title-receiver');
+                }
+                if (tableWrappers[2]) {
+                    const deliveryProductTable = tableWrappers[2].querySelector('table.delivery-product-section');
+                    if (deliveryProductTable) addDeliveryProductPrintTitleColumn(deliveryProductTable);
+                }
+            });
+
+            adjustAddressFontSize();
+
+            // 4. no-print 요소 숨김
+            const noPrintEls = document.querySelectorAll('.no-print');
+            noPrintEls.forEach(el => { el.style.display = 'none'; });
+
+            // 알림도 숨김
+            const alertBox = document.getElementById('alertBox');
+            if (alertBox) alertBox.style.display = 'none';
+
+            // 5. 컨테이너를 A4 너비로 설정
+            const container = document.querySelector('.container');
+            const origStyle = container.style.cssText;
+            container.style.width = '794px';
+            container.style.maxWidth = '794px';
+            container.style.padding = '10px';
+            container.style.margin = '0';
+            container.style.boxShadow = 'none';
+            container.style.borderRadius = '0';
+            container.style.background = 'white';
+
+            // 6. 렌더링 대기 (1초)
+            await new Promise(r => setTimeout(r, 1000));
+
+            // 7. html2canvas 캡쳐
+            try {
+                const canvas = await html2canvas(container, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: 794,
+                    windowWidth: 794
+                });
+
+                // PNG 다운로드
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch(e) {
+                console.error('이미지 캡쳐 실패:', e);
+                // 캡쳐 실패 시 인쇄로 대체
+                alert('이미지 저장에 실패했습니다.\n인쇄 버튼을 사용하여 PDF로 저장해주세요.');
             }
 
-            // 짧은 딜레이 후 알림 숨기고 인쇄 대화상자 표시
-            setTimeout(function() {
-                // 알림이 인쇄 미리보기에 표시되지 않도록 숨김
-                const alertBox = document.getElementById('alertBox');
-                if (alertBox) alertBox.style.display = 'none';
-                window.print();
-            }, 1500);
+            // 8. 정리: 모든 변경 사항 원복
+            // temp style 제거
+            const tempEl = document.getElementById('capture-print-styles');
+            if (tempEl) tempEl.remove();
+
+            // 주소 복원
+            restoreAddressFontSize();
+
+            // 타이틀 셀 제거
+            document.querySelectorAll('[data-print-title="true"]').forEach(cell => cell.remove());
+
+            // 테이블 구조 복원
+            document.querySelectorAll('[data-print-restructured="true"]').forEach(table => {
+                const orig = table._origStructure;
+                if (!orig) return;
+
+                const currentRows = Array.from(table.querySelectorAll(':scope > tr'));
+                currentRows.forEach(row => row.remove());
+
+                if (orig.thead) {
+                    orig.theadRows.forEach(row => orig.thead.appendChild(row));
+                    table.appendChild(orig.thead);
+                }
+                if (orig.tbody) {
+                    orig.tbodyRows.forEach(row => orig.tbody.appendChild(row));
+                    table.appendChild(orig.tbody);
+                }
+                if (orig.tfoot) {
+                    orig.tfootRows.forEach(row => orig.tfoot.appendChild(row));
+                    table.appendChild(orig.tfoot);
+                }
+
+                table.removeAttribute('data-print-restructured');
+                delete table._origStructure;
+
+                const rows = table.querySelectorAll('.product-row');
+                rows.forEach(row => {
+                    attachRowEventListeners(row);
+                    attachProductCodeFormatting(row);
+                });
+            });
+
+            // no-print 요소 복원
+            noPrintEls.forEach(el => { el.style.display = ''; });
+
+            // 컨테이너 스타일 복원
+            container.style.cssText = origStyle;
+
+            showAlert('이미지가 저장되었습니다!', 'success');
         }
 
         /**
