@@ -3534,38 +3534,16 @@
 
         /**
          * 이미지로 저장 (html2canvas 캡쳐 방식)
-         * @media print CSS를 화면에 적용 → html2canvas 캡쳐 → PNG 다운로드
+         * 화면에 보이는 그대로 캡쳐 → PNG 다운로드
+         * @media print CSS는 사용하지 않음 (축소 문제 방지)
          */
         async function saveAsImage() {
             if (!validateAllInputs()) return;
 
-            showAlert('이미지를 생성하고 있습니다...', 'info');
+            showAlert('이미지를 생성하고 있습니다... 잠시 기다려주세요.', 'info');
+            await new Promise(r => setTimeout(r, 300));
 
-            // 잠시 대기 (안내 메시지 표시)
-            await new Promise(r => setTimeout(r, 500));
-
-            // 1. @media print CSS 규칙을 추출하여 화면에도 적용
-            let printCSS = '';
-            try {
-                for (const sheet of document.styleSheets) {
-                    try {
-                        for (const rule of sheet.cssRules) {
-                            if (rule instanceof CSSMediaRule && rule.media.mediaText === 'print') {
-                                for (const innerRule of rule.cssRules) {
-                                    printCSS += innerRule.cssText + '\n';
-                                }
-                            }
-                        }
-                    } catch(e) {}
-                }
-            } catch(e) {}
-
-            const tempStyle = document.createElement('style');
-            tempStyle.id = 'capture-print-styles';
-            tempStyle.textContent = printCSS;
-            document.head.appendChild(tempStyle);
-
-            // 2. 파일명 생성 (주문서_성명_날짜시간)
+            // 1. 파일명 생성
             const ordererNameEl = document.getElementById('ordererName');
             const ordererName = ordererNameEl ? ordererNameEl.value.trim() : '';
             const now = new Date();
@@ -3578,63 +3556,29 @@
                 ? '주문서_' + ordererName + '_' + dateStr + '.png'
                 : '주문서_' + dateStr + '.png';
 
-            // 3. beforeprint와 동일한 레이아웃 적용
-            const ordererTable = document.querySelector('.orderer-info-container table');
-            if (ordererTable) addPrintTitleColumn(ordererTable, '주문 정보', 'title-orderer');
-
-            const productTable = document.getElementById('productTable');
-            if (productTable) addProductPrintTitleColumn(productTable);
-
-            const sections = document.querySelectorAll('.order-section');
-            sections.forEach(section => {
-                const tableWrappers = section.querySelectorAll('.table-responsive');
-                if (tableWrappers[0]) {
-                    const senderTable = tableWrappers[0].querySelector('table');
-                    if (senderTable) addPrintTitleColumn(senderTable, '보내는 분', 'title-sender');
-                }
-                if (tableWrappers[1]) {
-                    const receiverTable = tableWrappers[1].querySelector('table');
-                    if (receiverTable) addPrintTitleColumn(receiverTable, '받는 분', 'title-receiver');
-                }
-                if (tableWrappers[2]) {
-                    const deliveryProductTable = tableWrappers[2].querySelector('table.delivery-product-section');
-                    if (deliveryProductTable) addDeliveryProductPrintTitleColumn(deliveryProductTable);
-                }
-            });
-
-            adjustAddressFontSize();
-
-            // 4. no-print 요소 숨김
+            // 2. 버튼, 알림 등 불필요한 요소 숨김
             const noPrintEls = document.querySelectorAll('.no-print');
             noPrintEls.forEach(el => { el.style.display = 'none'; });
-
-            // 알림도 숨김
             const alertBox = document.getElementById('alertBox');
             if (alertBox) alertBox.style.display = 'none';
 
-            // 5. 컨테이너를 A4 너비로 설정
+            // 3. 컨테이너 스타일 임시 조정 (그림자, 둥근모서리 제거)
             const container = document.querySelector('.container');
             const origStyle = container.style.cssText;
-            container.style.width = '794px';
-            container.style.maxWidth = '794px';
-            container.style.padding = '10px';
-            container.style.margin = '0';
             container.style.boxShadow = 'none';
             container.style.borderRadius = '0';
             container.style.background = 'white';
 
-            // 6. 렌더링 대기 (1초)
+            // 4. 렌더링 대기 (1초)
             await new Promise(r => setTimeout(r, 1000));
 
-            // 7. html2canvas 캡쳐
+            // 5. html2canvas 캡쳐 (화면 그대로)
             try {
                 const canvas = await html2canvas(container, {
                     scale: 2,
                     useCORS: true,
                     allowTaint: true,
-                    backgroundColor: '#ffffff',
-                    width: 794,
-                    windowWidth: 794
+                    backgroundColor: '#ffffff'
                 });
 
                 // PNG 다운로드
@@ -3644,61 +3588,18 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+
+                // 복원 후 성공 메시지
+                noPrintEls.forEach(el => { el.style.display = ''; });
+                container.style.cssText = origStyle;
+                showAlert('이미지가 저장되었습니다! (' + fileName + ')', 'success');
             } catch(e) {
                 console.error('이미지 캡쳐 실패:', e);
-                // 캡쳐 실패 시 인쇄로 대체
-                alert('이미지 저장에 실패했습니다.\n인쇄 버튼을 사용하여 PDF로 저장해주세요.');
+                // 복원
+                noPrintEls.forEach(el => { el.style.display = ''; });
+                container.style.cssText = origStyle;
+                showAlert('이미지 저장에 실패했습니다. 인쇄 버튼으로 PDF 저장을 이용해주세요.', 'error');
             }
-
-            // 8. 정리: 모든 변경 사항 원복
-            // temp style 제거
-            const tempEl = document.getElementById('capture-print-styles');
-            if (tempEl) tempEl.remove();
-
-            // 주소 복원
-            restoreAddressFontSize();
-
-            // 타이틀 셀 제거
-            document.querySelectorAll('[data-print-title="true"]').forEach(cell => cell.remove());
-
-            // 테이블 구조 복원
-            document.querySelectorAll('[data-print-restructured="true"]').forEach(table => {
-                const orig = table._origStructure;
-                if (!orig) return;
-
-                const currentRows = Array.from(table.querySelectorAll(':scope > tr'));
-                currentRows.forEach(row => row.remove());
-
-                if (orig.thead) {
-                    orig.theadRows.forEach(row => orig.thead.appendChild(row));
-                    table.appendChild(orig.thead);
-                }
-                if (orig.tbody) {
-                    orig.tbodyRows.forEach(row => orig.tbody.appendChild(row));
-                    table.appendChild(orig.tbody);
-                }
-                if (orig.tfoot) {
-                    orig.tfootRows.forEach(row => orig.tfoot.appendChild(row));
-                    table.appendChild(orig.tfoot);
-                }
-
-                table.removeAttribute('data-print-restructured');
-                delete table._origStructure;
-
-                const rows = table.querySelectorAll('.product-row');
-                rows.forEach(row => {
-                    attachRowEventListeners(row);
-                    attachProductCodeFormatting(row);
-                });
-            });
-
-            // no-print 요소 복원
-            noPrintEls.forEach(el => { el.style.display = ''; });
-
-            // 컨테이너 스타일 복원
-            container.style.cssText = origStyle;
-
-            showAlert('이미지가 저장되었습니다!', 'success');
         }
 
         /**
