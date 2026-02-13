@@ -1,13 +1,4 @@
 // ========================================
-// 우편번호 숫자만 입력 허용
-// ========================================
-document.addEventListener('input', function(e) {
-    if (e.target.matches('#ordererPostal, .sender-postal, .receiver-postal')) {
-        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-    }
-});
-
-// ========================================
 // 우편번호 검색 함수
 // ========================================
 

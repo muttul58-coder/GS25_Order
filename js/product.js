@@ -1,0 +1,643 @@
+// ========================================
+// 상품 데이터 관리 함수
+// ========================================
+
+/**
+ * 상품 데이터 로드 상태 확인 및 표시
+ */
+function checkProductsDataLoaded() {
+    const statusDiv = document.getElementById('productDataStatus');
+    const statusText = document.getElementById('productDataStatusText');
+
+    if (!statusDiv || !statusText) {
+        // 설정 패널이 제거된 경우 콘솔 로그만 출력
+        if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA) {
+            console.log('상품 데이터 로드 완료:', PRODUCTS_DATA);
+            return true;
+        }
+        return false;
+    }
+
+    if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA) {
+        const productCount = Object.keys(PRODUCTS_DATA).length;
+        statusDiv.style.backgroundColor = '#d4edda';
+        statusDiv.style.border = '2px solid #c3e6cb';
+        statusText.innerHTML = `✅ <strong>products.js</strong> 로드 완료 (상품 <strong>${productCount}</strong>개)`;
+        console.log('상품 데이터 로드 완료:', PRODUCTS_DATA);
+        showAlert(`✅ 상품 데이터가 성공적으로 로드되었습니다! (상품 ${productCount}개)`, 'success');
+        return true;
+    } else {
+        statusDiv.style.backgroundColor = '#ffebee';
+        statusDiv.style.border = '2px solid #f44336';
+        statusText.innerHTML = '❌ <strong>products.js</strong> 파일을 찾을 수 없습니다. HTML 파일과 같은 폴더에 있는지 확인해주세요.';
+        console.error('products.js 파일이 로드되지 않았습니다.');
+        showAlert('⚠️ products.js 파일을 HTML 파일과 같은 폴더에 위치시켜주세요.', 'error');
+        return false;
+    }
+}
+
+/**
+ * 상품 코드로 상품 정보 검색
+ * @param {string} code - 상품 코드 (예: "08-01")
+ * @returns {Object|null} - 상품 정보 또는 null
+ */
+function getProductInfo(code) {
+    if (typeof PRODUCTS_DATA === 'undefined' || !PRODUCTS_DATA) {
+        return null;
+    }
+    return PRODUCTS_DATA[code] || null;
+}
+
+// ========================================
+// 상품 행 관리 함수
+// ========================================
+
+/**
+ * 섹션 내에 새로운 상품 행 추가
+ */
+function addProductRow() {
+    const tbody = document.getElementById('productTableBody');
+    const rows = tbody.querySelectorAll('.product-row');
+
+    // 현재 마지막 행이 완료되었는지 확인
+    if (rows.length > 0) {
+        const lastRow = rows[rows.length - 1];
+        const productCode = lastRow.querySelector('.product-code');
+        const quantity = lastRow.querySelector('.quantity');
+        const unitPrice = lastRow.querySelector('.unit-price');
+
+        if (!productCode.value.trim()) {
+            productCode.focus();
+            productCode.classList.add('error');
+            showAlert('⚠️ 현재 상품의 코드를 먼저 입력해주세요.', 'warning');
+            setTimeout(() => productCode.classList.remove('error'), 3000);
+            return;
+        }
+        if (!quantity.value || parseInt(quantity.value) <= 0) {
+            quantity.focus();
+            quantity.classList.add('error');
+            showAlert('⚠️ 현재 상품의 수량을 먼저 입력해주세요.', 'warning');
+            setTimeout(() => quantity.classList.remove('error'), 3000);
+            return;
+        }
+        if (!unitPrice.value || parseInt(unitPrice.value) <= 0) {
+            unitPrice.focus();
+            unitPrice.classList.add('error');
+            showAlert('⚠️ 현재 상품의 단가를 먼저 입력해주세요.', 'warning');
+            setTimeout(() => unitPrice.classList.remove('error'), 3000);
+            return;
+        }
+    }
+
+    const nextRowNumber = rows.length + 1;
+
+    // 새 행 생성
+    const newRow = document.createElement('tr');
+    newRow.className = 'product-row';
+    newRow.setAttribute('data-row', nextRowNumber);
+
+    // 행 HTML 구조 생성
+    newRow.innerHTML = `
+        <td class="row-number">${nextRowNumber}</td>
+        <td><input type="text" class="product-code" placeholder="00-00" required></td>
+        <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
+        <td>
+            <select class="event-type">
+                <option value="">없음</option>
+                <option value="1+1">1+1</option>
+                <option value="2+1">2+1</option>
+                <option value="3+1">3+1</option>
+                <option value="4+1">4+1</option>
+                <option value="5+1">5+1</option>
+                <option value="6+1">6+1</option>
+                <option value="7+1">7+1</option>
+                <option value="8+1">8+1</option>
+                <option value="9+1">9+1</option>
+                <option value="10+1">10+1</option>
+                <option value="11+1">11+1</option>
+                <option value="12+1">12+1</option>
+                <option value="13+1">13+1</option>
+                <option value="14+1">14+1</option>
+                <option value="15+1">15+1</option>
+                <option value="16+1">16+1</option>
+                <option value="17+1">17+1</option>
+                <option value="18+1">18+1</option>
+                <option value="19+1">19+1</option>
+                <option value="20+1">20+1</option>
+            </select>
+        </td>
+        <td><input type="number" class="quantity" value="0" min="0" required></td>
+        <td><input type="text" class="unit-price" value="0" required></td>
+        <td><input type="text" class="total-price" value="0" readonly></td>
+        <td class="no-print">
+            <div class="action-buttons">
+                <button type="button" class="remove-btn" onclick="removeProductRow(this)">삭제</button>
+            </div>
+        </td>
+    `;
+
+    // tbody에 새 행 추가
+    tbody.appendChild(newRow);
+
+    // 새로 추가된 행에 이벤트 리스너 및 포맷팅 적용
+    attachRowEventListeners(newRow);
+    attachProductCodeFormatting(newRow);
+
+    // 합계 업데이트
+    updateProductTotals();
+
+    // 배송 상품 콤보박스 동기화
+    refreshAllDeliveryProductSelects();
+    // 바코드 이미지 업데이트
+    updateBarcodeImages();
+
+    showAlert('✅ 새로운 상품 행이 추가되었습니다.', 'success');
+
+    // 상품코드 필드에 포커스
+    const newProductCode = newRow.querySelector('.product-code');
+    if (newProductCode) {
+        setTimeout(() => newProductCode.focus(), 50);
+    }
+}
+
+/**
+ * 상품 행 삭제
+ * @param {HTMLElement} button - 삭제 버튼 요소
+ */
+function removeProductRow(button) {
+    const tbody = document.getElementById('productTableBody');
+    const rows = tbody.querySelectorAll('.product-row');
+
+    // 최소 1개의 행은 유지해야 함
+    if (rows.length <= 1) {
+        showAlert('⚠️ 최소 1개의 상품은 있어야 합니다.', 'warning');
+        return;
+    }
+
+    const row = button.closest('.product-row');
+    row.remove();
+
+    // 행 번호 재정렬
+    renumberProductRows();
+
+    // 합계 업데이트
+    updateProductTotals();
+
+    // 배송 상품 콤보박스 동기화
+    refreshAllDeliveryProductSelects();
+    // 바코드 이미지 업데이트
+    updateBarcodeImages();
+
+    showAlert('✅ 상품 행이 삭제되었습니다.', 'success');
+}
+
+/**
+ * 상품 테이블 내 모든 행의 번호를 재정렬
+ */
+function renumberProductRows() {
+    const tbody = document.getElementById('productTableBody');
+    const rows = tbody.querySelectorAll('.product-row');
+    rows.forEach((row, index) => {
+        const rowNumber = row.querySelector('.row-number');
+        if (rowNumber) {
+            rowNumber.textContent = index + 1;
+        }
+        row.setAttribute('data-row', index + 1);
+    });
+}
+
+/**
+ * 주문 상품 테이블에서 유효한 상품 목록 추출 (수량 포함)
+ * @returns {Array} - [{code, name, qty}, ...]
+ */
+function getOrderProductList() {
+    const rows = document.getElementById('productTableBody').querySelectorAll('.product-row');
+    const list = [];
+    rows.forEach(row => {
+        const code = row.querySelector('.product-code').value.trim();
+        const name = row.querySelector('.product-name').value.trim();
+        const qty = parseInt(row.querySelector('.quantity').value) || 0;
+        if (code && name) {
+            list.push({ code, name, qty });
+        }
+    });
+    return list;
+}
+
+// ========================================
+// 이벤트 리스너 및 계산 함수
+// ========================================
+
+/**
+ * 상품 행에 이벤트 리스너 추가 (수량, 단가 변경 시 금액 자동 계산)
+ * @param {HTMLElement} row - 대상 행 요소
+ */
+function attachRowEventListeners(row) {
+    const quantity = row.querySelector('.quantity');
+    const unitPrice = row.querySelector('.unit-price');
+    const eventType = row.querySelector('.event-type');
+
+    // 수량 변경 시 금액 재계산 및 배송 수량 검증
+    quantity.addEventListener('input', () => {
+        calculateRowTotal(row);
+        validateDeliveryQuantities();
+    });
+
+    // 행사 변경 시 금액 재계산
+    if (eventType) {
+        eventType.addEventListener('change', () => calculateRowTotal(row));
+    }
+
+    // 단가 입력 시 천단위 쉼표 자동 포맷팅 및 금액 재계산
+    unitPrice.addEventListener('input', function() {
+        // 현재 커서 위치 저장
+        let cursorPosition = this.selectionStart;
+        const oldValue = this.value;
+        const oldLength = oldValue.length;
+
+        // 숫자만 추출
+        const numbersOnly = oldValue.replace(/[^\d]/g, '');
+
+        // 빈 값이면 그대로 유지
+        if (!numbersOnly) {
+            this.value = '';
+            calculateRowTotal(row);
+            return;
+        }
+
+        // 천단위 쉼표 적용
+        const formatted = formatNumberWithCommas(parseInt(numbersOnly));
+        this.value = formatted;
+
+        // 커서 위치 조정 (쉼표가 추가되면 커서가 이동하므로 조정 필요)
+        const newLength = formatted.length;
+        const diff = newLength - oldLength;
+        this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+
+        // 금액 재계산
+        calculateRowTotal(row);
+    });
+
+    // 단가 필드에서 포커스가 벗어날 때도 포맷팅 확인
+    unitPrice.addEventListener('blur', function() {
+        const value = this.value.replace(/,/g, '');
+        if (value) {
+            this.value = formatNumberWithCommas(parseInt(value));
+        }
+    });
+}
+
+/**
+ * 개별 행의 금액 계산 (수량 × 단가)
+ * @param {HTMLElement} row - 대상 행 요소
+ */
+function calculateRowTotal(row) {
+    const quantityInput = row.querySelector('.quantity');
+    const unitPriceInput = row.querySelector('.unit-price');
+    const totalPriceInput = row.querySelector('.total-price');
+    const eventTypeSelect = row.querySelector('.event-type');
+
+    const quantity = parseInt(quantityInput.value) || 0;
+    const unitPrice = parseFormattedNumber(unitPriceInput.value) || 0;
+    const eventValue = eventTypeSelect ? eventTypeSelect.value : '';
+
+    let total = 0;
+
+    if (eventValue && quantity > 0 && unitPrice > 0) {
+        // 행사 적용: "N+1" → (N+1)개 묶음당 N개만 결제
+        const n = parseInt(eventValue.split('+')[0]);
+        const bundleSize = n + 1;       // 묶음 크기 (예: 2+1 → 3개)
+        const bundles = Math.floor(quantity / bundleSize); // 완성된 묶음 수
+        const remainder = quantity % bundleSize;           // 나머지 개수
+        const paidQuantity = (bundles * n) + remainder;    // 실제 결제 수량
+        total = paidQuantity * unitPrice;
+    } else {
+        total = quantity * unitPrice;
+    }
+
+    // 금액 필드에 천단위 쉼표가 포함된 값 설정
+    totalPriceInput.value = formatNumberWithCommas(total);
+
+    // 합계 업데이트
+    updateProductTotals();
+}
+
+/**
+ * 상품 테이블의 총 수량과 총 금액 계산 및 업데이트
+ */
+function updateProductTotals() {
+    const tbody = document.getElementById('productTableBody');
+    const rows = tbody.querySelectorAll('.product-row');
+    let totalQuantity = 0;
+    let grandTotal = 0;
+
+    // 모든 행의 수량과 금액을 합산
+    rows.forEach(row => {
+        const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+        const totalPriceValue = row.querySelector('.total-price').value;
+        const totalPrice = parseFormattedNumber(totalPriceValue) || 0;
+
+        totalQuantity += quantity;
+        grandTotal += totalPrice;
+    });
+
+    // 합계 필드 업데이트 (천단위 쉼표 포함)
+    const totalQuantityEl = document.getElementById('totalQuantity');
+    const grandTotalEl = document.getElementById('totalAmount');
+
+    if (totalQuantityEl) totalQuantityEl.textContent = totalQuantity;
+    if (grandTotalEl) grandTotalEl.textContent = formatNumberWithCommas(grandTotal);
+}
+
+/**
+ * 바코드 이미지 영역 업데이트
+ * 상품 행의 상품코드를 수집하여 바코드 이미지를 표시
+ */
+function updateBarcodeImages() {
+    const tbody = document.getElementById('productTableBody');
+    const rows = tbody.querySelectorAll('.product-row');
+    const row1 = document.querySelector('.barcode-row-1 .barcode-grid');
+    const row2 = document.querySelector('.barcode-row-2 .barcode-grid');
+    const row3 = document.querySelector('.barcode-row-3 .barcode-grid');
+    const row2Tr = document.querySelector('.barcode-row-2');
+    const row3Tr = document.querySelector('.barcode-row-3');
+
+    if (!row1 || !row2 || !row3) return;
+
+    // 유효한 상품코드 수집
+    const codes = [];
+    rows.forEach(row => {
+        const code = row.querySelector('.product-code').value.trim();
+        if (code && code.includes('-')) {
+            codes.push(code);
+        }
+    });
+
+    // 1줄 슬롯 (0~3)
+    const slots1 = row1.querySelectorAll('.barcode-slot');
+    // 2줄 슬롯 (4~7)
+    const slots2 = row2.querySelectorAll('.barcode-slot');
+    // 3줄 슬롯 (8~11)
+    const slots3 = row3.querySelectorAll('.barcode-slot');
+
+    // 1줄 업데이트
+    slots1.forEach((slot, i) => {
+        slot.innerHTML = '';
+        if (codes[i]) {
+            const img = document.createElement('img');
+            img.src = 'BarcodeImgs/' + codes[i] + '.jpg';
+            img.alt = codes[i];
+            img.onerror = function () { this.style.display = 'none'; };
+            slot.appendChild(img);
+        }
+    });
+
+    // 2줄 업데이트
+    let hasRow2 = false;
+    slots2.forEach((slot, i) => {
+        slot.innerHTML = '';
+        const idx = i + 4;
+        if (codes[idx]) {
+            const img = document.createElement('img');
+            img.src = 'BarcodeImgs/' + codes[idx] + '.jpg';
+            img.alt = codes[idx];
+            img.onerror = function () { this.style.display = 'none'; };
+            slot.appendChild(img);
+            hasRow2 = true;
+        }
+    });
+
+    // 3줄 업데이트
+    let hasRow3 = false;
+    slots3.forEach((slot, i) => {
+        slot.innerHTML = '';
+        const idx = i + 8;
+        if (codes[idx]) {
+            const img = document.createElement('img');
+            img.src = 'BarcodeImgs/' + codes[idx] + '.jpg';
+            img.alt = codes[idx];
+            img.onerror = function () { this.style.display = 'none'; };
+            slot.appendChild(img);
+            hasRow3 = true;
+        }
+    });
+
+    // 2줄, 3줄 표시/숨김
+    row2Tr.style.display = hasRow2 ? '' : 'none';
+    row3Tr.style.display = hasRow3 ? '' : 'none';
+}
+
+// ========================================
+// 상품 코드 포맷팅 및 자동완성 함수
+// ========================================
+
+/**
+ * 상품 코드 입력 필드에 포맷팅 및 자동완성 기능 추가
+ * @param {HTMLElement} row - 대상 행 요소
+ */
+function attachProductCodeFormatting(row) {
+    const productCodeInput = row.querySelector('.product-code');
+    const productNameInput = row.querySelector('.product-name');
+    const quantityInput = row.querySelector('.quantity');
+    const unitPriceInput = row.querySelector('.unit-price');
+
+    /**
+     * 상품코드 검색 실행 (blur/Enter 공용)
+     */
+    function searchProductCode() {
+        const code = productCodeInput.value.trim();
+
+        // 상품 코드가 비어있으면 필드 초기화
+        if (!code) {
+            productNameInput.value = '';
+            productNameInput.placeholder = '상품이름';
+            quantityInput.value = '1';
+            unitPriceInput.value = '';
+            row.querySelector('.total-price').value = '';
+            return;
+        }
+
+        // 상품 코드 포맷팅
+        const formatSuccess = formatProductCode(productCodeInput);
+
+        // 포맷팅이 실패하면 상품이름, 단가, 금액 지우기
+        if (!formatSuccess) {
+            productNameInput.value = '';
+            productNameInput.placeholder = '※ 상품 코드 형식 오류';
+            quantityInput.value = '1';
+            unitPriceInput.value = '';
+            row.querySelector('.total-price').value = '';
+            return;
+        }
+
+        // 포맷팅된 코드로 상품 정보 검색
+        const formattedCode = productCodeInput.value.trim();
+
+        if (formattedCode) {
+            // products.js 파일이 로드되었는지 확인
+            if (typeof PRODUCTS_DATA === 'undefined' || !PRODUCTS_DATA) {
+                productNameInput.value = '';
+                productNameInput.placeholder = '※ products.js 파일 로드 필요';
+                console.error('products.js 파일이 로드되지 않았습니다.');
+                return;
+            }
+
+            const productInfo = getProductInfo(formattedCode);
+
+            if (productInfo) {
+                // 상품이름 자동 입력
+                productNameInput.value = productInfo.name;
+                productNameInput.placeholder = '상품이름';
+
+                // 수량을 1로 설정
+                quantityInput.value = '1';
+
+                // 단가를 상품 정보의 가격으로 자동 입력 (천단위 쉼표 포함)
+                unitPriceInput.value = formatNumberWithCommas(productInfo.price);
+
+                // 금액 재계산 (천단위 쉼표 포함)
+                calculateRowTotal(row);
+
+                // 행사 필드로 포커스 이동
+                const eventTypeSelect = row.querySelector('.event-type');
+                if (eventTypeSelect) {
+                    setTimeout(() => eventTypeSelect.focus(), 100);
+                }
+
+                console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.price}원)`);
+            } else {
+                // 상품을 찾지 못한 경우
+                productNameInput.value = '';
+                quantityInput.value = '0';
+                unitPriceInput.value = '';
+                row.querySelector('.total-price').value = '';
+                productNameInput.placeholder = '※ 상품을 찾을 수 없음';
+                console.log(`상품 코드 "${formattedCode}"에 해당하는 상품을 찾을 수 없습니다.`);
+
+                // 상품코드로 포커스 이동 및 전체 선택
+                setTimeout(() => {
+                    productCodeInput.focus();
+                    productCodeInput.select();
+                }, 100);
+            }
+        }
+
+        // 배송 상품 콤보박스 동기화
+        refreshAllDeliveryProductSelects();
+        // 바코드 이미지 업데이트
+        updateBarcodeImages();
+    }
+
+    // Enter 키 입력 시 검색 실행
+    productCodeInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            searchProductCode();
+        }
+    });
+
+    // 포커스 아웃 시 검색 실행
+    productCodeInput.addEventListener('blur', function() {
+        searchProductCode();
+    });
+
+    // 실시간으로도 확인 (입력 중)
+    productCodeInput.addEventListener('input', function() {
+        const code = this.value.trim();
+
+        // 코드가 비어있으면 상품이름 지우기
+        if (!code) {
+            productNameInput.value = '';
+            productNameInput.placeholder = '상품이름';
+            return;
+        }
+
+        // products.js가 로드되어 있고, 코드에 하이픈이 있을 때만 실시간 검색
+        if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA && code && code.includes('-')) {
+            const productInfo = getProductInfo(code);
+            if (productInfo) {
+                productNameInput.value = productInfo.name;
+                productNameInput.placeholder = '상품이름';
+
+                // 수량을 상품 정보의 기본 수량으로 설정 (있는 경우)
+                if (productInfo.quantity) {
+                    quantityInput.value = productInfo.quantity;
+                }
+
+                // 단가를 상품 정보의 가격으로 자동 입력 (천단위 쉼표 포함)
+                unitPriceInput.value = formatNumberWithCommas(productInfo.price);
+
+                // 금액 재계산 (천단위 쉼표 포함)
+                calculateRowTotal(row);
+            } else {
+                productNameInput.value = '';
+                productNameInput.placeholder = '상품이름';
+            }
+        }
+    });
+}
+
+/**
+ * 상품 코드를 표준 형식으로 포맷팅
+ * 형식: 00-00 또는 000-00 (예: 8-1 → 08-01, 106-1 → 106-01)
+ * @param {HTMLInputElement} input - 상품 코드 입력 필드
+ * @returns {boolean} - 포맷팅 성공 여부
+ */
+function formatProductCode(input) {
+    // 숫자와 하이픈만 허용
+    let value = input.value.replace(/[^0-9-]/g, '');
+
+    if (!value) {
+        // 빈 값이면 처리 안 함
+        return true;
+    }
+
+    // 하이픈이 없는 경우 - 오류
+    if (!value.includes('-')) {
+        input.classList.add('error');
+        input.value = value;
+        showAlert('⚠️ 상품 코드는 하이픈(-)을 포함해야 합니다. (예: 08-01)', 'warning');
+        setTimeout(() => {
+            input.classList.remove('error');
+        }, 3000);
+        return false;
+    }
+
+    // 하이픈이 여러 개인 경우 - 첫 번째 하이픈만 사용
+    const parts = value.split('-');
+    if (parts.length > 2) {
+        // 첫 번째와 두 번째 부분만 사용
+        value = parts[0] + '-' + parts.slice(1).join('');
+    }
+
+    // 하이픈으로 분리
+    const [part1, part2] = value.split('-');
+
+    // 앞부분과 뒷부분이 모두 있어야 함
+    if (!part1 || !part2) {
+        input.classList.add('error');
+        input.value = value;
+        showAlert('⚠️ 상품 코드 형식이 올바르지 않습니다. (예: 08-01)', 'warning');
+        setTimeout(() => {
+            input.classList.remove('error');
+        }, 3000);
+        return false;
+    }
+
+    // 앞부분 포맷팅: 1자리면 0 추가, 2자리 이상이면 그대로 (최대 3자리)
+    let formattedPart1 = part1;
+    if (part1.length === 1) {
+        formattedPart1 = '0' + part1;
+    } else if (part1.length > 3) {
+        formattedPart1 = part1.substring(0, 3);
+    }
+
+    // 뒷부분 포맷팅: 2자리로 패딩 (00-99)
+    let formattedPart2 = part2.padStart(2, '0').substring(0, 2);
+
+    // 최종 포맷팅된 값
+    const formattedValue = `${formattedPart1}-${formattedPart2}`;
+    input.value = formattedValue;
+
+    return true;
+}

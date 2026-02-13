@@ -1,24 +1,4 @@
 // ========================================
-// 날짜/시간 관련 함수
-// ========================================
-
-/**
- * 현재 날짜와 시간을 업데이트하여 표시
- * 형식: YYYY-MM-DD HH:MM
- */
-function updateDateTime() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-
-    document.getElementById('currentDateTime').textContent =
-        `${year}-${month}-${day} ${hours}:${minutes}`;
-}
-
-// ========================================
 // 주문자 정보 복사 함수
 // ========================================
 
@@ -56,7 +36,7 @@ function toggleOrdererInfoCopy(checkbox) {
         senderAddress.style.backgroundColor = '#f0f0f0';
         senderAddressDetail.style.backgroundColor = '#f0f0f0';
 
-        showAlert('✅ 주문자 정보가 보내는 분 필드로 복사되었습니다.', 'success');
+        showAlert('✅ 주문 정보가 보내는 분 필드로 복사되었습니다.', 'success');
     } else {
         // 필드 초기화 및 편집 가능하게 설정
         senderName.value = '';
@@ -111,7 +91,7 @@ function toggleReceiverInfoCopy(checkbox, sourceType) {
             receiverPostal.value = document.getElementById('ordererPostal').value;
             receiverAddress.value = document.getElementById('ordererAddress').value;
             receiverAddressDetail.value = document.getElementById('ordererAddressDetail').value;
-            showAlert('✅ 주문자 정보가 받는 분 필드로 복사되었습니다.', 'success');
+            showAlert('✅ 주문 정보가 받는 분 필드로 복사되었습니다.', 'success');
         } else if (sourceType === 'sender') {
             // 보내는 분 정보 복사
             const senderName = section.querySelector('.sender-name');
@@ -219,11 +199,6 @@ function syncFromSender(section) {
     }
 }
 
-// 주문자 정보 input에 이벤트 리스너 등록
-['ordererName', 'ordererPhone', 'ordererPostal', 'ordererAddress', 'ordererAddressDetail'].forEach(id => {
-    document.getElementById(id).addEventListener('input', syncFromOrderer);
-});
-
 /**
  * 보내는 분 input에 이벤트 리스너 등록 (동적 섹션 포함)
  */
@@ -238,7 +213,18 @@ function attachSenderSyncListeners(section) {
     });
 }
 
-// 기존 첫 번째 섹션에 리스너 등록
-document.querySelectorAll('.order-section').forEach(section => {
-    attachSenderSyncListeners(section);
-});
+/**
+ * 주문자 정보 및 첫 번째 섹션 동기화 리스너 초기화
+ * (DOMContentLoaded 이후 init.js에서 호출)
+ */
+function initCopySync() {
+    // 주문자 정보 input에 이벤트 리스너 등록
+    ['ordererName', 'ordererPhone', 'ordererPostal', 'ordererAddress', 'ordererAddressDetail'].forEach(id => {
+        document.getElementById(id).addEventListener('input', syncFromOrderer);
+    });
+
+    // 기존 첫 번째 섹션에 리스너 등록
+    document.querySelectorAll('.order-section').forEach(section => {
+        attachSenderSyncListeners(section);
+    });
+}
