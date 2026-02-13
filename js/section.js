@@ -45,7 +45,7 @@ function addSection() {
             <table>
                 <tr>
                     <th style="width: 90px;">성명</th>
-                    <th style="width: 150px;">전화번호</th>
+                    <th style="width: 160px;">전화번호</th>
                     <th style="width: 150px;">우편번호</th>
                     <th>주소</th>
                 </tr>
@@ -84,7 +84,7 @@ function addSection() {
             <table class="receiver-section">
                 <tr>
                     <th style="width: 90px;">성명</th>
-                    <th style="width: 150px;">전화번호</th>
+                    <th style="width: 160px;">전화번호</th>
                     <th style="width: 150px;">우편번호</th>
                     <th>주소</th>
                 </tr>
