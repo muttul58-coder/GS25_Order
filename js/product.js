@@ -126,7 +126,7 @@ function addProductRow() {
                 <option value="20+1">20+1</option>
             </select>
         </td>
-        <td><input type="number" class="quantity" value="0" min="0" required></td>
+        <td><input type="number" class="quantity" value="0" min="0" inputmode="numeric" onfocus="this.select()" required></td>
         <td><input type="text" class="unit-price" value="0" required></td>
         <td><input type="text" class="total-price" value="0" readonly></td>
         <td class="no-print">
@@ -451,9 +451,10 @@ function attachProductCodeFormatting(row) {
         if (!code) {
             productNameInput.value = '';
             productNameInput.placeholder = '상품이름';
-            quantityInput.value = '1';
+            quantityInput.value = '0';
             unitPriceInput.value = '';
             row.querySelector('.total-price').value = '';
+            calculateRowTotal(row);
             return;
         }
 
@@ -464,9 +465,10 @@ function attachProductCodeFormatting(row) {
         if (!formatSuccess) {
             productNameInput.value = '';
             productNameInput.placeholder = '※ 상품 코드 형식 오류';
-            quantityInput.value = '1';
+            quantityInput.value = '0';
             unitPriceInput.value = '';
             row.querySelector('.total-price').value = '';
+            calculateRowTotal(row);
             return;
         }
 
