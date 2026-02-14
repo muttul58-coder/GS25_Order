@@ -455,8 +455,9 @@ async function shareToKakao() {
     const blob = await canvasToBlob(canvas);
     const file = new File([blob], fileName, { type: 'image/png' });
 
-    // 모바일: Web Share API 파일 공유
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    // 모바일에서만 Web Share API 사용 (PC Windows도 share API가 존재하지만 카톡 연동 불안정)
+    const isMobile = isMobileDevice();
+    if (isMobile && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
             await navigator.share({
                 title: '주문서',
@@ -469,7 +470,6 @@ async function shareToKakao() {
                 showAlert('공유가 취소되었습니다.', 'info');
             } else {
                 console.error('공유 실패:', err);
-                // 모바일 공유 실패 시 다운로드로 대체
                 downloadAndShowGuide(canvas, fileName);
             }
         }
