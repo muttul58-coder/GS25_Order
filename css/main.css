@@ -520,11 +520,31 @@
             margin: 0 0 8px 0;
         }
 
+        .share-guide-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin: 0 0 20px 0;
+        }
+
         .share-guide-filename {
             font-size: 13px;
             color: #888;
             margin: 0 0 20px 0;
             word-break: break-all;
+        }
+
+        .share-guide-key {
+            display: inline-block;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 4px 14px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 0 #bbb;
+            margin: 4px 0;
         }
 
         .share-guide-steps {
