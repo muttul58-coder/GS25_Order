@@ -435,9 +435,9 @@ async function saveAsImage() {
 }
 
 /**
- * 카카오톡 공유 (Web Share API + 클립보드 복사)
+ * 카카오톡 공유
  * 모바일: Web Share API로 카카오톡 직접 공유
- * PC: 이미지를 클립보드에 복사 → 카카오톡 채팅창에서 Ctrl+V로 붙여넣기
+ * PC: 이미지 다운로드 후 카카오톡 파일 첨부 안내
  */
 async function shareToKakao() {
     if (!validateAllInputs()) return;
@@ -469,92 +469,37 @@ async function shareToKakao() {
                 showAlert('공유가 취소되었습니다.', 'info');
             } else {
                 console.error('공유 실패:', err);
-                // 공유 실패 시 클립보드 복사로 대체
-                await copyImageToClipboard(blob);
+                // 모바일 공유 실패 시 다운로드로 대체
+                downloadAndShowGuide(canvas, fileName);
             }
         }
     } else {
-        // PC: 클립보드에 이미지 복사
-        await copyImageToClipboard(blob);
+        // PC: 이미지 다운로드 + 카톡 전송 안내
+        downloadAndShowGuide(canvas, fileName);
     }
 }
 
 /**
- * 이미지를 클립보드에 복사하고 안내 대화상자 표시
- * @param {Blob} blob PNG 이미지 Blob
+ * PC용: 이미지 다운로드 후 카카오톡 전송 안내 대화상자 표시
  */
-async function copyImageToClipboard(blob) {
-    try {
-        // ClipboardItem API로 이미지를 클립보드에 복사
-        const clipboardItem = new ClipboardItem({ 'image/png': blob });
-        await navigator.clipboard.write([clipboardItem]);
-        // 복사 성공 → 안내 대화상자 표시
-        showShareGuideDialog(true);
-    } catch (err) {
-        console.error('클립보드 복사 실패:', err);
-        // 클립보드 API 미지원/실패 시 → canvas를 이용한 대체 시도
-        try {
-            await fallbackClipboardCopy(blob);
-            showShareGuideDialog(true);
-        } catch (err2) {
-            console.error('대체 클립보드 복사도 실패:', err2);
-            showShareGuideDialog(false);
-        }
-    }
-}
+function downloadAndShowGuide(canvas, fileName) {
+    // 이미지 다운로드
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-/**
- * 클립보드 API 실패 시 대체 방법으로 이미지 복사 시도
- */
-async function fallbackClipboardCopy(blob) {
-    return new Promise((resolve, reject) => {
-        // img 태그를 임시로 만들어 선택 후 복사
-        const img = document.createElement('img');
-        const url = URL.createObjectURL(blob);
-        img.src = url;
-        img.style.position = 'fixed';
-        img.style.left = '-9999px';
-        img.style.top = '-9999px';
-        document.body.appendChild(img);
-
-        img.onload = function() {
-            const range = document.createRange();
-            range.selectNode(img);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-
-            try {
-                const success = document.execCommand('copy');
-                selection.removeAllRanges();
-                document.body.removeChild(img);
-                URL.revokeObjectURL(url);
-                if (success) {
-                    resolve();
-                } else {
-                    reject(new Error('execCommand copy 실패'));
-                }
-            } catch (e) {
-                selection.removeAllRanges();
-                document.body.removeChild(img);
-                URL.revokeObjectURL(url);
-                reject(e);
-            }
-        };
-
-        img.onerror = function() {
-            document.body.removeChild(img);
-            URL.revokeObjectURL(url);
-            reject(new Error('이미지 로드 실패'));
-        };
-    });
+    // 다운로드 폴더 경로 안내 대화상자 표시
+    showShareGuideDialog(fileName);
 }
 
 /**
  * 카카오톡 전송 안내 대화상자
- * @param {boolean} clipboardSuccess 클립보드 복사 성공 여부
+ * @param {string} fileName 다운로드된 파일명
  */
-function showShareGuideDialog(clipboardSuccess) {
+function showShareGuideDialog(fileName) {
     const existing = document.getElementById('shareGuideDialog');
     if (existing) existing.remove();
 
@@ -562,57 +507,36 @@ function showShareGuideDialog(clipboardSuccess) {
     overlay.id = 'shareGuideDialog';
     overlay.className = 'confirm-overlay';
 
-    if (clipboardSuccess) {
-        // 클립보드 복사 성공 → Ctrl+V 안내
-        overlay.innerHTML =
-            '<div class="share-guide-box">' +
-                '<div class="share-guide-icon">✅</div>' +
-                '<h3 class="share-guide-title">이미지가 복사되었습니다!</h3>' +
-                '<p class="share-guide-subtitle">카카오톡 채팅창에 바로 붙여넣기 하세요</p>' +
-                '<div class="share-guide-steps">' +
-                    '<div class="share-guide-step">' +
-                        '<span class="step-number">1</span>' +
-                        '<span class="step-text">카카오톡 대화방을 열어주세요</span>' +
-                    '</div>' +
-                    '<div class="share-guide-step">' +
-                        '<span class="step-number">2</span>' +
-                        '<span class="step-text">채팅 입력창을 클릭한 후<br><strong class="share-guide-key">Ctrl + V</strong> 붙여넣기</span>' +
-                    '</div>' +
-                    '<div class="share-guide-step">' +
-                        '<span class="step-number">3</span>' +
-                        '<span class="step-text">이미지가 첨부되면 <strong>전송</strong> 버튼을 누르세요</span>' +
-                    '</div>' +
+    overlay.innerHTML =
+        '<div class="share-guide-box">' +
+            '<div class="share-guide-icon">💬</div>' +
+            '<h3 class="share-guide-title">카카오톡으로 전송하기</h3>' +
+            '<p class="share-guide-subtitle">이미지가 다운로드 되었습니다</p>' +
+            '<div class="share-guide-file-info">' +
+                '<span class="share-guide-file-icon">📁</span>' +
+                '<span class="share-guide-filename">' + fileName + '</span>' +
+            '</div>' +
+            '<div class="share-guide-steps">' +
+                '<div class="share-guide-step">' +
+                    '<span class="step-number">1</span>' +
+                    '<span class="step-text">PC 카카오톡 대화방을 열어주세요</span>' +
                 '</div>' +
-                '<div class="share-guide-buttons">' +
-                    '<button type="button" class="confirm-btn confirm-yes" id="shareGuideOkBtn">확인</button>' +
+                '<div class="share-guide-step">' +
+                    '<span class="step-number">2</span>' +
+                    '<span class="step-text">채팅 입력창 왼쪽 <strong>+ 버튼</strong>을 클릭하세요</span>' +
                 '</div>' +
-            '</div>';
-    } else {
-        // 클립보드 복사 실패 → 이미지 저장 버튼 안내
-        overlay.innerHTML =
-            '<div class="share-guide-box">' +
-                '<div class="share-guide-icon">⚠️</div>' +
-                '<h3 class="share-guide-title">클립보드 복사에 실패했습니다</h3>' +
-                '<p class="share-guide-subtitle">이미지 저장 후 카카오톡에서 파일을 첨부해주세요</p>' +
-                '<div class="share-guide-steps">' +
-                    '<div class="share-guide-step">' +
-                        '<span class="step-number">1</span>' +
-                        '<span class="step-text"><strong>📷 이미지 저장</strong> 버튼으로 이미지를 저장하세요</span>' +
-                    '</div>' +
-                    '<div class="share-guide-step">' +
-                        '<span class="step-number">2</span>' +
-                        '<span class="step-text">카카오톡 대화방을 열어주세요</span>' +
-                    '</div>' +
-                    '<div class="share-guide-step">' +
-                        '<span class="step-number">3</span>' +
-                        '<span class="step-text"><strong>+ 버튼 → 파일</strong>에서 저장한 이미지를 선택하여 전송하세요</span>' +
-                    '</div>' +
+                '<div class="share-guide-step">' +
+                    '<span class="step-number">3</span>' +
+                    '<span class="step-text"><strong>사진</strong>을 클릭하고, <strong>다운로드</strong> 폴더에서<br>위 파일을 선택하여 전송하세요</span>' +
                 '</div>' +
-                '<div class="share-guide-buttons">' +
-                    '<button type="button" class="confirm-btn confirm-yes" id="shareGuideOkBtn">확인</button>' +
-                '</div>' +
-            '</div>';
-    }
+            '</div>' +
+            '<div class="share-guide-tip">' +
+                '💡 또는 다운로드된 파일을 카톡 채팅창으로<br>드래그하여 놓아도 전송됩니다' +
+            '</div>' +
+            '<div class="share-guide-buttons">' +
+                '<button type="button" class="confirm-btn confirm-yes" id="shareGuideOkBtn">확인</button>' +
+            '</div>' +
+        '</div>';
 
     document.body.appendChild(overlay);
 
