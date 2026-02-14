@@ -411,7 +411,7 @@
             flex-wrap: wrap;
         }
 
-        .submit-btn, .print-btn, .add-section-btn, .print-only-btn, .submit-only-btn, .pdf-btn {
+        .submit-btn, .print-btn, .add-section-btn, .print-only-btn, .submit-only-btn, .pdf-btn, .kakao-share-btn {
             padding: 14px 32px;
             font-size: 16px;
             font-weight: 600;
@@ -477,6 +477,102 @@
             background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(229, 57, 53, 0.4);
+        }
+
+        /* 카카오톡 공유 버튼 - 카카오 노란색 */
+        .kakao-share-btn {
+            background: linear-gradient(135deg, #FEE500 0%, #F5D900 100%);
+            color: #3C1E1E;
+        }
+
+        .kakao-share-btn:hover {
+            background: linear-gradient(135deg, #F5D900 0%, #E5C800 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(254, 229, 0, 0.5);
+        }
+
+        /* 카톡 전송 안내 대화상자 */
+        .share-guide-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 380px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .share-guide-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .share-guide-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin: 0 0 8px 0;
+        }
+
+        .share-guide-filename {
+            font-size: 13px;
+            color: #888;
+            margin: 0 0 20px 0;
+            word-break: break-all;
+        }
+
+        .share-guide-steps {
+            text-align: left;
+            margin-bottom: 24px;
+        }
+
+        .share-guide-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .share-guide-step:last-child {
+            border-bottom: none;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            background: #FEE500;
+            color: #3C1E1E;
+            border-radius: 50%;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .step-text {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .share-guide-buttons {
+            display: flex;
+            justify-content: center;
+        }
+
+        .share-guide-buttons .confirm-btn {
+            min-width: 120px;
+            padding: 12px 32px;
+            font-size: 15px;
         }
 
         /* 주문 전송만 버튼 - 초록색 */

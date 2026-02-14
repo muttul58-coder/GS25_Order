@@ -249,16 +249,11 @@ function printOnly() {
 }
 
 /**
- * 이미지로 저장 (html2canvas 캡쳐 방식)
- * 화면에 보이는 그대로 캡쳐 → PNG 다운로드
- * @media print CSS는 사용하지 않음 (축소 문제 방지)
+ * 주문서 이미지 캡쳐 공통 함수
+ * html2canvas로 화면을 캡쳐하여 canvas와 파일명을 반환
+ * @returns {Promise<{canvas: HTMLCanvasElement, fileName: string} | null>}
  */
-async function saveAsImage() {
-    if (!validateAllInputs()) return;
-
-    showAlert('이미지를 생성하고 있습니다... 잠시 기다려주세요.', 'info');
-    await new Promise(r => setTimeout(r, 300));
-
+async function captureOrderImage() {
     // 1. 파일명 생성
     const ordererNameEl = document.getElementById('ordererName');
     const ordererName = ordererNameEl ? ordererNameEl.value.trim() : '';
@@ -295,13 +290,11 @@ async function saveAsImage() {
         container.style.maxWidth = '1024px';
         container.style.padding = '25px';
         document.body.style.overflow = 'hidden';
-        // .table-responsive의 overflow를 visible로 변경하여 잘림 방지
         tableResponsives.forEach(el => {
             origTableResponsiveStyles.push(el.style.cssText);
             el.style.overflowX = 'visible';
             el.style.overflow = 'visible';
         });
-        // 테이블 min-width 제거 (컨테이너 너비에 맞게)
         container.querySelectorAll('table').forEach(t => {
             t.style.minWidth = '0';
             t.style.width = '100%';
@@ -326,14 +319,12 @@ async function saveAsImage() {
     // 4. input/select/textarea를 span으로 임시 교체 (html2canvas 텍스트 잘림 방지)
     const replacedElements = [];
     container.querySelectorAll('input, select, textarea').forEach(el => {
-        // 숨겨진 요소는 건너뜀
         if (el.offsetParent === null && el.type !== 'hidden') return;
         if (el.type === 'hidden') return;
 
         const span = document.createElement('span');
         const styles = window.getComputedStyle(el);
 
-        // 원본 input의 스타일을 span에 복사
         span.style.display = styles.display === 'none' ? 'none' : 'inline-flex';
         span.style.alignItems = 'center';
         span.style.width = styles.width;
@@ -352,7 +343,6 @@ async function saveAsImage() {
         span.style.whiteSpace = 'nowrap';
         span.style.boxSizing = 'border-box';
 
-        // 값 설정
         if (el.tagName === 'SELECT') {
             span.textContent = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : '';
         } else {
@@ -368,9 +358,10 @@ async function saveAsImage() {
     // 5. 렌더링 대기
     await new Promise(r => setTimeout(r, 800));
 
-    // 6. html2canvas 캡쳐 (화면 그대로)
+    // 6. html2canvas 캡쳐
+    let canvas = null;
     try {
-        const canvas = await html2canvas(container, {
+        canvas = await html2canvas(container, {
             scale: 2,
             useCORS: true,
             allowTaint: true,
@@ -379,42 +370,175 @@ async function saveAsImage() {
             width: container.scrollWidth,
             height: container.scrollHeight
         });
-
-        // PNG 다운로드
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = canvas.toDataURL('image/png');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // PNG 다운로드 성공 후 복원
-        restoreAfterCapture();
-        showAlert('이미지가 저장되었습니다! (' + fileName + ')', 'success');
     } catch(e) {
         console.error('이미지 캡쳐 실패:', e);
-        restoreAfterCapture();
-        showAlert('이미지 저장에 실패했습니다. 인쇄 버튼으로 PDF 저장을 이용해주세요.', 'error');
     }
 
-    // 공통 복원 함수
-    function restoreAfterCapture() {
-        replacedElements.forEach(el => { el.style.display = ''; });
-        container.querySelectorAll('[data-capture-replacement]').forEach(s => s.remove());
-        noPrintEls.forEach(el => { el.style.display = ''; });
-        container.style.cssText = origStyle;
-        // 인적사항 테이블 컬럼 너비 복원
-        origThWidths.forEach(({ el, orig }) => { el.style.width = orig; });
-        // 모바일 스타일 복원
-        if (isMobile) {
-            document.body.style.overflow = origBodyOverflow;
-            tableResponsives.forEach((el, i) => {
-                el.style.cssText = origTableResponsiveStyles[i] || '';
-            });
-            container.querySelectorAll('table').forEach(t => {
-                t.style.minWidth = '';
-                t.style.width = '';
-            });
-        }
+    // 7. DOM 복원
+    replacedElements.forEach(el => { el.style.display = ''; });
+    container.querySelectorAll('[data-capture-replacement]').forEach(s => s.remove());
+    noPrintEls.forEach(el => { el.style.display = ''; });
+    container.style.cssText = origStyle;
+    origThWidths.forEach(({ el, orig }) => { el.style.width = orig; });
+    if (isMobile) {
+        document.body.style.overflow = origBodyOverflow;
+        tableResponsives.forEach((el, i) => {
+            el.style.cssText = origTableResponsiveStyles[i] || '';
+        });
+        container.querySelectorAll('table').forEach(t => {
+            t.style.minWidth = '';
+            t.style.width = '';
+        });
     }
+
+    if (!canvas) return null;
+    return { canvas, fileName };
+}
+
+/**
+ * canvas를 Blob(PNG)으로 변환하는 유틸리티
+ * @param {HTMLCanvasElement} canvas
+ * @returns {Promise<Blob>}
+ */
+function canvasToBlob(canvas) {
+    return new Promise(resolve => {
+        canvas.toBlob(resolve, 'image/png');
+    });
+}
+
+/**
+ * 이미지로 저장 (html2canvas 캡쳐 방식)
+ * 화면에 보이는 그대로 캡쳐 → PNG 다운로드
+ * @media print CSS는 사용하지 않음 (축소 문제 방지)
+ */
+async function saveAsImage() {
+    if (!validateAllInputs()) return;
+
+    showAlert('이미지를 생성하고 있습니다... 잠시 기다려주세요.', 'info');
+    await new Promise(r => setTimeout(r, 300));
+
+    const result = await captureOrderImage();
+    if (!result) {
+        showAlert('이미지 저장에 실패했습니다. 인쇄 버튼으로 PDF 저장을 이용해주세요.', 'error');
+        return;
+    }
+
+    const { canvas, fileName } = result;
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showAlert('이미지가 저장되었습니다! (' + fileName + ')', 'success');
+}
+
+/**
+ * 카카오톡 공유 (Web Share API 활용)
+ * 모바일: 이미지 파일을 카카오톡/메시지 앱으로 직접 공유
+ * PC: Web Share API 지원 시 공유, 미지원 시 이미지 다운로드 + 안내
+ */
+async function shareToKakao() {
+    if (!validateAllInputs()) return;
+
+    showAlert('공유할 이미지를 생성하고 있습니다... 잠시 기다려주세요.', 'info');
+    await new Promise(r => setTimeout(r, 300));
+
+    const result = await captureOrderImage();
+    if (!result) {
+        showAlert('이미지 생성에 실패했습니다. 다시 시도해주세요.', 'error');
+        return;
+    }
+
+    const { canvas, fileName } = result;
+    const blob = await canvasToBlob(canvas);
+    const file = new File([blob], fileName, { type: 'image/png' });
+
+    // Web Share API 지원 여부 확인 (파일 공유 가능 여부)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+            await navigator.share({
+                title: '주문서',
+                text: '주문서 이미지입니다.',
+                files: [file]
+            });
+            showAlert('✅ 공유가 완료되었습니다!', 'success');
+        } catch (err) {
+            // 사용자가 공유를 취소한 경우
+            if (err.name === 'AbortError') {
+                showAlert('공유가 취소되었습니다.', 'info');
+            } else {
+                console.error('공유 실패:', err);
+                // 공유 실패 시 다운로드로 대체
+                fallbackDownloadAndGuide(canvas, fileName);
+            }
+        }
+    } else {
+        // Web Share API 미지원 (주로 PC 브라우저)
+        fallbackDownloadAndGuide(canvas, fileName);
+    }
+}
+
+/**
+ * Web Share API 미지원 환경에서 이미지 다운로드 후 안내 표시
+ */
+function fallbackDownloadAndGuide(canvas, fileName) {
+    // 이미지 다운로드
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // 카카오톡 전송 안내 대화상자 표시
+    showShareGuideDialog(fileName);
+}
+
+/**
+ * 카카오톡 전송 안내 대화상자
+ */
+function showShareGuideDialog(fileName) {
+    const existing = document.getElementById('shareGuideDialog');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'shareGuideDialog';
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML =
+        '<div class="share-guide-box">' +
+            '<div class="share-guide-icon">💬</div>' +
+            '<h3 class="share-guide-title">카카오톡으로 전송하기</h3>' +
+            '<p class="share-guide-filename">' + fileName + '</p>' +
+            '<div class="share-guide-steps">' +
+                '<div class="share-guide-step">' +
+                    '<span class="step-number">1</span>' +
+                    '<span class="step-text">이미지가 다운로드되었습니다</span>' +
+                '</div>' +
+                '<div class="share-guide-step">' +
+                    '<span class="step-number">2</span>' +
+                    '<span class="step-text">카카오톡 대화방을 열어주세요</span>' +
+                '</div>' +
+                '<div class="share-guide-step">' +
+                    '<span class="step-number">3</span>' +
+                    '<span class="step-text"><strong>+ 버튼 → 사진/파일</strong>에서 다운로드한 이미지를 선택하여 전송하세요</span>' +
+                '</div>' +
+            '</div>' +
+            '<div class="share-guide-buttons">' +
+                '<button type="button" class="confirm-btn confirm-yes" id="shareGuideOkBtn">확인</button>' +
+            '</div>' +
+        '</div>';
+
+    document.body.appendChild(overlay);
+
+    // 확인 버튼 이벤트
+    document.getElementById('shareGuideOkBtn').addEventListener('click', function() {
+        overlay.remove();
+    });
+
+    // 오버레이 클릭 시 닫기
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
 }
