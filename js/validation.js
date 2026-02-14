@@ -29,6 +29,16 @@ function validateAllInputs() {
         return false;
     }
 
+    // 전화번호 최소 자릿수 검증 (숫자만 9자리 이상)
+    const ordererPhoneDigits = ordererPhone.value.replace(/[^\d]/g, '');
+    if (ordererPhoneDigits.length < 9) {
+        ordererPhone.focus();
+        ordererPhone.classList.add('error');
+        showAlert('⚠️ 주문자 전화번호가 올바르지 않습니다. (최소 9자리)', 'warning');
+        setTimeout(() => ordererPhone.classList.remove('error'), 3000);
+        return false;
+    }
+
     if (!ordererPostal.value.trim()) {
         ordererPostal.focus();
         ordererPostal.classList.add('error');
@@ -112,6 +122,16 @@ function validateAllInputs() {
             return false;
         }
 
+        const senderPhoneDigits = senderPhone.value.replace(/[^\d]/g, '');
+        if (senderPhoneDigits.length < 9) {
+            senderPhone.focus();
+            senderPhone.classList.add('error');
+            showAlert(`⚠️ [배송 정보 #${sectionNum}] 보내는 분 전화번호가 올바르지 않습니다. (최소 9자리)`, 'warning');
+            section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => senderPhone.classList.remove('error'), 3000);
+            return false;
+        }
+
         if (!senderPostal.value.trim()) {
             senderPostal.focus();
             senderPostal.classList.add('error');
@@ -149,6 +169,16 @@ function validateAllInputs() {
             receiverPhone.focus();
             receiverPhone.classList.add('error');
             showAlert(`⚠️ [배송 정보 #${sectionNum}] 받는 분 전화번호를 입력해주세요.`, 'warning');
+            section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => receiverPhone.classList.remove('error'), 3000);
+            return false;
+        }
+
+        const receiverPhoneDigits = receiverPhone.value.replace(/[^\d]/g, '');
+        if (receiverPhoneDigits.length < 9) {
+            receiverPhone.focus();
+            receiverPhone.classList.add('error');
+            showAlert(`⚠️ [배송 정보 #${sectionNum}] 받는 분 전화번호가 올바르지 않습니다. (최소 9자리)`, 'warning');
             section.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => receiverPhone.classList.remove('error'), 3000);
             return false;
@@ -318,7 +348,7 @@ function checkProductInfoComplete() {
     if (!quantity.value || parseInt(quantity.value) <= 0) {
         return { complete: false, missingField: quantity, fieldName: '수량' };
     }
-    if (!unitPrice.value || parseInt(unitPrice.value) <= 0) {
+    if (!unitPrice.value || parseFormattedNumber(unitPrice.value) <= 0) {
         return { complete: false, missingField: unitPrice, fieldName: '단가' };
     }
 

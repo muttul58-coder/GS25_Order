@@ -20,6 +20,8 @@ function searchOrdererAddress() {
             document.getElementById('ordererAddress').value = data.roadAddress || data.jibunAddress;
             // 상세주소 필드로 포커스 이동
             document.getElementById('ordererAddressDetail').focus();
+            // "주문 정보와 동일" 체크된 보내는 분/받는 분 자동 동기화
+            syncFromOrderer();
         }
     }).open();
 }
@@ -46,6 +48,8 @@ function searchSenderAddress(button) {
             postalInput.value = data.zonecode;
             addressInput.value = data.roadAddress || data.jibunAddress;
             addressDetailInput.focus();
+            // "보내는 분 정보와 동일" 체크된 받는 분 자동 동기화
+            syncFromSender(section);
         }
     }).open();
 }

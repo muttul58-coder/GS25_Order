@@ -314,11 +314,13 @@ async function saveAsImage() {
         origThWidths.push({ el: th, orig: th.style.width });
         th.style.width = '70px';
     });
-    container.querySelectorAll('th[style*="width: 150px"]').forEach(th => {
-        const text = th.textContent.trim();
+    container.querySelectorAll('th[style*="width: 160px"]').forEach(th => {
         origThWidths.push({ el: th, orig: th.style.width });
-        if (text === '전화번호') th.style.width = '120px';
-        else if (text === '우편번호') th.style.width = '70px';
+        th.style.width = '120px';
+    });
+    container.querySelectorAll('th[style*="width: 150px"]').forEach(th => {
+        origThWidths.push({ el: th, orig: th.style.width });
+        th.style.width = '70px';
     });
 
     // 4. input/select/textarea를 span으로 임시 교체 (html2canvas 텍스트 잘림 방지)

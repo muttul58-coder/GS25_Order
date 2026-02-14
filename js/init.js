@@ -2,8 +2,15 @@
 // 우편번호 숫자만 입력 허용
 // ========================================
 document.addEventListener('input', function(e) {
+    // 우편번호 숫자만 입력 허용
     if (e.target.matches('#ordererPostal, .sender-postal, .receiver-postal')) {
         e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    }
+    // 배송 상품 수량 음수 방지
+    if (e.target.matches('.delivery-product-qty')) {
+        if (e.target.value && parseInt(e.target.value) < 0) {
+            e.target.value = 0;
+        }
     }
 });
 
@@ -48,9 +55,11 @@ function initializePage() {
         refreshDeliveryProductSelects(firstSection);
     }
 
-    // 배송 희망 일 오늘 날짜로 초기화
+    // 배송 희망 일 오늘 날짜로 초기화 + 과거 날짜 선택 방지
+    const today = getTodayDate();
     document.querySelectorAll('.delivery-date').forEach(input => {
-        input.value = getTodayDate();
+        input.value = today;
+        input.min = today;
     });
 }
 

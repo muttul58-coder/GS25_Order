@@ -99,7 +99,7 @@ function addProductRow() {
     // 행 HTML 구조 생성
     newRow.innerHTML = `
         <td class="row-number">${nextRowNumber}</td>
-        <td><input type="text" class="product-code" placeholder="00-00" required></td>
+        <td><input type="text" class="product-code" placeholder="00-00" inputmode="numeric" required></td>
         <td><input type="text" class="product-name" placeholder="상품이름" readonly></td>
         <td>
             <select class="event-type">
@@ -126,9 +126,9 @@ function addProductRow() {
                 <option value="20+1">20+1</option>
             </select>
         </td>
-        <td><input type="number" class="quantity" value="0" min="0" inputmode="numeric" onfocus="this.select()" required></td>
-        <td><input type="text" class="unit-price" value="0" required></td>
-        <td><input type="text" class="total-price" value="0" readonly></td>
+        <td><input type="number" class="quantity" placeholder="0" min="0" inputmode="numeric" onfocus="this.select()" required></td>
+        <td><input type="text" class="unit-price" placeholder="______" required></td>
+        <td><input type="text" class="total-price" readonly></td>
         <td class="no-print">
             <div class="action-buttons">
                 <button type="button" class="remove-btn" onclick="removeProductRow(this)">삭제</button>
@@ -239,8 +239,30 @@ function attachRowEventListeners(row) {
 
     // 수량 변경 시 금액 재계산 및 배송 수량 검증
     quantity.addEventListener('input', () => {
+        // 음수 방지
+        if (quantity.value && parseInt(quantity.value) < 0) {
+            quantity.value = 0;
+        }
         calculateRowTotal(row);
         validateDeliveryQuantities();
+    });
+
+    // 수량 필드에서 Enter 시 다음 행의 상품코드로 이동 (없으면 새 행 추가)
+    quantity.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const tbody = document.getElementById('productTableBody');
+            const rows = Array.from(tbody.querySelectorAll('.product-row'));
+            const currentIndex = rows.indexOf(row);
+            if (currentIndex < rows.length - 1) {
+                // 다음 행의 상품코드에 포커스
+                const nextCode = rows[currentIndex + 1].querySelector('.product-code');
+                if (nextCode) nextCode.focus();
+            } else {
+                // 마지막 행이면 새 행 추가
+                addProductRow();
+            }
+        }
     });
 
     // 행사 변경 시 금액 재계산
@@ -543,9 +565,33 @@ function attachProductCodeFormatting(row) {
         searchProductCode();
     });
 
-    // 실시간으로도 확인 (입력 중)
+    // 실시간으로도 확인 (입력 중) + 하이픈 자동 삽입
     productCodeInput.addEventListener('input', function() {
-        const code = this.value.trim();
+        let code = this.value;
+
+        // 숫자와 하이픈만 허용
+        code = code.replace(/[^0-9-]/g, '');
+        if (code !== this.value) {
+            this.value = code;
+        }
+
+        // 하이픈 자동 삽입: 숫자만 입력되었을 때 카테고리-번호 자동 분리
+        if (!code.includes('-') && code.length >= 3) {
+            if (code.length === 3) {
+                // 3자리: "08x"~"99x" → 2자리 카테고리로 자동 분리
+                // 단, "100"~"106"은 3자리 카테고리 가능성이 있으므로 대기
+                if (parseInt(code) < 100) {
+                    this.value = code.slice(0, 2) + '-' + code.slice(2);
+                }
+            } else if (code.length >= 4) {
+                // 4자리 이상: 2자리 카테고리 우선 적용 (08~99)
+                // 3자리 카테고리(100~106)는 사용자가 직접 하이픈 입력
+                this.value = code.slice(0, 2) + '-' + code.slice(2);
+            }
+            code = this.value;
+        }
+
+        code = code.trim();
 
         // 코드가 비어있으면 상품이름 지우기
         if (!code) {

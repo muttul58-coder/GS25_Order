@@ -26,13 +26,13 @@ function addSection() {
             <button type="button" class="section-delete-btn no-print" onclick="removeSection(this)">🗑️ 섹션 삭제</button>
             <div class="delivery-date-area">
                 <label>배송 희망 일 :
-                    <input type="date" class="delivery-date" value="${getTodayDate()}" lang="ko">
+                    <input type="date" class="delivery-date" value="${getTodayDate()}" min="${getTodayDate()}" lang="ko">
                 </label>
             </div>
         </div>
 
         <!-- 보내는 분 정보 -->
-        <div class="section-header">
+        <div class="section-header send-section">
             <span>보내는 분</span>
             <div class="header-checkbox-area no-print">
                 <label class="checkbox-label">
@@ -42,7 +42,7 @@ function addSection() {
             </div>
         </div>
         <div class="table-responsive">
-            <table>
+            <table class="send-section">
                 <tr>
                     <th style="width: 90px;">성명</th>
                     <th style="width: 160px;">전화번호</th>
@@ -50,11 +50,11 @@ function addSection() {
                     <th>주소</th>
                 </tr>
                 <tr>
-                    <td><input type="text" class="sender-name" placeholder="______" required></td>
-                    <td><input type="tel" class="sender-phone" placeholder="010-0000-0000" required></td>
+                    <td><input type="text" class="sender-name" placeholder="성명 입력" required></td>
+                    <td><input type="tel" class="sender-phone" placeholder="전화번호 입력" required></td>
                     <td>
                         <div class="postal-input-wrapper">
-                            <input type="text" class="sender-postal" placeholder="00000" maxlength="5" required>
+                            <input type="text" class="sender-postal" placeholder="우편번호" maxlength="5" required>
                             <button type="button" class="postal-search-btn no-print" onclick="searchSenderAddress(this)">검색</button>
                         </div>
                     </td>
@@ -89,11 +89,11 @@ function addSection() {
                     <th>주소</th>
                 </tr>
                 <tr>
-                    <td><input type="text" class="receiver-name" placeholder="______" required></td>
-                    <td><input type="tel" class="receiver-phone" placeholder="010-0000-0000" required></td>
+                    <td><input type="text" class="receiver-name" placeholder="성명 입력" required></td>
+                    <td><input type="tel" class="receiver-phone" placeholder="전화번호 입력" required></td>
                     <td>
                         <div class="postal-input-wrapper">
-                            <input type="text" class="receiver-postal" placeholder="00000" maxlength="5" required>
+                            <input type="text" class="receiver-postal" placeholder="우편번호" maxlength="5" required>
                             <button type="button" class="postal-search-btn no-print" onclick="searchReceiverAddress(this)">검색</button>
                         </div>
                     </td>
@@ -129,7 +129,7 @@ function addSection() {
                             </select>
                         </td>
                         <td><input type="text" class="delivery-product-name" placeholder="상품이름" readonly></td>
-                        <td><input type="number" class="delivery-product-qty" value="0" min="0" onchange="validateDeliveryQuantities()" oninput="validateDeliveryQuantities()"></td>
+                        <td><input type="number" class="delivery-product-qty" placeholder="0" min="0" onfocus="this.select()" onchange="validateDeliveryQuantities()" oninput="validateDeliveryQuantities()"></td>
                         <td class="no-print">
                             <div class="action-buttons">
                                 <button type="button" class="remove-btn" onclick="removeDeliveryProductRow(this)">삭제</button>
@@ -187,22 +187,17 @@ function removeSection(button) {
 
     const sectionNumber = section.querySelector('.section-number').textContent;
 
-    // 삭제 확인
-    const confirmDelete = confirm(`${sectionNumber}을(를) 삭제하시겠습니까?\n(보내는 분, 받는 분, 배송 상품 정보가 삭제됩니다)`);
-    if (!confirmDelete) {
-        return;
-    }
-
-    // 섹션 제거
-    section.remove();
-
-    // 섹션 번호 재정렬
-    renumberSections();
-
-    // 배송 상품 수량 검증
-    validateDeliveryQuantities();
-
-    showAlert('✅ 배송 정보가 삭제되었습니다.', 'success');
+    // 커스텀 확인 대화상자로 삭제 확인
+    showConfirmDialog(
+        `${sectionNumber}을(를) 삭제하시겠습니까?\n(보내는 분, 받는 분, 배송 상품 정보가 삭제됩니다)`,
+        function() {
+            // 확인: 섹션 제거
+            section.remove();
+            renumberSections();
+            validateDeliveryQuantities();
+            showAlert('✅ 배송 정보가 삭제되었습니다.', 'success');
+        }
+    );
 }
 
 /**

@@ -127,7 +127,7 @@ function addDeliveryProductRow(button) {
             </select>
         </td>
         <td><input type="text" class="delivery-product-name" placeholder="상품이름" readonly></td>
-        <td><input type="number" class="delivery-product-qty" value="0" min="0" onchange="validateDeliveryQuantities()" oninput="validateDeliveryQuantities()"></td>
+        <td><input type="number" class="delivery-product-qty" placeholder="0" min="0" onfocus="this.select()" onchange="validateDeliveryQuantities()" oninput="validateDeliveryQuantities()"></td>
         <td class="no-print">
             <div class="action-buttons">
                 <button type="button" class="remove-btn" onclick="removeDeliveryProductRow(this)">삭제</button>

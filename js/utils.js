@@ -135,6 +135,52 @@ function attachPhoneFormatting(input) {
     });
 }
 
+// ========================================
+// 커스텀 확인 대화상자
+// ========================================
+
+/**
+ * 커스텀 확인 대화상자 표시 (confirm 대체)
+ * @param {string} message - 표시할 메시지
+ * @param {Function} onConfirm - 확인 시 콜백
+ * @param {Function} [onCancel] - 취소 시 콜백
+ */
+function showConfirmDialog(message, onConfirm, onCancel) {
+    // 이미 있으면 제거
+    const existing = document.getElementById('confirmDialog');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'confirmDialog';
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML = `
+        <div class="confirm-box">
+            <p class="confirm-message">${message}</p>
+            <div class="confirm-buttons">
+                <button type="button" class="confirm-btn confirm-yes">확인</button>
+                <button type="button" class="confirm-btn confirm-no">취소</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.confirm-yes').addEventListener('click', function() {
+        overlay.remove();
+        if (onConfirm) onConfirm();
+    });
+    overlay.querySelector('.confirm-no').addEventListener('click', function() {
+        overlay.remove();
+        if (onCancel) onCancel();
+    });
+    // 오버레이 클릭 시 취소
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            overlay.remove();
+            if (onCancel) onCancel();
+        }
+    });
+}
+
 /**
  * 페이지 내 모든 전화번호 필드에 포맷팅 적용
  */

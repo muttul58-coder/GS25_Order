@@ -853,3 +853,79 @@
         .postal-input-wrapper input {
             flex: 1;
         }
+
+        /* 커스텀 확인 대화상자 */
+        .confirm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .confirm-box {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .confirm-message {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .confirm-btn {
+            padding: 10px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .confirm-yes {
+            background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(229,57,53,0.3);
+        }
+
+        .confirm-yes:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(229,57,53,0.4);
+        }
+
+        .confirm-no {
+            background: #f1f5f9;
+            color: #64748b;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .confirm-no:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
