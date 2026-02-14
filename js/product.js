@@ -3,6 +3,85 @@
 // ========================================
 
 /**
+ * 숫자만 입력된 상품코드에 하이픈 자동 삽입
+ * PRODUCTS_DATA를 참조하여 3자리 카테고리(100~106)와 2자리 카테고리를 정확히 구분
+ * @param {string} digits 숫자만으로 이루어진 문자열
+ * @returns {string|null} 하이픈이 삽입된 코드 또는 null(아직 판단 불가)
+ */
+function autoInsertHyphen(digits) {
+    var hasData = (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA);
+
+    // 3자리 입력: "100"~"106"이면 3자리 카테고리 가능성 → 대기
+    if (digits.length === 3) {
+        var num3 = parseInt(digits);
+        if (num3 >= 100 && num3 <= 106) {
+            return null; // 아직 판단 불가, 추가 입력 대기
+        }
+        // 그 외는 2자리 카테고리 (예: "081" → "08-1")
+        return digits.slice(0, 2) + '-' + digits.slice(2);
+    }
+
+    // 4자리 입력: "100x"~"106x"이면 3자리 카테고리 가능성 → 대기
+    if (digits.length === 4) {
+        var prefix3 = parseInt(digits.slice(0, 3));
+        if (prefix3 >= 100 && prefix3 <= 106) {
+            return null; // "1060" 등은 5자리 완성을 대기
+        }
+        // 그 외는 2자리 카테고리 (예: "0801" → "08-01")
+        return digits.slice(0, 2) + '-' + digits.slice(2);
+    }
+
+    // 5자리 이상 입력: 3자리 vs 2자리 카테고리 판별
+    if (digits.length >= 5) {
+        var cat3 = digits.slice(0, 3); // 3자리 카테고리 후보
+        var cat3num = parseInt(cat3);
+
+        // 3자리 카테고리 범위(100~106)이면 PRODUCTS_DATA로 확인
+        if (cat3num >= 100 && cat3num <= 106) {
+            var code3 = cat3 + '-' + digits.slice(3);
+            var code2 = digits.slice(0, 2) + '-' + digits.slice(2);
+
+            if (hasData) {
+                // 3자리 카테고리로 매칭되는 상품이 있으면 3자리 우선
+                var formatted3 = formatCodeForLookup(code3);
+                var formatted2 = formatCodeForLookup(code2);
+                if (PRODUCTS_DATA[formatted3]) {
+                    return code3;
+                }
+                if (PRODUCTS_DATA[formatted2]) {
+                    return code2;
+                }
+                // 둘 다 없으면 3자리 카테고리 우선 (100~106 범위이므로)
+                return code3;
+            }
+            // 데이터 없으면 3자리 카테고리 우선
+            return code3;
+        }
+
+        // 100 미만이면 2자리 카테고리
+        return digits.slice(0, 2) + '-' + digits.slice(2);
+    }
+
+    return null;
+}
+
+/**
+ * 코드 문자열을 PRODUCTS_DATA 조회용으로 포맷팅 (패딩 적용)
+ * @param {string} code "106-1" → "106-01", "8-1" → "08-01"
+ */
+function formatCodeForLookup(code) {
+    var parts = code.split('-');
+    if (parts.length !== 2) return code;
+    var cat = parts[0];
+    var num = parts[1];
+    // 카테고리: 1자리면 2자리로 패딩 (8 → 08), 3자리는 그대로
+    if (cat.length === 1) cat = '0' + cat;
+    // 번호: 1자리면 2자리로 패딩 (1 → 01)
+    if (num.length === 1) num = '0' + num;
+    return cat + '-' + num;
+}
+
+/**
  * 상품 데이터 로드 상태 확인 및 표시
  */
 function checkProductsDataLoaded() {
@@ -577,18 +656,11 @@ function attachProductCodeFormatting(row) {
 
         // 하이픈 자동 삽입: 숫자만 입력되었을 때 카테고리-번호 자동 분리
         if (!code.includes('-') && code.length >= 3) {
-            if (code.length === 3) {
-                // 3자리: "08x"~"99x" → 2자리 카테고리로 자동 분리
-                // 단, "100"~"106"은 3자리 카테고리 가능성이 있으므로 대기
-                if (parseInt(code) < 100) {
-                    this.value = code.slice(0, 2) + '-' + code.slice(2);
-                }
-            } else if (code.length >= 4) {
-                // 4자리 이상: 2자리 카테고리 우선 적용 (08~99)
-                // 3자리 카테고리(100~106)는 사용자가 직접 하이픈 입력
-                this.value = code.slice(0, 2) + '-' + code.slice(2);
+            var inserted = autoInsertHyphen(code);
+            if (inserted) {
+                this.value = inserted;
+                code = inserted;
             }
-            code = this.value;
         }
 
         code = code.trim();
