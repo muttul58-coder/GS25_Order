@@ -1209,3 +1209,20 @@
             color: #64748b;
             line-height: 1.5;
         }
+
+        .test-mode-off {
+            margin-left: 12px;
+            padding: 4px 12px;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            background: transparent;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .test-mode-off:hover {
+            background: #fff;
+            color: #b91c1c;
+        }

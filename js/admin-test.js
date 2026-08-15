@@ -124,6 +124,11 @@ function refreshAllRowEvents() {
 
 /**
  * 테스트 모드 알림 띠. 인쇄물에도 찍히도록 no-print 를 붙이지 않는다.
+ *
+ * 띠 안에 끄기 버튼을 같이 둔다. 테스트를 켠 탭에서 주소의 ?admin=1 만
+ * 지우면 관리자 메뉴는 사라지지만 테스트 모드는 그대로 남는다 (같은 탭이라
+ * sessionStorage 가 유지된다). 그때 끌 방법이 없으면 안 되므로, 띠를 보는
+ * 사람은 누구나 바로 끌 수 있어야 한다.
  */
 function renderTestBanner() {
     const existing = document.getElementById('testModeBanner');
@@ -137,9 +142,21 @@ function renderTestBanner() {
     const banner = existing || document.createElement('div');
     banner.id = 'testModeBanner';
     banner.className = 'test-mode-banner';
-    banner.textContent =
+    banner.innerHTML = '';
+
+    const text = document.createElement('span');
+    text.textContent =
         `🔧 테스트 모드 — ${date} (${describePromoPeriod(date)}) 기준으로 보고 있습니다. ` +
         `실제 오늘은 ${getTodayDate()} 입니다. 이 주문서는 실제 주문에 쓰지 마세요.`;
+    banner.appendChild(text);
+
+    // 인쇄물에는 버튼이 필요 없다
+    const off = document.createElement('button');
+    off.type = 'button';
+    off.className = 'test-mode-off no-print';
+    off.textContent = '테스트 끄기';
+    off.onclick = () => setTestPromoDate('');
+    banner.appendChild(off);
 
     if (!existing) {
         document.body.insertBefore(banner, document.body.firstChild);
