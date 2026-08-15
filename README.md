@@ -74,7 +74,8 @@ GS25_Order/
 │   └── manual.html       # 위 내용의 웹 매뉴얼 (GitHub Pages 로 바로 열림)
 ├── 시즌설정.txt          # 관리자가 고치는 유일한 파일 (이름: 값 형식)
 ├── tools/
-│   └── update_season.py  # 시즌 상품/바코드 일괄 갱신
+│   ├── update_season.py  # 시즌 상품/바코드 일괄 갱신
+│   └── season_prep.py    # 준비 0단계 — 카탈로그 주소와 PDF만 받아 확인하고 재료를 모음
 ├── apps_script.js        # Google Apps Script (시트 자동 생성)
 └── README.md
 ```

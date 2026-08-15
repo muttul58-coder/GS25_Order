@@ -59,7 +59,8 @@ GS25_Order/
 ├── BarcodeImgs/          # 601 barcode JPEGs, one per code (GENERATED, e.g. 08-01.jpg)
 ├── BarcodeSource/        # Season barcode-book PDFs (source for BarcodeImgs/)
 ├── tools/
-│   └── update_season.py  # Regenerates products.js + BarcodeImgs/ from a season PDF
+│   ├── update_season.py  # Regenerates products.js + BarcodeImgs/ from a season PDF
+│   └── season_prep.py    # Step 0: verify the two links, fetch banner + unknown icons, draft 시즌설정.txt
 ├── plan.md               # PDF implementation plan
 ├── README.md             # Korean documentation
 └── LICENSE               # MIT
@@ -475,6 +476,21 @@ Take the 행사 dates from the season's 사전행사 banner at
 `<catalog-root>/headers/event_header_1.png` and `<catalog-root>/events/event_1.jpg`;
 the dated icons ("9월 5일부터") corroborate the 본행사 date, and the banner's 품목 count
 is a free check on the extracted `eventPre` total (2026 추석: both said 127).
+
+**Running the refresh on the admin's behalf.** The admin hands over exactly two things —
+the catalog site URL and the barcode-book PDF — and `.claude/skills/season-refresh/SKILL.md`
+is the procedure for that. Start with `python tools/season_prep.py <카탈로그 주소> <PDF>`:
+it normalises the URL, verifies the catalog opens and still has the fields we expect,
+checks PDF ↔ catalog codes 1:1, downloads the 사전행사 banner and any *unseen* benefit
+icons into `.season_prep/` (gitignored), and prints a `시즌설정.txt` draft with only the
+three dates blank. It changes nothing except placing the PDF in `BarcodeSource/`, so a
+wrong URL costs one command instead of a half-finished run.
+
+The dates and the icon rates are then read **from the images** — that is the whole reason
+this can be done at all, and also why both must be confirmed with the admin before use:
+banner wording shifts between seasons, and the real `2+1` and `3+1` icons differ by one
+glyph. The barcode scan test cannot be delegated at all; `products.json` carries no
+barcode number, so there is no ground truth to check the rendered JPEG against.
 
 Dependencies: `pip install pdfplumber pymupdf pillow`
 

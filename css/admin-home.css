@@ -263,6 +263,77 @@ body {
   padding: 12px 14px;
 }
 
+/* ---- 클로드 코드에 맡기는 경우 ------------------------------------- */
+
+.claude {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: var(--sunk);
+}
+
+.claude h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.claude-lead {
+  margin: 10px 0 6px;
+  font-size: 14.5px;
+  color: var(--ink-soft);
+}
+
+.claude-give,
+.claude-flow {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.claude-give li,
+.claude-flow li {
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  margin: 6px 0;
+}
+
+.claude-give small {
+  display: block;
+  color: var(--ink-mute);
+  font-size: 13px;
+}
+
+.claude code {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12.5px;
+}
+
+/* 그대로 옮겨 적을 문장이라 줄바꿈을 살리고, 좁은 화면에서는 가로로 굴린다 */
+.claude-say {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.claude-warn {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--stop-wash);
+  border: 1px solid var(--stop-line);
+  color: var(--stop);
+  font-size: 14px;
+}
+
 details.check {
   margin-top: 14px;
   background: var(--sunk);
