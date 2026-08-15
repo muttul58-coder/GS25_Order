@@ -75,7 +75,7 @@ GS25_Order/
 |------|------|
 | `order_form.html` | HTML 구조만. 스타일과 로직은 `css/`, `js/` 로 분리됨 |
 | `product_detail.html` | 바코드를 누르면 새 창으로 뜨는 상품 상세 (사진·구성·행사) |
-| `order_split.html` | 상품을 찾아 담는 2단 화면. 주문서를 iframe 으로 띄웁니다 |
+| `order_split.html` | 상품을 찾아 담는 2단 화면 (검색 + 분류 목록). 주문서를 iframe 으로 띄웁니다 |
 | `시즌설정.txt` | **시즌 갱신의 입력값 전부.** 명절마다 여기만 고칩니다 |
 | `season.json` | 구매혜택 아이콘 기억용. 스크립트가 관리하므로 손대지 않습니다 |
 | `config.js` | Google Forms URL 및 Entry ID 설정 |

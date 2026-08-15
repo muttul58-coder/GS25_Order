@@ -324,6 +324,22 @@ overlay behind a floating 상품 찾기 button, and a successful 담기 closes i
 the clerk cannot see the row that was just added. A blocked 담기 deliberately leaves
 it open so the message is read.
 
+**Category browsing.** The panel's 분류 목록 button shows the catalog's own groups —
+사전행사 5 and 본행사 29 for 2026 추석 — and picking one filters the list; a 검색어 can be
+combined with it. Counts are computed from the data, so they always match what the
+list shows.
+
+The numbers come from `products.json` (`sort` → `cat`, the 5-char o/x `event` string →
+`preCat`), but the **labels do not exist in that file**. They are minified into the
+catalog's own JS bundle as an array named `Ta`, which `load_categories()` scrapes:
+fetch the catalog index, find `assets/index-*.js`, bracket-match `Ta = [ … ]`, keep the
+`type: "list"` rows. Scraping someone else's minified build is the fragile step here.
+It therefore **fails soft**: a season where the scrape breaks still gets correct
+products, `CATEGORIES` becomes `null`, and the UI labels groups "분류 3" by number. Do
+not invent names in the fallback — a wrong label sends the clerk hunting in the wrong
+group, while a bare number is merely unhelpful. The run prints `[!]` with the reason,
+and separately lists any `sort` value that has no label.
+
 **Product detail window.** Clicking a barcode opens `product_detail.html?code=<코드>`
 — photo, name, price, 구성 설명 and both 행사 rates — in a 500×900 popup pinned to the
 right of the screen so the order form stays visible (`catalogSearchLink()` /

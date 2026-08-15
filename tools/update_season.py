@@ -618,6 +618,103 @@ def load_catalog(source):
     return json.loads(raw)
 
 
+def load_categories(catalog_url):
+    """카탈로그의 분류 이름표를 가져온다.
+
+    분류 번호(products.json 의 sort)는 데이터에 있지만 **이름은 없다.**
+    이름은 카탈로그 사이트의 자바스크립트 안에 Ta 라는 배열로 박혀 있다.
+    [ [사전행사 분류...], [본행사 분류...] ] 두 묶음이고, type 이 "list" 인
+    것만 상품 목록이다(나머지는 안내 배너).
+
+    남의 압축된 코드에서 긁어오는 것이라 시즌이 바뀌면 깨질 수 있다.
+    깨져도 상품 데이터는 멀쩡하므로 여기서 멈추지 않고 (None, 사유) 를
+    돌려준다. 부르는 쪽이 크게 경고하고 "분류 3" 처럼 번호로 보여 준다.
+    이름을 지어내는 것보다 번호가 낫다 - 틀린 이름은 엉뚱한 데서 상품을 찾게 한다.
+
+    @returns ((사전행사 [(번호, 이름)], 본행사 [(번호, 이름)]), None) 또는 (None, 사유)
+    """
+    if not catalog_url.startswith("http"):
+        return None, "카탈로그가 인터넷 주소가 아닙니다"
+
+    root = catalog_url.rsplit("/", 1)[0]
+    try:
+        index = urlopen(root + "/", timeout=30).read().decode("utf-8", "replace")
+    except Exception as e:
+        return None, "카탈로그 첫 화면을 못 받았습니다 (%s)" % e
+
+    m = re.search(r'src="([^"]*index-[^"]*\.js)"', index)
+    if not m:
+        return None, "카탈로그 첫 화면에서 자바스크립트 주소를 찾지 못했습니다"
+
+    src = m.group(1)
+    if not src.startswith("http"):
+        src = root.rsplit("/", 1)[0] + src if src.startswith("/") else root + "/" + src
+    try:
+        script = urlopen(src, timeout=60).read().decode("utf-8", "replace")
+    except Exception as e:
+        return None, "카탈로그 자바스크립트를 못 받았습니다 (%s)" % e
+
+    m = re.search(r'\bTa\s*=\s*\[', script)
+    if not m:
+        return None, "분류 표(Ta)를 찾지 못했습니다 - 카탈로그 구조가 바뀐 듯합니다"
+
+    start = script.index("[", m.start())
+    depth, i = 0, start
+    while i < len(script):
+        if script[i] == "[":
+            depth += 1
+        elif script[i] == "]":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    if depth != 0:
+        return None, "분류 표가 중간에 끊겼습니다"
+
+    blob = script[start + 1:i]
+
+    # 바깥 배열 안의 두 묶음을 대괄호 균형으로 가른다
+    groups, depth, chunk = [], 0, []
+    for ch in blob:
+        if ch == "[":
+            depth += 1
+            if depth == 1:
+                chunk = []
+                continue
+        elif ch == "]":
+            depth -= 1
+            if depth == 0:
+                groups.append("".join(chunk))
+                continue
+        if depth >= 1:
+            chunk.append(ch)
+
+    if len(groups) < 2:
+        return None, "분류 표의 묶음이 2개가 아닙니다 (%d개)" % len(groups)
+
+    item_re = re.compile(
+        r'\{\s*id:\s*(\d+),\s*type:\s*"(\w+)",\s*(?:header:\s*!\d,\s*)?label:\s*"([^"]*)"')
+
+    parsed = []
+    for group in groups[:2]:
+        rows = []
+        for num, kind, label in item_re.findall(group):
+            # type 이 "event" 인 항목은 상품 목록이 아니라 안내 배너다
+            if kind != "list":
+                continue
+            num = int(num)
+            if num == 0:      # "전체보기" - 분류가 아니다
+                continue
+            rows.append((num, label))
+        parsed.append(rows)
+
+    if not parsed[0] or not parsed[1]:
+        return None, "분류 이름이 비어 있습니다 (사전 %d개 / 본 %d개)" % (
+            len(parsed[0]), len(parsed[1]))
+
+    return (parsed[0], parsed[1]), None
+
+
 def benefit_codes(field):
     """attached / attached_e 문자열("3,15,1")을 번호 목록으로."""
     out = []
@@ -687,7 +784,20 @@ def check_picture_names(catalog):
             if (r.get("picture") or "") != r["code"] + ".webp"]
 
 
-def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_note):
+def pre_category_of(row):
+    """사전행사 분류 번호. 대상이 아니면 None.
+
+    카탈로그는 event 를 5글자 o/x 문자열로 준다("xxxox" = 4번 분류).
+    2026 추석 기준 o 가 두 개인 상품은 없었고, 켜진 개수 합(127)이
+    attached_e 를 가진 상품 수와 정확히 같았다. 그래도 첫 번째 것만 쓰지 않고
+    두 개 이상이면 알 수 있도록 목록으로 돌려준다.
+    """
+    flags = str(row.get("event") or "")
+    return [i + 1 for i, ch in enumerate(flags) if ch in ("o", "O")]
+
+
+def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_note,
+                      categories):
     entries, market, conflicts = [], [], []
     n_pre = n_main = 0
 
@@ -722,6 +832,13 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
         if desc:
             fields.append('"desc": %s' % json.dumps(desc, ensure_ascii=False))
 
+        # 분류(카탈로그 목록에서 이 상품이 들어 있는 묶음)
+        if isinstance(r.get("sort"), int) and r["sort"] > 0:
+            fields.append('"cat": %d' % r["sort"])
+        pre_cats = pre_category_of(r)
+        if pre_cats:
+            fields.append('"preCat": %s' % json.dumps(pre_cats))
+
         entries.append('  "%s": { %s }' % (code, ", ".join(fields)))
 
     header = (
@@ -746,8 +863,34 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
     )
     # 저장소가 CRLF 로 보관돼 있다. LF 로 쓰면 줄바꿈만 바뀐 거대한 diff 가 생긴다.
     with io.open(PRODUCTS_JS, "w", encoding="utf-8", newline="\r\n") as f:
-        f.write(header + "const PRODUCTS_DATA = {\n" + ",\n".join(entries) + "\n};\n")
+        f.write(header
+                + categories_block(categories)
+                + "const PRODUCTS_DATA = {\n" + ",\n".join(entries) + "\n};\n")
     return market, n_pre, n_main, conflicts
+
+
+def categories_block(categories):
+    """분류 이름표를 products.js 에 적는다.
+
+    이름을 못 가져왔으면 null 로 둔다. 화면은 그때 "분류 3" 처럼 번호로
+    보여 준다 - 지어낸 이름을 보여 주면 점원이 엉뚱한 묶음을 뒤진다.
+    """
+    if not categories:
+        return ("// 분류 이름을 가져오지 못했습니다. 화면에는 번호로 표시됩니다.\n"
+                "const CATEGORIES = null;\n\n")
+
+    pre, main = categories
+
+    def rows(items):
+        return ",\n".join(
+            '    { "id": %d, "label": %s }' % (num, json.dumps(label, ensure_ascii=False))
+            for num, label in items)
+
+    return ("// 카탈로그 목록의 분류 (카탈로그 사이트에서 가져옴)\n"
+            "const CATEGORIES = {\n"
+            "  pre: [\n%s\n  ],\n"
+            "  main: [\n%s\n  ]\n"
+            "};\n\n" % (rows(pre), rows(main)))
 
 
 def page_graphics(page):
@@ -987,9 +1130,22 @@ def main():
     save_benefit_memory(SEASON_JSON, memory, cfg["season"])
 
     print("5) products.js / store.js 생성")
+    categories, cat_error = load_categories(cfg["catalog"])
+    if cat_error:
+        print("   [!] 분류 이름을 가져오지 못했습니다: %s" % cat_error)
+        print("       상품 데이터는 정상입니다. 목록 화면에만 이름 대신 번호가 나옵니다.")
+    else:
+        print("   분류: 사전행사 %d개 / 본행사 %d개"
+              % (len(categories[0]), len(categories[1])))
+        known = set(n for n, _ in categories[1])
+        missing = sorted(set(r["sort"] for r in catalog
+                             if isinstance(r.get("sort"), int)) - known)
+        if missing:
+            print("   [!] 이름이 없는 분류 번호: %s" % missing)
+
     market, n_pre, n_main, conflicts = write_products_js(
         catalog, cfg["season"], cfg["catalog"],
-        cfg["pre_start"], cfg["main_start"], cfg["pre_note"])
+        cfg["pre_start"], cfg["main_start"], cfg["pre_note"], categories)
     write_store_js(cfg["store"], cfg["season"])
     print("   상품 %d개, 시세반영 %d개 %s" % (len(catalog), len(market), market))
     print("   행사: 사전행사 %d개 (%s ~) / 본행사 %d개 (%s ~)"

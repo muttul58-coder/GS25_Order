@@ -19,6 +19,7 @@ const CARDS_PER_PAGE = 30;
 let catalogMatches = [];   // 현재 검색 결과 (코드 배열)
 let catalogShown = 0;      // 그중 화면에 그린 개수
 let catalogToastTimer = null;
+let catalogCategory = null; // 고른 분류 {kind:'main'|'pre', id, label} 또는 null
 
 /**
  * 주문서 iframe 의 window. 아직 안 떴으면 null.
@@ -46,7 +47,15 @@ function orderWindow() {
 function searchProducts(query) {
     if (typeof PRODUCTS_DATA === 'undefined' || !PRODUCTS_DATA) return [];
 
-    const codes = Object.keys(PRODUCTS_DATA).sort(compareProductCodes);
+    let codes = Object.keys(PRODUCTS_DATA).sort(compareProductCodes);
+
+    // 분류를 골랐으면 먼저 그 안으로 좁힌다 (검색어와 함께 걸 수 있다)
+    if (catalogCategory) {
+        codes = codes.filter(function (code) {
+            return inCategory(PRODUCTS_DATA[code], catalogCategory);
+        });
+    }
+
     const q = query.trim().toLowerCase();
     if (!q) return codes;
 
@@ -64,6 +73,53 @@ function searchProducts(query) {
 }
 
 /**
+ * 이 상품이 그 분류에 들어 있는가
+ * @param {object} info - PRODUCTS_DATA 항목
+ * @param {{kind: string, id: number}} category
+ */
+function inCategory(info, category) {
+    if (category.kind === 'pre') {
+        return Array.isArray(info.preCat) && info.preCat.indexOf(category.id) !== -1;
+    }
+    return info.cat === category.id;
+}
+
+/**
+ * 분류 목록. 카탈로그에서 이름을 못 가져온 시즌이면 번호로 만든다.
+ *
+ * 이름을 지어내지 않는 이유: 틀린 이름은 점원을 엉뚱한 묶음으로 보낸다.
+ * "분류 3" 은 불친절하지만 거짓말은 아니다.
+ *
+ * @param {'main'|'pre'} kind
+ * @returns {{id: number, label: string, count: number}[]}
+ */
+function categoryList(kind) {
+    const table = (typeof CATEGORIES !== 'undefined' && CATEGORIES) ? CATEGORIES[kind] : null;
+    const counts = {};
+
+    Object.keys(PRODUCTS_DATA).forEach(function (code) {
+        const info = PRODUCTS_DATA[code];
+        const ids = (kind === 'pre')
+            ? (Array.isArray(info.preCat) ? info.preCat : [])
+            : (info.cat ? [info.cat] : []);
+        ids.forEach(function (id) { counts[id] = (counts[id] || 0) + 1; });
+    });
+
+    if (table) {
+        return table
+            .filter(function (row) { return counts[row.id]; })
+            .map(function (row) {
+                return { id: row.id, label: row.label, count: counts[row.id] };
+            });
+    }
+
+    return Object.keys(counts).map(Number).sort(function (a, b) { return a - b; })
+        .map(function (id) {
+            return { id: id, label: '분류 ' + id, count: counts[id] };
+        });
+}
+
+/**
  * 상품코드 정렬 (08-01 < 08-02 < 10-01 < 106-01)
  */
 function compareProductCodes(a, b) {
@@ -72,6 +128,99 @@ function compareProductCodes(a, b) {
     const d = parseInt(pa[0], 10) - parseInt(pb[0], 10);
     if (d !== 0) return d;
     return parseInt(pa[1], 10) - parseInt(pb[1], 10);
+}
+
+/**
+ * 카탈로그의 분류 목록 화면. 상품 대신 분류를 나열한다.
+ *
+ * 코드를 모르는 채로 "무슨 세트가 있나" 훑을 때 쓴다. 카탈로그 사이트의
+ * 목록 페이지와 같은 묶음·같은 순서다.
+ */
+function showCategoryIndex() {
+    const list = document.getElementById('catalogList');
+    const count = document.getElementById('catalogCount');
+    list.innerHTML = '';
+    if (count) count.textContent = '분류를 고르세요';
+
+    const cfg = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG) ? PROMO_CONFIG : {};
+
+    appendCategoryGroup(list, 'pre',
+        '사전행사 (' + (cfg.preStart || '') + ' ~ ' + shiftBefore(cfg.mainStart) + ')');
+    appendCategoryGroup(list, 'main',
+        '본행사 (' + (cfg.mainStart || '') + ' ~)');
+
+    updateCategoryButton();
+}
+
+/**
+ * 본행사 시작 하루 전 (사전행사 마지막 날). 날짜가 없으면 빈 문자열.
+ */
+function shiftBefore(date) {
+    if (!date || typeof shiftDate !== 'function') return '';
+    return shiftDate(date, -1);
+}
+
+function appendCategoryGroup(list, kind, title) {
+    const rows = categoryList(kind);
+    if (!rows.length) return;
+
+    const head = document.createElement('div');
+    head.className = 'cat-group';
+    head.textContent = title;
+    list.appendChild(head);
+
+    rows.forEach(function (row) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'cat-item';
+
+        const label = document.createElement('span');
+        label.textContent = row.label;
+        item.appendChild(label);
+
+        const n = document.createElement('span');
+        n.className = 'cat-count';
+        n.textContent = row.count + '개';
+        item.appendChild(n);
+
+        item.onclick = function () {
+            pickCategory(kind, row.id, row.label);
+        };
+        list.appendChild(item);
+    });
+}
+
+/**
+ * 분류를 골라 그 안의 상품만 본다
+ */
+function pickCategory(kind, id, label) {
+    catalogCategory = { kind: kind, id: id, label: label };
+    runSearch();
+    document.getElementById('catalogList').scrollTop = 0;
+}
+
+/**
+ * 분류 선택을 풀고 전체로 돌아간다
+ */
+function clearCategory() {
+    catalogCategory = null;
+    runSearch();
+}
+
+/**
+ * 분류 버튼 눌렀을 때: 목록 화면 열기 / 이미 분류 안이면 해제
+ */
+function toggleCategoryIndex() {
+    if (catalogCategory) {
+        clearCategory();
+    } else {
+        showCategoryIndex();
+    }
+}
+
+function updateCategoryButton() {
+    const btn = document.getElementById('catalogCatBtn');
+    if (btn) btn.textContent = catalogCategory ? '분류 해제' : '분류 목록';
 }
 
 /**
@@ -87,10 +236,24 @@ function runSearch() {
 
     const count = document.getElementById('catalogCount');
     if (count) {
-        count.textContent = catalogMatches.length
+        count.innerHTML = '';
+        if (catalogCategory) {
+            const tag = document.createElement('button');
+            tag.type = 'button';
+            tag.className = 'cat-tag';
+            tag.textContent = catalogCategory.label + ' ✕';
+            tag.title = '분류 선택 해제';
+            tag.onclick = clearCategory;
+            count.appendChild(tag);
+        }
+        const text = document.createElement('span');
+        text.textContent = catalogMatches.length
             ? `상품 ${catalogMatches.length}개`
             : '찾는 상품이 없습니다';
+        count.appendChild(text);
     }
+
+    updateCategoryButton();
 
     if (!catalogMatches.length) {
         list.innerHTML = '<div class="catalog-empty">'
