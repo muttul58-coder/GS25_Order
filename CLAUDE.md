@@ -36,6 +36,7 @@ GS25 convenience store parcel order management web application (Korean language)
 GS25_Order/
 ├── order_form.html       # Main HTML (~330 lines, HTML only)
 ├── product_detail.html   # Barcode click target — product photo/구성/행사 popup
+├── order_split.html      # 상품 찾기 panel (left) + order form in an iframe (right)
 ├── css/
 │   ├── main.css          # Screen styles: layout, forms, tables, buttons, alerts (~854 lines)
 │   ├── print.css         # Print-only @media print styles for A4 (~476 lines)
@@ -117,6 +118,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 | `js/submit.js` | `submitOnly()`, `printOrder()`, `submitToGoogleForm()`, `collectOrderData()`, `checkConfigStatus()` | Google Forms submission, order data collection |
 | `js/admin-test.js` | `getPromoDate()`, `getTestPromoDate()`, `setTestPromoDate()`, `describePromoPeriod()`, `refreshAllRowEvents()`, `renderTestBanner()`, `buildAdminPanel()`, `toggleAdminPanel()`, `initAdminTestMode()` | Admin preview of a different 행사 period (`?admin=1`, `?test=main`) |
 | `js/init.js` | `initializePage()` | Page initialization: date/time, event listeners, postal filter |
+| `js/catalog-panel.js` | `searchProducts()`, `runSearch()`, `buildCard()`, `addToOrder()`, `missingFieldOf()`, `openCatalog()`, `closeCatalog()` | `order_split.html` only: product search panel, 담기 into the order-form iframe |
 
 ### CSS Module Details
 
@@ -125,6 +127,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 | `css/main.css` | Screen styles: reset, layout, forms, tables, buttons, alerts, section theming (orderer/sender/receiver colors), barcode grid, validation error states |
 | `css/print.css` | `@media print` block: A4 optimization, vertical title columns, element hiding, page break rules |
 | `css/responsive.css` | `@media (max-width: 768px)` and `@media (max-width: 480px)` breakpoints |
+| `css/catalog-panel.css` | `order_split.html` only: two-column split, product cards, phone overlay below 900px |
 
 ### Data Flow
 
@@ -238,7 +241,7 @@ has to make it good.
 
 ### File Co-location Requirement
 
-`config.js`, `products.js`, `product_detail.html`, `css/`, `js/`, and `BarcodeImgs/` **must be in the same directory** as `order_form.html` for the application to work.
+`config.js`, `products.js`, `product_detail.html`, `order_split.html`, `css/`, `js/`, and `BarcodeImgs/` **must be in the same directory** as `order_form.html` for the application to work.
 
 ### Seasonal Catalog Refresh (설날/추석)
 
@@ -297,6 +300,29 @@ changed. If a barcode diff appears without a PDF change, something is wrong.
 Products priced `"시세반영"` (gold/silver bars) are emitted as
 `{ "price": 0, "marketPrice": true }`; the form then leaves 단가 blank and prompts
 the clerk for the day's price instead of pre-filling 0.
+
+**Split screen (`order_split.html`).** A second entry point: 상품 찾기 panel on the
+left (500px, fixed), `order_form.html` in an iframe on the right. The order form is
+**not duplicated** — the shell embeds it, and because both are same-origin the 담기
+button calls into the frame directly.
+
+담기 never computes anything. It writes the code into the row's 상품코드 input and
+dispatches `blur` on it, which is exactly the path a clerk's own typing takes, so
+상품명·단가·행사·지급수량·금액·바코드 all come from the existing autocomplete. Adding a
+second product calls the form's own `addProductRow()` rather than building a row —
+that keeps its guard against leaving 수량/단가 blank. The panel pre-checks the same
+fields (`missingFieldOf()`) only so the reason appears in the panel, since on a phone
+the form's own alert sits behind the overlay; 시세반영 items are the case that actually
+hits this. An already-added code is refused, not silently incremented.
+
+Printing was verified: `print()` from inside the iframe fires `beforeprint` only in
+the frame, never in the shell, so the printout is the order form alone — the panel
+cannot leak onto paper. Do not "fix" this by adding print rules to the shell.
+
+Below 900px the two-column layout does not fit, so the panel becomes a full-width
+overlay behind a floating 상품 찾기 button, and a successful 담기 closes it — otherwise
+the clerk cannot see the row that was just added. A blocked 담기 deliberately leaves
+it open so the message is read.
 
 **Product detail window.** Clicking a barcode opens `product_detail.html?code=<코드>`
 — photo, name, price, 구성 설명 and both 행사 rates — in a 500×900 popup pinned to the

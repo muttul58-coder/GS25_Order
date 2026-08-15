@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>상품 찾기 + 주문서</title>
+
+    <!--
+        왼쪽에서 상품을 찾아 오른쪽 주문서에 담는 2단 화면.
+
+        주문서는 order_form.html 을 iframe 으로 그대로 띄운다. 같은 사이트라
+        안쪽 함수를 부를 수 있고, 주문서를 복사해 두 벌로 관리하지 않아도 된다.
+        주문서만 쓰고 싶으면 order_form.html 을 그대로 열면 된다.
+    -->
+
+    <link rel="stylesheet" href="css/catalog-panel.css">
+
+    <!-- 패널이 쓰는 상품 데이터와, 주문서와 같은 행사 판정 함수 -->
+    <script src="products.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin-test.js"></script>
+    <script src="js/product.js"></script>
+    <script src="js/catalog-panel.js"></script>
+</head>
+<body>
+    <div class="split">
+        <aside class="catalog">
+            <div class="catalog-head">
+                <div class="catalog-title">
+                    <span>🔍 상품 찾기 <span class="season" id="catalogSeason"></span></span>
+                    <button type="button" class="catalog-close" onclick="closeCatalog()">닫기</button>
+                </div>
+                <div class="catalog-search">
+                    <input type="search" id="catalogQuery" placeholder="상품 이름 또는 코드 (예: 한우, 1005)"
+                           autocomplete="off">
+                    <button type="button" onclick="runSearch()">검색</button>
+                </div>
+            </div>
+
+            <div class="catalog-count" id="catalogCount"></div>
+            <div class="catalog-list" id="catalogList"></div>
+        </aside>
+
+        <main class="form-pane">
+            <iframe id="orderFrame" src="order_form.html" title="주문서"></iframe>
+        </main>
+    </div>
+
+    <!-- 폰에서만 보이는 패널 열기 버튼 -->
+    <button type="button" class="catalog-toggle" onclick="toggleCatalog()">🔍 상품 찾기</button>
+</body>
+</html>

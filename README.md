@@ -6,6 +6,7 @@ GS25 편의점 택배 주문서 웹 애플리케이션입니다.
 ## 배포 링크
 
 - **주문서 페이지**: https://muttul58-coder.github.io/GS25_Order/order_form.html
+- **상품 찾기 + 주문서 (2단)**: https://muttul58-coder.github.io/GS25_Order/order_split.html
 - **응답 시트**: https://docs.google.com/spreadsheets/d/1J_qtVbK5QmU3rDsSq3o_ieaCo4LDOmfE7orWqVzsLPY/edit?gid=1762982959#gid=1762982959
 
 ---
@@ -34,6 +35,7 @@ GS25 편의점 택배 주문서 웹 애플리케이션입니다.
 GS25_Order/
 ├── order_form.html       # 메인 HTML (구조만, ~330줄)
 ├── product_detail.html   # 바코드를 누르면 뜨는 상품 상세 창 (사진·구성·행사)
+├── order_split.html      # 왼쪽 상품 찾기 + 오른쪽 주문서 2단 화면
 ├── css/
 │   ├── main.css          # 화면 스타일
 │   ├── print.css         # A4 인쇄 전용 스타일
@@ -73,6 +75,7 @@ GS25_Order/
 |------|------|
 | `order_form.html` | HTML 구조만. 스타일과 로직은 `css/`, `js/` 로 분리됨 |
 | `product_detail.html` | 바코드를 누르면 새 창으로 뜨는 상품 상세 (사진·구성·행사) |
+| `order_split.html` | 상품을 찾아 담는 2단 화면. 주문서를 iframe 으로 띄웁니다 |
 | `시즌설정.txt` | **시즌 갱신의 입력값 전부.** 명절마다 여기만 고칩니다 |
 | `season.json` | 구매혜택 아이콘 기억용. 스크립트가 관리하므로 손대지 않습니다 |
 | `config.js` | Google Forms URL 및 Entry ID 설정 |
@@ -278,7 +281,7 @@ Google Forms에 전송되는 JSON 구조:
 
 ## 주의사항
 
-- `config.js`, `products.js`, `product_detail.html`, `css/`, `js/`, `BarcodeImgs/` 는 `order_form.html` 과 **같은 폴더**에 있어야 합니다
+- `config.js`, `products.js`, `product_detail.html`, `order_split.html`, `css/`, `js/`, `BarcodeImgs/` 는 `order_form.html` 과 **같은 폴더**에 있어야 합니다
 - `products.js` 와 `BarcodeImgs/` 는 자동 생성 파일입니다 — 직접 수정하지 말고 `tools/update_season.py` 로 갱신하세요
 - 코드 수정 시 역할에 맞는 `js/*.js` 또는 `css/*.css` 파일을 편집합니다
 
