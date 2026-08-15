@@ -26,7 +26,7 @@ GS25 convenience store parcel order management web application (Korean language)
 
 | File | Purpose |
 |---|---|
-| `products.js` | Product database — exports global `PRODUCTS_DATA` object (646 items) |
+| `products.js` | Product database — exports global `PRODUCTS_DATA` (601 items, generated) |
 | `config.js` | Google Forms endpoint URL and entry IDs — exports global `GOOGLE_FORM_CONFIG` |
 
 ## File Structure
@@ -50,9 +50,12 @@ GS25_Order/
 │   ├── submit.js         # Google Forms submission, config status (~245 lines)
 │   └── init.js           # Page initialization (DOMContentLoaded) (~63 lines)
 ├── config.js             # Google Forms configuration (9 lines)
-├── products.js           # Product database (646 products)
+├── products.js           # Product database (601 products, GENERATED)
 ├── apps_script.js        # Google Apps Script for Sheets automation (not loaded by HTML)
-├── BarcodeImgs/          # 687 barcode JPEG images (named by product code, e.g. 08-01.jpg)
+├── BarcodeImgs/          # 601 barcode JPEGs, one per code (GENERATED, e.g. 08-01.jpg)
+├── BarcodeSource/        # Season barcode-book PDFs (source for BarcodeImgs/)
+├── tools/
+│   └── update_season.py  # Regenerates products.js + BarcodeImgs/ from a season PDF
 ├── plan.md               # PDF implementation plan
 ├── README.md             # Korean documentation
 └── LICENSE               # MIT
@@ -103,7 +106,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 |---|---|---|
 | `js/utils.js` | `showAlert()`, `formatNumberWithCommas()`, `parseFormattedNumber()`, `getTodayDate()`, `updateDateTime()`, `isMobileDevice()`, `formatPhoneNumber()`, `initPhoneFormatting()` | Global utilities, number formatting, phone auto-hyphen |
 | `js/address.js` | `searchOrdererAddress()`, `searchSenderAddress()`, `searchReceiverAddress()` | Daum Postcode API integration |
-| `js/product.js` | `checkProductsDataLoaded()`, `getProductInfo()`, `formatProductCode()`, `addProductRow()`, `removeProductRow()`, `calculateRowTotal()`, `updateProductTotals()`, `updateBarcodeImages()` | Product code lookup, table row CRUD, total calculation, barcode display |
+| `js/product.js` | `resolveCodeDigits()`, `getProductInfo()`, `formatProductCode()`, `addProductRow()`, `calculateGivenQuantity()`, `getRowGivenQuantity()`, `calculateRowTotal()`, `updateProductTotals()`, `updateBarcodeImages()` | Product code lookup, table row CRUD, given-quantity + total calculation, barcode display |
 | `js/delivery.js` | `refreshDeliveryProductSelects()`, `onDeliveryProductCodeChange()`, `addDeliveryProductRow()`, `removeDeliveryProductRow()`, `validateDeliveryQuantities()` | Delivery product selection and quantity validation |
 | `js/copy-sync.js` | `toggleOrdererInfoCopy()`, `toggleReceiverInfoCopy()`, `syncFromOrderer()`, `syncFromSender()`, `initCopySync()` | Auto-copy orderer info to sender/receiver with live sync |
 | `js/validation.js` | `validateAllInputs()`, `checkOrdererInfoComplete()`, `checkSequentialInput()`, `attachSequentialInputGuide()` | Input validation, sequential input enforcement |
@@ -149,9 +152,29 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 
 ### Product Code Format
 
-- Standard format: `XX-YY` (e.g., `08-01`, `106-09`)
+- Standard format: `XX-YY` or `XXX-YY` (e.g., `08-01`, `106-09`)
 - Auto-normalization: `8-1` → `08-01` via `formatProductCode()`
-- Product categories span codes 08–106
+- Digits-only entry (`1005` → `10-05`) is resolved by `resolveCodeDigits()`, which
+  picks the split that actually exists in `PRODUCTS_DATA` rather than guessing
+  category width from a numeric range. Do not reintroduce range-based guessing:
+  seasons have shipped both `10-05` and `100-05`, and only the catalog can
+  disambiguate them.
+- Category codes change every season — the current catalog (2026 추석) spans 08–94
+
+### Promotion Semantics (수량 vs 지급수량)
+
+The product table has two quantity columns and they mean different things:
+
+- **수량** — what the customer pays for. User-entered.
+- **지급수량** — what actually ships, bonus included. Read-only, computed by
+  `calculateGivenQuantity()` as `quantity + floor(quantity / N)` for a `"N+1"` event.
+
+`금액` is always `수량 × 단가`. A promotion adds free goods; it does **not** discount
+the price. (Before 2026-08 the form modelled this the other way round — 수량 meant
+units received and the price was reduced — so old orders are not comparable.)
+
+Delivery-product allocation validates against **지급수량**, not 수량, since that is
+what leaves the warehouse. `getOrderProductList()` therefore returns given quantities.
 
 ### Color Scheme (section theming)
 
@@ -184,13 +207,34 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 
 `config.js`, `products.js`, `css/`, `js/`, and `BarcodeImgs/` **must be in the same directory** as `order_form.html` for the application to work.
 
-### Adding Products
+### Seasonal Catalog Refresh (설날/추석)
 
-Edit `products.js` — add entries to the `PRODUCTS_DATA` object:
-```javascript
-"XX-YY": { "name": "상품명", "price": 12345 }
+**`products.js` and `BarcodeImgs/` are generated — do not hand-edit them.**
+
+The GS25 catalog is replaced wholesale every 설날/추석. Codes are reused for
+*different* products across seasons (in the 2026 추석 change, 371 of the carried-over
+codes pointed at a different item), so `products.js` and `BarcodeImgs/` must be
+regenerated **together**. Updating only one of them prints a barcode that scans as
+a different product than the order form shows.
+
+1. Drop the new barcode-book PDF into `BarcodeSource/`
+2. Find the catalog JSON: open the season's catalog site, then read
+   `<catalog-root>/products.json` (e.g. `https://gs25mobile.com/2026_2nd/products.json`)
+3. Run:
+
+```bash
+python tools/update_season.py BarcodeSource/<new>.pdf --catalog <catalog-json-url> --season "2027 설날"
 ```
-Add corresponding barcode image as `BarcodeImgs/XX-YY.jpg`.
+
+The script cross-checks product names between the PDF and the catalog JSON, and
+fails if the code sets do not line up 1:1. Any non-zero exit or `[!]` line means
+the two sources disagree — resolve before deploying.
+
+Products priced `"시세반영"` (gold/silver bars) are emitted as
+`{ "price": 0, "marketPrice": true }`; the form then leaves 단가 blank and prompts
+the clerk for the day's price instead of pre-filling 0.
+
+Dependencies: `pip install pdfplumber pymupdf`
 
 ### Google Forms Configuration
 

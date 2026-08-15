@@ -64,9 +64,11 @@ function refreshDeliveryProductSelects(section) {
             option.textContent = p.code;
             select.appendChild(option);
         });
+        const row = select.closest('.delivery-product-row');
+
         // 기존 선택값 복원 (현재 선택된 상품은 항상 유지)
-        if (currentValue) {
-            if (!select.querySelector('option[value="' + currentValue + '"]') && products.some(p => p.code === currentValue)) {
+        if (currentValue && products.some(p => p.code === currentValue)) {
+            if (!select.querySelector('option[value="' + currentValue + '"]')) {
                 const option = document.createElement('option');
                 option.value = currentValue;
                 option.textContent = currentValue;
@@ -74,11 +76,14 @@ function refreshDeliveryProductSelects(section) {
             }
             select.value = currentValue;
         } else {
+            // 선택한 적이 없거나, 주문 목록에서 사라진 상품인 경우
+            // 상품이름/수량이 남아 있으면 채워진 행처럼 보이므로 함께 비운다
             select.value = '';
-            // 상품이름 필드도 초기화
-            const row = select.closest('.delivery-product-row');
             if (row) {
                 row.querySelector('.delivery-product-name').value = '';
+                if (currentValue) {
+                    row.querySelector('.delivery-product-qty').value = '';
+                }
             }
         }
     });
@@ -182,11 +187,12 @@ function renumberDeliveryProductRows(section) {
  */
 function validateDeliveryQuantities() {
     // 주문 상품별 수량 수집
+    // 구매 수량이 아니라 지급 수량(덤 포함) 기준 — 실제로 배송되는 개수와 맞춰야 한다
     const orderProducts = {};
     const productRows = document.getElementById('productTableBody').querySelectorAll('.product-row');
     productRows.forEach(row => {
         const code = row.querySelector('.product-code').value.trim();
-        const qty = parseInt(row.querySelector('.quantity').value) || 0;
+        const qty = getRowGivenQuantity(row);
         if (code) {
             orderProducts[code] = (orderProducts[code] || 0) + qty;
         }
@@ -216,9 +222,11 @@ function validateDeliveryQuantities() {
             allMatch = false;
             if (deliveryQty > orderQty) {
                 hasIssue = true;
-                messages.push(`⚠️ [${code}] 배송 수량(${deliveryQty})이 주문 수량(${orderQty})을 초과합니다.`);
-            } else if (deliveryQty > 0 && deliveryQty < orderQty) {
-                messages.push(`ℹ️ [${code}] 배송 수량(${deliveryQty}) / 주문 수량(${orderQty})`);
+                messages.push(`⚠️ [${code}] 배송 수량(${deliveryQty})이 지급 수량(${orderQty})을 초과합니다.`);
+            } else {
+                // 0개도 반드시 안내한다. 안내가 없으면 사용자는 어떤 상품이
+                // 배분되지 않았는지 모른 채 전송 단계에서 막히게 된다.
+                messages.push(`ℹ️ [${code}] 배송 수량(${deliveryQty}) / 지급 수량(${orderQty})`);
             }
         }
     }
@@ -238,7 +246,7 @@ function validateDeliveryQuantities() {
             msgDiv.innerHTML = messages.join('<br>');
         } else if (allMatch && Object.keys(orderProducts).length > 0 && Object.keys(deliveryProducts).length > 0) {
             msgDiv.className = 'delivery-quantity-message quantity-match-ok';
-            msgDiv.textContent = '✅ 모든 상품의 배송 수량이 주문 수량과 일치합니다.';
+            msgDiv.textContent = '✅ 모든 상품의 배송 수량이 지급 수량과 일치합니다.';
         } else if (messages.length > 0) {
             msgDiv.className = 'delivery-quantity-message quantity-mismatch-warning';
             msgDiv.innerHTML = messages.join('<br>');

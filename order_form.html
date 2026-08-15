@@ -90,6 +90,7 @@
                             <th>상품이름</th>
                             <th style="width: 70px;">행사</th>
                             <th style="width: 70px;">수량</th>
+                            <th style="width: 70px;">지급수량</th>
                             <th style="width: 100px;">단가</th>
                             <th style="width: 100px;">금액</th>
                             <th style="width: 100px;" class="no-print">작업</th>
@@ -127,6 +128,7 @@
                                 </select>
                             </td>
                             <td><input type="number" class="quantity" placeholder="0" min="0" inputmode="numeric" onfocus="this.select()" required></td>
+                            <td><input type="text" class="given-quantity" readonly tabindex="-1"></td>
                             <td><input type="text" class="unit-price" placeholder="______" required></td>
                             <td><input type="text" class="total-price" readonly></td>
                             <td class="no-print">
@@ -139,7 +141,7 @@
                     <tfoot>
                         <!-- 행 추가 버튼 -->
                         <tr class="no-print">
-                            <td colspan="8" class="add-row-container">
+                            <td colspan="9" class="add-row-container">
                                 <button type="button" class="add-btn" onclick="addProductRow()">+ 상품 추가</button>
                             </td>
                         </tr>
@@ -147,34 +149,13 @@
                         <tr class="total-row">
                             <td colspan="4">총 수량</td>
                             <td class="section-total-quantity" id="totalQuantity">0</td>
+                            <td class="section-total-quantity" id="totalGivenQuantity">0</td>
                             <td>총 금액</td>
                             <td class="section-grand-total" id="totalAmount">0</td>
                             <td class="no-print"></td>
                         </tr>
-                        <!-- 바코드 이미지 1줄 -->
-                        <tr class="barcode-row barcode-row-1">
-                            <td colspan="12" class="barcode-container">
-                                <div class="barcode-grid">
-                                    <div class="barcode-slot"></div>
-                                    <div class="barcode-slot"></div>
-                                    <div class="barcode-slot"></div>
-                                    <div class="barcode-slot"></div>
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- 바코드 이미지 2줄 (기본 숨김) -->
-                        <tr class="barcode-row barcode-row-2" style="display:none;">
-                            <td colspan="12" class="barcode-container">
-                                <div class="barcode-grid">
-                                    <div class="barcode-slot"></div>
-                                    <div class="barcode-slot"></div>
-                                    <div class="barcode-slot"></div>
-                                    <div class="barcode-slot"></div>
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- 바코드 이미지 3줄 (기본 숨김) -->
-                        <tr class="barcode-row barcode-row-3" style="display:none;">
+                        <!-- 바코드 이미지 - 상품 수에 맞춰 updateBarcodeImages()가 줄을 늘리고 줄인다 -->
+                        <tr class="barcode-row">
                             <td colspan="12" class="barcode-container">
                                 <div class="barcode-grid">
                                     <div class="barcode-slot"></div>

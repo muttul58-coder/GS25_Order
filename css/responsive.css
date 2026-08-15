@@ -48,7 +48,7 @@
                 flex-direction: column;
             }
 
-            .submit-btn, .print-btn, .add-section-btn, .print-only-btn, .submit-only-btn, .pdf-btn {
+            .submit-btn, .print-btn, .add-section-btn, .print-only-btn, .submit-only-btn, .pdf-btn, .kakao-share-btn {
                 width: 100%;
                 padding: 12px;
                 font-size: 16px;

@@ -225,12 +225,10 @@ window.addEventListener('afterprint', function() {
         table.removeAttribute('data-print-restructured');
         delete table._origStructure;
 
-        // 이벤트 리스너 재연결
-        const rows = table.querySelectorAll('.product-row');
-        rows.forEach(row => {
-            attachRowEventListeners(row);
-            attachProductCodeFormatting(row);
-        });
+        // 이벤트 리스너는 다시 붙이지 않는다.
+        // 위 복원은 행을 새로 만드는 것이 아니라 같은 DOM 노드를 옮기는 것이라
+        // 기존 리스너가 그대로 살아 있다. 다시 붙이면 인쇄할 때마다 리스너가
+        // 한 벌씩 쌓여 입력 한 번에 핸들러가 여러 번 실행된다.
     });
 });
 
