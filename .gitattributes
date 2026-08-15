@@ -1,0 +1,14 @@
+# 리눅스(GitHub Actions)에서 실행되는 파일만 LF 로 고정한다.
+# CRLF 로 커밋되면 줄 끝의 \r 때문에 "$'\r': command not found" 로 죽는다.
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+
+# 나머지(html/css/js/md/json)는 규칙을 두지 않는다.
+# 이 저장소는 CRLF 로 보관돼 있어서, 규칙을 걸면 전체가 재정규화되며
+# 줄바꿈만 바뀐 수천 줄짜리 diff 가 생긴다.
+
+# 이미지/PDF 는 절대 줄바꿈 변환을 하지 않는다 (바코드가 깨진다)
+*.jpg binary
+*.png binary
+*.pdf binary
