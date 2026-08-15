@@ -2,29 +2,100 @@
 // 폼 전송 함수
 // ========================================
 
+// 중복 전송 방지 상태
+// no-cors 전송이라 응답을 읽을 수 없으므로, 같은 내용이 두 번 시트에 쌓이는 것은
+// 클라이언트에서 막아야 한다. (전송 버튼 연타 / 전송 후 "인쇄 및 주문 전송" 재클릭)
+let isSubmitting = false;
+let lastSubmittedSignature = null;
+
+/**
+ * 현재 주문 내용의 지문 생성 (중복 전송 판별용)
+ */
+function getOrderSignature() {
+    return JSON.stringify(collectOrderData());
+}
+
+/**
+ * 전송 관련 버튼 일괄 활성/비활성
+ */
+function setSubmitButtonsDisabled(disabled) {
+    document.querySelectorAll('.submit-only-btn, .print-btn').forEach(btn => {
+        btn.disabled = disabled;
+    });
+}
+
+/**
+ * 이미 같은 내용을 전송했는지 확인하고, 재전송 여부를 사용자에게 묻는다
+ * @returns {Promise<boolean>} 전송을 진행할지 여부
+ */
+function confirmIfDuplicate() {
+    return new Promise(resolve => {
+        if (lastSubmittedSignature === null ||
+            lastSubmittedSignature !== getOrderSignature()) {
+            resolve(true);
+            return;
+        }
+        showConfirmDialog(
+            '이미 전송된 주문입니다.<br>같은 내용을 한 번 더 전송하시겠습니까?',
+            () => resolve(true),
+            () => resolve(false)
+        );
+    });
+}
+
 /**
  * 주문 전송만 실행 (인쇄 없이)
  */
 async function submitOnly() {
+    if (isSubmitting) return;
+
     // 입력 검증
     if (!validateAllInputs()) {
         return;
     }
 
-    await submitToGoogleForm();
+    if (!await confirmIfDuplicate()) {
+        showAlert('전송을 취소했습니다.', 'info');
+        return;
+    }
+
+    isSubmitting = true;
+    setSubmitButtonsDisabled(true);
+    try {
+        await submitToGoogleForm();
+    } finally {
+        isSubmitting = false;
+        setSubmitButtonsDisabled(false);
+    }
 }
 
 /**
  * 주문서 인쇄 및 구글 설문지 제출
  */
 async function printOrder() {
+    if (isSubmitting) return;
+
     // 입력 검증
     if (!validateAllInputs()) {
         return;
     }
 
-    // 구글 폼 제출
-    const submitted = await submitToGoogleForm();
+    if (!await confirmIfDuplicate()) {
+        // 전송은 건너뛰고 인쇄만 진행
+        window.print();
+        return;
+    }
+
+    isSubmitting = true;
+    setSubmitButtonsDisabled(true);
+    let submitted = false;
+    try {
+        // 구글 폼 제출
+        submitted = await submitToGoogleForm();
+    } finally {
+        isSubmitting = false;
+        setSubmitButtonsDisabled(false);
+    }
 
     if (submitted) {
         // PC/모바일 모두 브라우저 인쇄 대화상자 표시
@@ -82,6 +153,9 @@ async function submitToGoogleForm() {
             body: formData
         });
 
+        // 전송에 성공한 내용을 기록해 두고 같은 내용의 재전송을 막는다
+        lastSubmittedSignature = getOrderSignature();
+
         showAlert('✅ 주문이 성공적으로 전송되었습니다!', 'success');
         return true;
     } catch (error) {
@@ -100,6 +174,7 @@ function collectOrderData() {
     const productList = [];
     const productRows = document.getElementById('productTableBody').querySelectorAll('.product-row');
     let allTotalQuantity = 0;
+    let allTotalGiven = 0;
     let allGrandTotal = 0;
     productRows.forEach(row => {
         const unitPriceValue = row.querySelector('.unit-price').value;
@@ -107,15 +182,19 @@ function collectOrderData() {
         const qty = Number(row.querySelector('.quantity').value) || 0;
         const amt = parseFormattedNumber(totalPriceValue) || 0;
 
+        const given = getRowGivenQuantity(row);
+
         productList.push({
             상품코드: row.querySelector('.product-code').value,
             상품이름: row.querySelector('.product-name').value,
             행사: row.querySelector('.event-type').value || '없음',
             수량: row.querySelector('.quantity').value,
+            지급수량: given,
             단가: parseFormattedNumber(unitPriceValue),
             금액: amt
         });
         allTotalQuantity += qty;
+        allTotalGiven += given;
         allGrandTotal += amt;
     });
 
@@ -148,8 +227,11 @@ function collectOrderData() {
             }
         });
 
+        const deliveryDateInput = section.querySelector('.delivery-date');
+
         const sectionData = {
             주문번호: index + 1,
+            배송희망일: deliveryDateInput ? deliveryDateInput.value : '',
             보내는분: {
                 성명: section.querySelector('.sender-name').value,
                 전화번호: section.querySelector('.sender-phone').value,
@@ -173,6 +255,7 @@ function collectOrderData() {
     data.전체합계 = {
         총주문건수: data.주문목록.length,
         총수량: allTotalQuantity,
+        총지급수량: allTotalGiven,
         총금액: allGrandTotal
     };
 

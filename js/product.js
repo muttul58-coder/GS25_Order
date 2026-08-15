@@ -3,66 +3,47 @@
 // ========================================
 
 /**
- * 숫자만 입력된 상품코드에 하이픈 자동 삽입
- * PRODUCTS_DATA를 참조하여 3자리 카테고리(100~106)와 2자리 카테고리를 정확히 구분
+ * 숫자만 입력된 상품코드를 "카테고리-번호"로 해석
+ *
+ * 카테고리 자릿수(2자리 / 3자리)를 범위로 추측하지 않고 PRODUCTS_DATA에
+ * 실제로 존재하는 코드인지로 판별한다. 시즌마다 카테고리 체계가 바뀌어도
+ * (예: 2026 추석은 08~94 전부 2자리) 코드 수정 없이 그대로 동작한다.
+ *
  * @param {string} digits 숫자만으로 이루어진 문자열
- * @returns {string|null} 하이픈이 삽입된 코드 또는 null(아직 판단 불가)
+ * @returns {{code: string, exact: boolean}|null}
+ *          exact=true  → PRODUCTS_DATA에 존재하는 유일한 해석
+ *          exact=false → 존재하지 않지만 형식상 가장 그럴듯한 해석
+ *          null        → 아직 판단 불가(입력이 짧거나 해석이 둘 이상)
+ */
+function resolveCodeDigits(digits) {
+    // 번호는 최대 2자리이므로 카테고리는 2자리 또는 3자리만 가능
+    var candidates = [];
+    for (var catLen = 2; catLen <= 3; catLen++) {
+        var num = digits.slice(catLen);
+        if (digits.length <= catLen || num.length > 2) continue;
+        candidates.push(formatCodeForLookup(digits.slice(0, catLen) + '-' + num));
+    }
+    if (candidates.length === 0) return null;
+
+    if (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA) {
+        var hits = candidates.filter(function (c) { return PRODUCTS_DATA[c]; });
+        if (hits.length === 1) return { code: hits[0], exact: true };
+        // 2개 이상이면 모호 → 숫자를 더 받아야 판별 가능
+        if (hits.length > 1) return null;
+    }
+
+    // 카탈로그에 없는 코드: 형식만 맞춰 돌려주고 "상품을 찾을 수 없음"으로 안내
+    return { code: candidates[0], exact: false };
+}
+
+/**
+ * 입력 중 하이픈 자동 삽입 (확실할 때만 개입)
+ * @param {string} digits 숫자만으로 이루어진 문자열
+ * @returns {string|null} 하이픈이 삽입된 코드 또는 null
  */
 function autoInsertHyphen(digits) {
-    var hasData = (typeof PRODUCTS_DATA !== 'undefined' && PRODUCTS_DATA);
-
-    // 3자리 입력: "100"~"106"이면 3자리 카테고리 가능성 → 대기
-    if (digits.length === 3) {
-        var num3 = parseInt(digits);
-        if (num3 >= 100 && num3 <= 106) {
-            return null; // 아직 판단 불가, 추가 입력 대기
-        }
-        // 그 외는 2자리 카테고리 (예: "081" → "08-1")
-        return digits.slice(0, 2) + '-' + digits.slice(2);
-    }
-
-    // 4자리 입력: "100x"~"106x"이면 3자리 카테고리 가능성 → 대기
-    if (digits.length === 4) {
-        var prefix3 = parseInt(digits.slice(0, 3));
-        if (prefix3 >= 100 && prefix3 <= 106) {
-            return null; // "1060" 등은 5자리 완성을 대기
-        }
-        // 그 외는 2자리 카테고리 (예: "0801" → "08-01")
-        return digits.slice(0, 2) + '-' + digits.slice(2);
-    }
-
-    // 5자리 이상 입력: 3자리 vs 2자리 카테고리 판별
-    if (digits.length >= 5) {
-        var cat3 = digits.slice(0, 3); // 3자리 카테고리 후보
-        var cat3num = parseInt(cat3);
-
-        // 3자리 카테고리 범위(100~106)이면 PRODUCTS_DATA로 확인
-        if (cat3num >= 100 && cat3num <= 106) {
-            var code3 = cat3 + '-' + digits.slice(3);
-            var code2 = digits.slice(0, 2) + '-' + digits.slice(2);
-
-            if (hasData) {
-                // 3자리 카테고리로 매칭되는 상품이 있으면 3자리 우선
-                var formatted3 = formatCodeForLookup(code3);
-                var formatted2 = formatCodeForLookup(code2);
-                if (PRODUCTS_DATA[formatted3]) {
-                    return code3;
-                }
-                if (PRODUCTS_DATA[formatted2]) {
-                    return code2;
-                }
-                // 둘 다 없으면 3자리 카테고리 우선 (100~106 범위이므로)
-                return code3;
-            }
-            // 데이터 없으면 3자리 카테고리 우선
-            return code3;
-        }
-
-        // 100 미만이면 2자리 카테고리
-        return digits.slice(0, 2) + '-' + digits.slice(2);
-    }
-
-    return null;
+    var resolved = resolveCodeDigits(digits);
+    return (resolved && resolved.exact) ? resolved.code : null;
 }
 
 /**
@@ -206,6 +187,7 @@ function addProductRow() {
             </select>
         </td>
         <td><input type="number" class="quantity" placeholder="0" min="0" inputmode="numeric" onfocus="this.select()" required></td>
+        <td><input type="text" class="given-quantity" readonly tabindex="-1"></td>
         <td><input type="text" class="unit-price" placeholder="______" required></td>
         <td><input type="text" class="total-price" readonly></td>
         <td class="no-print">
@@ -286,21 +268,30 @@ function renumberProductRows() {
 }
 
 /**
- * 주문 상품 테이블에서 유효한 상품 목록 추출 (수량 포함)
+ * 주문 상품 테이블에서 유효한 상품 목록 추출
+ *
+ * qty 는 구매 수량이 아니라 **지급 수량**이다. 배송 상품은 덤을 포함해
+ * 실제로 나가는 개수를 배분해야 하므로 지급 수량이 기준이 된다.
+ * 같은 상품코드가 여러 행에 입력된 경우 하나로 합산한다.
+ * (합산하지 않으면 배송 상품 콤보박스에 같은 코드가 중복으로 표시된다)
  * @returns {Array} - [{code, name, qty}, ...]
  */
 function getOrderProductList() {
     const rows = document.getElementById('productTableBody').querySelectorAll('.product-row');
-    const list = [];
+    const byCode = new Map();
     rows.forEach(row => {
         const code = row.querySelector('.product-code').value.trim();
         const name = row.querySelector('.product-name').value.trim();
-        const qty = parseInt(row.querySelector('.quantity').value) || 0;
-        if (code && name) {
-            list.push({ code, name, qty });
+        const qty = getRowGivenQuantity(row);
+        if (!code || !name) return;
+
+        if (byCode.has(code)) {
+            byCode.get(code).qty += qty;
+        } else {
+            byCode.set(code, { code, name, qty });
         }
     });
-    return list;
+    return Array.from(byCode.values());
 }
 
 // ========================================
@@ -344,9 +335,13 @@ function attachRowEventListeners(row) {
         }
     });
 
-    // 행사 변경 시 금액 재계산
+    // 행사 변경 시 금액/지급수량 재계산
+    // 행사가 바뀌면 지급 수량이 달라지므로 배송 배분도 다시 확인해야 한다
     if (eventType) {
-        eventType.addEventListener('change', () => calculateRowTotal(row));
+        eventType.addEventListener('change', () => {
+            calculateRowTotal(row);
+            refreshAllDeliveryProductSelects();
+        });
     }
 
     // 단가 입력 시 천단위 쉼표 자동 포맷팅 및 금액 재계산
@@ -389,35 +384,66 @@ function attachRowEventListeners(row) {
 }
 
 /**
- * 개별 행의 금액 계산 (수량 × 단가)
+ * 행사를 반영한 지급 수량 계산
+ *
+ * '수량'은 손님이 결제하는 개수이고, 행사 "N+1"은 N개를 살 때마다 1개를
+ * 덤으로 주는 것이다. 따라서 실제로 나가는 개수는 수량 + (수량 / N) 이다.
+ *   1+1 : 1개 구매 → 2개 지급
+ *   2+1 : 1개 구매 → 1개 지급 / 2개 구매 → 3개 지급 / 4개 구매 → 6개 지급
+ *
+ * @param {number} quantity - 구매(결제) 수량
+ * @param {string} eventValue - 행사 값 ("", "1+1", "2+1" ...)
+ * @returns {number} 실제 지급되는 수량
+ */
+function calculateGivenQuantity(quantity, eventValue) {
+    if (!eventValue || quantity <= 0) return quantity;
+
+    const n = parseInt(eventValue.split('+')[0]);
+    if (!n || n <= 0) return quantity;
+
+    return quantity + Math.floor(quantity / n);
+}
+
+/**
+ * 상품 행의 지급 수량 (입력값에서 직접 계산)
+ * @param {HTMLElement} row - 상품 행
+ * @returns {number}
+ */
+function getRowGivenQuantity(row) {
+    const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+    const eventSelect = row.querySelector('.event-type');
+    return calculateGivenQuantity(quantity, eventSelect ? eventSelect.value : '');
+}
+
+/**
+ * 개별 행의 지급 수량과 금액 계산
+ *
+ * 금액은 항상 수량 × 단가이다. 행사 할인은 값을 깎아주는 것이 아니라
+ * 덤을 더 주는 방식이므로 청구액에는 영향을 주지 않는다.
+ *
  * @param {HTMLElement} row - 대상 행 요소
  */
 function calculateRowTotal(row) {
     const quantityInput = row.querySelector('.quantity');
     const unitPriceInput = row.querySelector('.unit-price');
     const totalPriceInput = row.querySelector('.total-price');
+    const givenQuantityInput = row.querySelector('.given-quantity');
     const eventTypeSelect = row.querySelector('.event-type');
 
     const quantity = parseInt(quantityInput.value) || 0;
     const unitPrice = parseFormattedNumber(unitPriceInput.value) || 0;
     const eventValue = eventTypeSelect ? eventTypeSelect.value : '';
 
-    let total = 0;
-
-    if (eventValue && quantity > 0 && unitPrice > 0) {
-        // 행사 적용: "N+1" → (N+1)개 묶음당 N개만 결제
-        const n = parseInt(eventValue.split('+')[0]);
-        const bundleSize = n + 1;       // 묶음 크기 (예: 2+1 → 3개)
-        const bundles = Math.floor(quantity / bundleSize); // 완성된 묶음 수
-        const remainder = quantity % bundleSize;           // 나머지 개수
-        const paidQuantity = (bundles * n) + remainder;    // 실제 결제 수량
-        total = paidQuantity * unitPrice;
-    } else {
-        total = quantity * unitPrice;
+    // 지급 수량 표시
+    if (givenQuantityInput) {
+        const given = calculateGivenQuantity(quantity, eventValue);
+        givenQuantityInput.value = given > 0 ? given : '';
+        // 덤이 붙은 행은 눈에 띄게 표시
+        givenQuantityInput.classList.toggle('has-bonus', given > quantity);
     }
 
     // 금액 필드에 천단위 쉼표가 포함된 값 설정
-    totalPriceInput.value = formatNumberWithCommas(total);
+    totalPriceInput.value = formatNumberWithCommas(quantity * unitPrice);
 
     // 합계 업데이트
     updateProductTotals();
@@ -430,23 +456,29 @@ function updateProductTotals() {
     const tbody = document.getElementById('productTableBody');
     const rows = tbody.querySelectorAll('.product-row');
     let totalQuantity = 0;
+    let totalGiven = 0;
     let grandTotal = 0;
 
-    // 모든 행의 수량과 금액을 합산
+    // 모든 행의 수량, 지급 수량, 금액을 합산
     rows.forEach(row => {
         const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+        const givenInput = row.querySelector('.given-quantity');
+        const given = givenInput ? (parseInt(givenInput.value) || 0) : quantity;
         const totalPriceValue = row.querySelector('.total-price').value;
         const totalPrice = parseFormattedNumber(totalPriceValue) || 0;
 
         totalQuantity += quantity;
+        totalGiven += given;
         grandTotal += totalPrice;
     });
 
     // 합계 필드 업데이트 (천단위 쉼표 포함)
     const totalQuantityEl = document.getElementById('totalQuantity');
+    const totalGivenEl = document.getElementById('totalGivenQuantity');
     const grandTotalEl = document.getElementById('totalAmount');
 
     if (totalQuantityEl) totalQuantityEl.textContent = totalQuantity;
+    if (totalGivenEl) totalGivenEl.textContent = totalGiven;
     if (grandTotalEl) grandTotalEl.textContent = formatNumberWithCommas(grandTotal);
 }
 
@@ -454,78 +486,74 @@ function updateProductTotals() {
  * 바코드 이미지 영역 업데이트
  * 상품 행의 상품코드를 수집하여 바코드 이미지를 표시
  */
+const BARCODE_SLOTS_PER_ROW = 4;
+
+/**
+ * 바코드 한 줄(tr) 생성
+ */
+function createBarcodeRow() {
+    const tr = document.createElement('tr');
+    tr.className = 'barcode-row';
+
+    const td = document.createElement('td');
+    td.colSpan = 12;
+    td.className = 'barcode-container';
+
+    const grid = document.createElement('div');
+    grid.className = 'barcode-grid';
+    for (let i = 0; i < BARCODE_SLOTS_PER_ROW; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'barcode-slot';
+        grid.appendChild(slot);
+    }
+
+    td.appendChild(grid);
+    tr.appendChild(td);
+    return tr;
+}
+
 function updateBarcodeImages() {
     const tbody = document.getElementById('productTableBody');
-    const rows = tbody.querySelectorAll('.product-row');
-    const row1 = document.querySelector('.barcode-row-1 .barcode-grid');
-    const row2 = document.querySelector('.barcode-row-2 .barcode-grid');
-    const row3 = document.querySelector('.barcode-row-3 .barcode-grid');
-    const row2Tr = document.querySelector('.barcode-row-2');
-    const row3Tr = document.querySelector('.barcode-row-3');
-
-    if (!row1 || !row2 || !row3) return;
+    const table = document.getElementById('productTable');
+    const tfoot = table ? table.querySelector('tfoot') : null;
+    if (!tbody || !tfoot) return;
 
     // 유효한 상품코드 수집
     const codes = [];
-    rows.forEach(row => {
+    tbody.querySelectorAll('.product-row').forEach(row => {
         const code = row.querySelector('.product-code').value.trim();
         if (code && code.includes('-')) {
             codes.push(code);
         }
     });
 
-    // 1줄 슬롯 (0~3)
-    const slots1 = row1.querySelectorAll('.barcode-slot');
-    // 2줄 슬롯 (4~7)
-    const slots2 = row2.querySelectorAll('.barcode-slot');
-    // 3줄 슬롯 (8~11)
-    const slots3 = row3.querySelectorAll('.barcode-slot');
+    // 필요한 줄 수만큼 바코드 행을 늘리거나 줄인다 (상품 개수 제한 없음, 최소 1줄 유지)
+    const needed = Math.max(1, Math.ceil(codes.length / BARCODE_SLOTS_PER_ROW));
+    const rows = Array.from(tfoot.querySelectorAll('.barcode-row'));
 
-    // 1줄 업데이트
-    slots1.forEach((slot, i) => {
-        slot.innerHTML = '';
-        if (codes[i]) {
+    while (rows.length < needed) {
+        const tr = createBarcodeRow();
+        tfoot.appendChild(tr);
+        rows.push(tr);
+    }
+    while (rows.length > needed) {
+        rows.pop().remove();
+    }
+
+    // 슬롯 채우기
+    rows.forEach((tr, rowIndex) => {
+        tr.style.display = '';
+        tr.querySelectorAll('.barcode-slot').forEach((slot, i) => {
+            slot.innerHTML = '';
+            const code = codes[rowIndex * BARCODE_SLOTS_PER_ROW + i];
+            if (!code) return;
             const img = document.createElement('img');
-            img.src = 'BarcodeImgs/' + codes[i] + '.jpg';
-            img.alt = codes[i];
+            img.src = 'BarcodeImgs/' + code + '.jpg';
+            img.alt = code;
             img.onerror = function () { this.style.display = 'none'; };
             slot.appendChild(img);
-        }
+        });
     });
-
-    // 2줄 업데이트
-    let hasRow2 = false;
-    slots2.forEach((slot, i) => {
-        slot.innerHTML = '';
-        const idx = i + 4;
-        if (codes[idx]) {
-            const img = document.createElement('img');
-            img.src = 'BarcodeImgs/' + codes[idx] + '.jpg';
-            img.alt = codes[idx];
-            img.onerror = function () { this.style.display = 'none'; };
-            slot.appendChild(img);
-            hasRow2 = true;
-        }
-    });
-
-    // 3줄 업데이트
-    let hasRow3 = false;
-    slots3.forEach((slot, i) => {
-        slot.innerHTML = '';
-        const idx = i + 8;
-        if (codes[idx]) {
-            const img = document.createElement('img');
-            img.src = 'BarcodeImgs/' + codes[idx] + '.jpg';
-            img.alt = codes[idx];
-            img.onerror = function () { this.style.display = 'none'; };
-            slot.appendChild(img);
-            hasRow3 = true;
-        }
-    });
-
-    // 2줄, 3줄 표시/숨김
-    row2Tr.style.display = hasRow2 ? '' : 'none';
-    row3Tr.style.display = hasRow3 ? '' : 'none';
 }
 
 // ========================================
@@ -595,19 +623,29 @@ function attachProductCodeFormatting(row) {
                 // 수량을 1로 설정
                 quantityInput.value = '1';
 
-                // 단가를 상품 정보의 가격으로 자동 입력 (천단위 쉼표 포함)
-                unitPriceInput.value = formatNumberWithCommas(productInfo.price);
+                if (productInfo.marketPrice) {
+                    // 금/은 등 시세반영 상품: 단가를 비워두고 직접 입력받는다
+                    unitPriceInput.value = '';
+                    unitPriceInput.placeholder = '시세 입력';
+                    calculateRowTotal(row);
+                    showAlert(`💡 [${formattedCode}] 시세반영 상품입니다. 당일 단가를 입력해주세요.`, 'warning');
+                    setTimeout(() => unitPriceInput.focus(), 100);
+                } else {
+                    // 단가를 상품 정보의 가격으로 자동 입력 (천단위 쉼표 포함)
+                    unitPriceInput.value = formatNumberWithCommas(productInfo.price);
+                    unitPriceInput.placeholder = '______';
 
-                // 금액 재계산 (천단위 쉼표 포함)
-                calculateRowTotal(row);
+                    // 금액 재계산 (천단위 쉼표 포함)
+                    calculateRowTotal(row);
 
-                // 행사 필드로 포커스 이동
-                const eventTypeSelect = row.querySelector('.event-type');
-                if (eventTypeSelect) {
-                    setTimeout(() => eventTypeSelect.focus(), 100);
+                    // 행사 필드로 포커스 이동
+                    const eventTypeSelect = row.querySelector('.event-type');
+                    if (eventTypeSelect) {
+                        setTimeout(() => eventTypeSelect.focus(), 100);
+                    }
                 }
 
-                console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.price}원)`);
+                console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.marketPrice ? '시세반영' : productInfo.price + '원'})`);
             } else {
                 // 상품을 찾지 못한 경우
                 productNameInput.value = '';
@@ -684,8 +722,14 @@ function attachProductCodeFormatting(row) {
                     quantityInput.value = productInfo.quantity;
                 }
 
-                // 단가를 상품 정보의 가격으로 자동 입력 (천단위 쉼표 포함)
-                unitPriceInput.value = formatNumberWithCommas(productInfo.price);
+                if (productInfo.marketPrice) {
+                    // 시세반영 상품은 단가를 채우지 않는다 (blur/Enter 시 안내)
+                    unitPriceInput.placeholder = '시세 입력';
+                } else {
+                    // 단가를 상품 정보의 가격으로 자동 입력 (천단위 쉼표 포함)
+                    unitPriceInput.value = formatNumberWithCommas(productInfo.price);
+                    unitPriceInput.placeholder = '______';
+                }
 
                 // 금액 재계산 (천단위 쉼표 포함)
                 calculateRowTotal(row);
@@ -712,11 +756,16 @@ function formatProductCode(input) {
         return true;
     }
 
-    // 하이픈이 없는 경우 - 오류
+    // 하이픈이 없는 경우 - 숫자만으로 해석 시도 후, 실패하면 오류
     if (!value.includes('-')) {
+        const resolved = resolveCodeDigits(value);
+        if (resolved) {
+            input.value = resolved.code;
+            return true;
+        }
         input.classList.add('error');
         input.value = value;
-        showAlert('⚠️ 상품 코드는 하이픈(-)을 포함해야 합니다. (예: 08-01)', 'warning');
+        showAlert('⚠️ 상품 코드 형식이 올바르지 않습니다. (예: 08-01)', 'warning');
         setTimeout(() => {
             input.classList.remove('error');
         }, 3000);

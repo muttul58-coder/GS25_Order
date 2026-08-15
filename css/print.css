@@ -357,14 +357,21 @@
             }
 
             /* 상품 정보 테이블 컬럼 너비 (인쇄 시) - table-layout:fixed 비율 */
-            /* 타이틀(3%) / No(4%) / 상품코드(9%) / 상품이름(auto) / 행사(8%) / 수량(7%) / 단가(10%) / 금액(12%) / 작업(0-hidden) */
+            /* 인쇄 시 맨 앞에 세로 타이틀 컬럼이 삽입되므로 nth-child 가 1칸씩 밀린다 */
+            /* 타이틀(3%) / No(4%) / 상품코드(9%) / 상품이름(auto) / 행사(7%) / 수량(6%) / 지급수량(7%) / 단가(10%) / 금액(12%) / 작업(0-hidden) */
             .product-section th:nth-child(2) { width: 4% !important; }
             .product-section th:nth-child(3) { width: 9% !important; }
             .product-section th:nth-child(4) { width: auto !important; }
-            .product-section th:nth-child(5) { width: 8% !important; }
-            .product-section th:nth-child(6) { width: 7% !important; text-align: center !important; }
-            .product-section th:nth-child(7) { width: 10% !important; }
-            .product-section th:nth-child(8) { width: 12% !important; }
+            .product-section th:nth-child(5) { width: 7% !important; }
+            .product-section th:nth-child(6) { width: 6% !important; text-align: center !important; }
+            .product-section th:nth-child(7) { width: 7% !important; text-align: center !important; }
+            .product-section th:nth-child(8) { width: 10% !important; }
+            .product-section th:nth-child(9) { width: 12% !important; }
+
+            /* 지급수량은 인쇄물에서도 가운데 정렬 */
+            input.given-quantity {
+                text-align: center !important;
+            }
 
             /* 인쇄 시 모든 th, td 내용 한 줄 유지 */
             th {

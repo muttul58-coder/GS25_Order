@@ -260,6 +260,19 @@
             text-align: right;
         }
 
+        /* 지급수량 - 행사 덤을 포함해 실제로 나가는 개수 (자동 계산, 입력 불가) */
+        input.given-quantity {
+            text-align: center;
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        /* 덤이 붙은 행은 눈에 띄게 (행사 적용 확인용) */
+        input.given-quantity.has-bonus {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+
         /* 보내는 분 섹션 스타일 - 주황색 배경 */
         .send-header {
             background: #fde68a;

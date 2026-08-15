@@ -232,7 +232,7 @@ function validateAllInputs() {
 
     // 4. 배송 상품 수량 일치 검증
     if (!validateDeliveryQuantities()) {
-        showAlert('⚠️ 배송 상품 수량이 주문 수량과 일치하지 않습니다. 확인해주세요.', 'warning');
+        showAlert('⚠️ 배송 상품 수량이 지급 수량과 일치하지 않습니다. 확인해주세요.', 'warning');
         return false;
     }
 
