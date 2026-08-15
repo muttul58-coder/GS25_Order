@@ -26,7 +26,7 @@ GS25 convenience store parcel order management web application (Korean language)
 
 | File | Purpose |
 |---|---|
-| `products.js` | Product database — exports global `PRODUCTS_DATA` (601 items, generated) |
+| `products.js` | Product database — exports globals `PRODUCTS_DATA` (601 items: name, price, 행사) and `PROMO_CONFIG` (본행사 start date). Generated. |
 | `config.js` | Google Forms endpoint URL and entry IDs — exports global `GOOGLE_FORM_CONFIG` |
 
 ## File Structure
@@ -106,8 +106,8 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 |---|---|---|
 | `js/utils.js` | `showAlert()`, `formatNumberWithCommas()`, `parseFormattedNumber()`, `getTodayDate()`, `updateDateTime()`, `isMobileDevice()`, `formatPhoneNumber()`, `initPhoneFormatting()` | Global utilities, number formatting, phone auto-hyphen |
 | `js/address.js` | `searchOrdererAddress()`, `searchSenderAddress()`, `searchReceiverAddress()` | Daum Postcode API integration |
-| `js/product.js` | `resolveCodeDigits()`, `getProductInfo()`, `formatProductCode()`, `addProductRow()`, `calculateGivenQuantity()`, `getRowGivenQuantity()`, `calculateRowTotal()`, `updateProductTotals()`, `updateBarcodeImages()` | Product code lookup, table row CRUD, given-quantity + total calculation, barcode display |
-| `js/delivery.js` | `refreshDeliveryProductSelects()`, `onDeliveryProductCodeChange()`, `addDeliveryProductRow()`, `removeDeliveryProductRow()`, `validateDeliveryQuantities()` | Delivery product selection and quantity validation |
+| `js/product.js` | `resolveCodeDigits()`, `getProductInfo()`, `formatProductCode()`, `addProductRow()`, `calculateGivenQuantity()`, `getApplicableEvent()`, `applyCatalogEvent()`, `getRowGivenQuantity()`, `calculateRowTotal()`, `updateProductTotals()`, `updateBarcodeImages()` | Product code lookup, table row CRUD, promotion auto-select, given-quantity + total calculation, barcode display |
+| `js/delivery.js` | `refreshDeliveryProductSelects()`, `onDeliveryProductCodeChange()`, `addDeliveryProductRow()`, `removeDeliveryProductRow()`, `getDeliveryQuantityLimit()`, `clampDeliveryQuantity()`, `reconcileDeliveryQuantities()`, `validateDeliveryQuantities()` | Delivery product selection, quantity clamping/reconciliation, validation |
 | `js/copy-sync.js` | `toggleOrdererInfoCopy()`, `toggleReceiverInfoCopy()`, `syncFromOrderer()`, `syncFromSender()`, `initCopySync()` | Auto-copy orderer info to sender/receiver with live sync |
 | `js/validation.js` | `validateAllInputs()`, `checkOrdererInfoComplete()`, `checkSequentialInput()`, `attachSequentialInputGuide()` | Input validation, sequential input enforcement |
 | `js/section.js` | `addSection()`, `removeSection()`, `renumberSections()` | Delivery section add/delete/reorder |
@@ -167,14 +167,27 @@ The product table has two quantity columns and they mean different things:
 
 - **수량** — what the customer pays for. User-entered.
 - **지급수량** — what actually ships, bonus included. Read-only, computed by
-  `calculateGivenQuantity()` as `quantity + floor(quantity / N)` for a `"N+1"` event.
+  `calculateGivenQuantity()` as `quantity + floor(quantity / N) * M` for an
+  `"N+M"` event. Most events are `N+1`, but the 2026 추석 catalog also ships
+  `7+3`, `2+2` and `3+2` — do not assume the bonus is 1.
 
 `금액` is always `수량 × 단가`. A promotion adds free goods; it does **not** discount
 the price. (Before 2026-08 the form modelled this the other way round — 수량 meant
 units received and the price was reduced — so old orders are not comparable.)
 
 Delivery-product allocation validates against **지급수량**, not 수량, since that is
-what leaves the warehouse. `getOrderProductList()` therefore returns given quantities.
+what leaves the warehouse. `getOrderProductList()` therefore returns given quantities,
+and `clampDeliveryQuantity()` blocks entering more than the remaining given quantity.
+
+**Auto-selection.** `applyCatalogEvent()` fills the 행사 dropdown from `products.js`
+when a product code is looked up. The clerk can always override it — store-level
+promotions do not always match the catalog.
+
+**사전행사 vs 본행사.** The catalog carries two different rates per product and they
+disagree for 118 of the 601 items. `getApplicableEvent()` picks `eventPre` before
+`PROMO_CONFIG.mainStart` and `eventMain` from that date on (both are generated into
+`products.js`). Getting this wrong silently overcharges or undercharges, so the date
+is data, not a hardcoded constant in the JS.
 
 ### Color Scheme (section theming)
 
@@ -223,7 +236,7 @@ a different product than the order form shows.
 3. Run:
 
 ```bash
-python tools/update_season.py BarcodeSource/<new>.pdf --catalog <catalog-json-url> --season "2027 설날"
+python tools/update_season.py BarcodeSource/<new>.pdf --catalog <catalog-json-url> --season "2027 설날" --main-start 2027-01-20
 ```
 
 The script cross-checks product names between the PDF and the catalog JSON, and
@@ -234,7 +247,17 @@ Products priced `"시세반영"` (gold/silver bars) are emitted as
 `{ "price": 0, "marketPrice": true }`; the form then leaves 단가 blank and prompts
 the clerk for the day's price instead of pre-filling 0.
 
-Dependencies: `pip install pdfplumber pymupdf`
+**Promotions.** The catalog stores them as 구매혜택 icon numbers in `attached`
+(본행사) / `attached_e` (사전행사); the rate is only readable from the icon image at
+`<catalog-root>/icons/benefit_<n>.png`, so `BENEFIT_PROMO` / `BENEFIT_OTHER` in
+`update_season.py` are a hand-made table. **Icon numbering is season-specific.** The
+script stops when it meets a number in neither table and prints the icon URLs — open
+them, read the label, extend the table. `--allow-unknown-benefits` skips the check,
+but an unrecognised promotion silently becomes 없음 and the clerk ships the wrong
+count. Set `--main-start` to the season's 본행사 start date (printed on the dated
+icons, e.g. "9월 5일부터").
+
+Dependencies: `pip install pdfplumber pymupdf pillow`
 
 ### Google Forms Configuration
 

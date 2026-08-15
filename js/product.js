@@ -184,6 +184,9 @@ function addProductRow() {
                 <option value="18+1">18+1</option>
                 <option value="19+1">19+1</option>
                 <option value="20+1">20+1</option>
+                <option value="2+2">2+2</option>
+                <option value="3+2">3+2</option>
+                <option value="7+3">7+3</option>
             </select>
         </td>
         <td><input type="number" class="quantity" placeholder="0" min="0" inputmode="numeric" onfocus="this.select()" required></td>
@@ -395,22 +398,82 @@ function attachRowEventListeners(row) {
 /**
  * 행사를 반영한 지급 수량 계산
  *
- * '수량'은 손님이 결제하는 개수이고, 행사 "N+1"은 N개를 살 때마다 1개를
- * 덤으로 주는 것이다. 따라서 실제로 나가는 개수는 수량 + (수량 / N) 이다.
+ * '수량'은 손님이 결제하는 개수이고, 행사 "N+M"은 N개를 살 때마다 M개를
+ * 덤으로 주는 것이다. 따라서 실제로 나가는 개수는 수량 + (수량 / N) * M 이다.
  *   1+1 : 1개 구매 → 2개 지급
  *   2+1 : 1개 구매 → 1개 지급 / 2개 구매 → 3개 지급 / 4개 구매 → 6개 지급
+ *   7+3 : 7개 구매 → 10개 지급 / 14개 구매 → 20개 지급
  *
  * @param {number} quantity - 구매(결제) 수량
- * @param {string} eventValue - 행사 값 ("", "1+1", "2+1" ...)
+ * @param {string} eventValue - 행사 값 ("", "1+1", "2+1", "7+3" ...)
  * @returns {number} 실제 지급되는 수량
  */
 function calculateGivenQuantity(quantity, eventValue) {
     if (!eventValue || quantity <= 0) return quantity;
 
-    const n = parseInt(eventValue.split('+')[0]);
+    const parts = eventValue.split('+');
+    const n = parseInt(parts[0]);
+    // 덤 개수가 적히지 않은 예전 형식("2+")은 1개로 본다
+    const bonus = parts.length > 1 ? (parseInt(parts[1]) || 1) : 1;
     if (!n || n <= 0) return quantity;
 
-    return quantity + Math.floor(quantity / n);
+    return quantity + Math.floor(quantity / n) * bonus;
+}
+
+/**
+ * 오늘 기준으로 적용되는 행사를 고른다
+ *
+ * 카탈로그는 사전행사와 본행사의 행사율을 따로 준다 (2026 추석은 601개 중
+ * 118개가 서로 다르다). 본행사 시작일부터 eventMain, 그 전에는 eventPre.
+ *
+ * @param {Object} productInfo - PRODUCTS_DATA 항목
+ * @returns {string} 행사 값 ("2+1" 등). 해당 없으면 빈 문자열
+ */
+function getApplicableEvent(productInfo) {
+    if (!productInfo) return '';
+
+    const mainStart = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG)
+        ? PROMO_CONFIG.mainStart : null;
+    // 문자열 비교로 충분하다 (둘 다 YYYY-MM-DD)
+    const isMainPeriod = mainStart ? (getTodayDate() >= mainStart) : true;
+
+    if (isMainPeriod) {
+        return productInfo.eventMain || '';
+    }
+    // 사전행사 기간: 사전행사 대상이 아니면 행사 없음
+    return productInfo.eventPre || '';
+}
+
+/**
+ * 카탈로그 행사를 행 의 '행사' 콤보박스에 적용
+ *
+ * 어디까지나 자동 입력이다. 매장 사정으로 행사가 다를 수 있으니 점원이
+ * 언제든 직접 바꿀 수 있어야 한다.
+ *
+ * @param {HTMLElement} row - 상품 행
+ * @param {Object} productInfo - PRODUCTS_DATA 항목
+ * @returns {string} 실제로 선택된 행사 값 (없으면 빈 문자열)
+ */
+function applyCatalogEvent(row, productInfo) {
+    const select = row.querySelector('.event-type');
+    if (!select) return '';
+
+    const event = getApplicableEvent(productInfo);
+    if (!event) {
+        select.value = '';
+        return '';
+    }
+
+    // 콤보박스에 없는 비율이면 항목을 만들어 준다.
+    // 시즌마다 행사 종류가 바뀌므로 목록에 없다고 조용히 '없음'이 되면 안 된다.
+    if (!select.querySelector(`option[value="${event}"]`)) {
+        const option = document.createElement('option');
+        option.value = event;
+        option.textContent = event;
+        select.appendChild(option);
+    }
+    select.value = event;
+    return event;
 }
 
 /**
@@ -632,6 +695,9 @@ function attachProductCodeFormatting(row) {
                 // 수량을 1로 설정
                 quantityInput.value = '1';
 
+                // 카탈로그의 구매혜택에서 가져온 행사를 자동 선택 (직접 바꿀 수 있음)
+                const appliedEvent = applyCatalogEvent(row, productInfo);
+
                 if (productInfo.marketPrice) {
                     // 금/은 등 시세반영 상품: 단가를 비워두고 직접 입력받는다
                     unitPriceInput.value = '';
@@ -654,7 +720,11 @@ function attachProductCodeFormatting(row) {
                     }
                 }
 
-                console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.marketPrice ? '시세반영' : productInfo.price + '원'})`);
+                if (appliedEvent) {
+                    showAlert(`🎁 [${formattedCode}] ${appliedEvent} 행사 상품입니다. 행사가 다르면 직접 바꿔주세요.`, 'success');
+                }
+
+                console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.marketPrice ? '시세반영' : productInfo.price + '원'}, 행사: ${appliedEvent || '없음'})`);
             } else {
                 // 상품을 찾지 못한 경우
                 productNameInput.value = '';
