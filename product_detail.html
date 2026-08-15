@@ -124,6 +124,25 @@
             color: #64748b;
         }
 
+        .catalog-link {
+            display: block;
+            margin-top: 14px;
+            padding: 11px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            color: #0e7490;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .catalog-link:hover {
+            border-color: #0891b2;
+            background: #f0fdfa;
+        }
+
         .error {
             margin-top: 30px;
             padding: 20px;
@@ -214,6 +233,14 @@ function renderDetail() {
 
     parts.push('<div class="note">GS25 ' + escapeText(seasonName())
         + ' 카탈로그 기준입니다. 사진은 카탈로그에서 가져옵니다.</div>');
+
+    // 원본 카탈로그로 가는 길. 이 화면은 카탈로그 데이터로 우리가 그린 것이라
+    // 확인이 필요할 때 원본을 볼 수 있어야 한다.
+    if (cfg.catalogSearch) {
+        parts.push('<a class="catalog-link" target="_blank" rel="noopener noreferrer" href="'
+            + escapeText(cfg.catalogSearch + encodeURIComponent(code))
+            + '">GS25 원본 카탈로그에서 보기</a>');
+    }
 
     content.innerHTML = parts.join('\n');
 

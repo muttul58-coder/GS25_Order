@@ -352,7 +352,10 @@ We render this ourselves rather than linking GS25's own detail view because that
 is a modal held in React state with **no URL**, and the catalog is a different origin
 — the popup cannot be scripted or clicked on the user's behalf (verified:
 `contentDocument` is `null`, any access throws `SecurityError`). Do not attempt to
-automate it; the fix is to render from data we already have.
+automate it; the fix is to render from data we already have. A **GS25 원본 카탈로그에서
+보기** link at the bottom of the detail window (built from `PROMO_CONFIG.catalogSearch`) is
+the one reader of that value — it lands on the catalog's search result for the code,
+which is as deep as an outside link can go.
 
 `product_detail.html` loads `js/utils.js`, `js/admin-test.js` and `js/product.js` so
 `getApplicableEvent()` decides the period exactly once, for both screens — a second
