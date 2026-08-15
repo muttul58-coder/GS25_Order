@@ -5,9 +5,18 @@ GS25 편의점 택배 주문서 웹 애플리케이션입니다.
 
 ## 배포 링크
 
+**공유해도 되는 주소 (점원·손님용)**
+
 - **주문서 페이지**: https://muttul58-coder.github.io/GS25_Order/order_form.html
 - **상품 찾기 + 주문서 (2단)**: https://muttul58-coder.github.io/GS25_Order/order_split.html
+
+**관리자만 (공유 금지)**
+
+- **관리자 홈**: https://muttul58-coder.github.io/GS25_Order/admin.html
+  현재 시즌·행사 기간·상품 수·마지막 갱신일을 데이터에서 읽어 보여주고, 아래 주소들을 전부 버튼으로 모아둔 화면입니다.
+  GitHub Pages 에는 비밀번호를 걸 수 없으므로 `noindex` + "주문서에서 링크하지 않음" 수준의 보호만 됩니다.
 - **응답 시트**: https://docs.google.com/spreadsheets/d/1J_qtVbK5QmU3rDsSq3o_ieaCo4LDOmfE7orWqVzsLPY/edit?gid=1762982959#gid=1762982959
+  (관리자 홈의 버튼은 `시즌설정.txt` 의 `응답 시트 주소` 줄에서 옵니다)
 
 ---
 
@@ -36,6 +45,7 @@ GS25_Order/
 ├── order_form.html       # 메인 HTML (구조만, ~330줄)
 ├── product_detail.html   # 바코드를 누르면 뜨는 상품 상세 창 (사진·구성·행사)
 ├── order_split.html      # 왼쪽 상품 찾기 + 오른쪽 주문서 2단 화면
+├── admin.html            # 관리자 홈 — 현재 상태 + 모든 주소 (점원에게 공유하지 않음)
 ├── css/
 │   ├── main.css          # 화면 스타일
 │   ├── print.css         # A4 인쇄 전용 스타일
@@ -338,7 +348,12 @@ Google Forms에 전송되는 JSON 구조:
 > 📖 **웹 매뉴얼 (보기 편한 버전): <https://muttul58-coder.github.io/GS25_Order/docs/manual.html>**
 > 같은 내용의 문서 버전: [docs/관리자안내.md](docs/관리자안내.md)
 
-### 바로가기 (즐겨찾기용)
+### 바로가기 — **관리자 홈 하나만 즐겨찾기** 하면 됩니다
+
+<https://muttul58-coder.github.io/GS25_Order/admin.html>
+
+아래 주소가 전부 그 안에 버튼으로 들어 있고, 지금이 어느 행사 기간인지·마지막 갱신이 언제였는지도
+현재 데이터에서 읽어 함께 보여줍니다. 직접 열고 싶을 때만 아래를 쓰세요.
 
 | 순서 | 하는 일 | 주소 |
 |---|---|---|
@@ -353,7 +368,7 @@ Google Forms에 전송되는 JSON 구조:
 ### 절차
 
 1. 새 바코드북 PDF를 `BarcodeSource/`에 올립니다 (끌어다 놓기)
-2. `season.json`에서 시즌 이름·카탈로그 주소·PDF 파일명·행사 기간을 고칩니다
+2. `시즌설정.txt`에서 시즌 이름·카탈로그 주소·PDF 파일명·행사 기간을 고칩니다
 3. **시즌 갱신**을 실행합니다
 
 나머지(PDF 해석 → 카탈로그 대조 → `products.js`/`store.js` 생성 → 바코드 601장 렌더링

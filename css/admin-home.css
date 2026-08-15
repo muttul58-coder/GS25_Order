@@ -1,0 +1,297 @@
+/* ==========================================================================
+   admin.html (관리자 홈) 전용 스타일
+
+   색 토큰은 docs/manual.html 과 같은 값이다. 두 화면을 오가는 사람이
+   같은 사이트라고 느끼게 하려는 것이다. 토큰 이름을 바꿀 때는 함께 고칠 것.
+   ========================================================================== */
+
+:root {
+  --paper:      #f6f8f7;
+  --card:       #ffffff;
+  --sunk:       #eef2f1;
+  --ink:        #101917;
+  --ink-soft:   #40514d;
+  --ink-mute:   #6b7d78;
+  --line:       #d6dedb;
+  --line-soft:  #e6ecea;
+
+  --accent:     #0f766e;
+  --accent-ink: #ffffff;
+  --accent-wash:#e2f2ef;
+
+  --warn:       #9a5b06;
+  --warn-wash:  #fdf3e2;
+  --warn-line:  #e8c88a;
+
+  --stop:       #a51f1f;
+  --stop-wash:  #fceeee;
+  --stop-line:  #eec0c0;
+
+  --ok:         #15654f;
+  --ok-wash:    #e6f4ee;
+  --ok-line:    #b8ddcc;
+
+  --shadow:     0 1px 2px rgba(16,25,23,.05), 0 6px 20px rgba(16,25,23,.05);
+
+  --kr: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+        "Malgun Gothic", "맑은 고딕", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:      #0c1312;
+    --card:       #141d1b;
+    --sunk:       #1a2523;
+    --ink:        #e8efed;
+    --ink-soft:   #b3c2be;
+    --ink-mute:   #849792;
+    --line:       #2b3937;
+    --line-soft:  #223230;
+
+    --accent:     #4fd1c5;
+    --accent-ink: #06211f;
+    --accent-wash:#14312e;
+
+    --warn:       #f0b354;
+    --warn-wash:  #2f2415;
+    --warn-line:  #574326;
+
+    --stop:       #f28b8b;
+    --stop-wash:  #331a1a;
+    --stop-line:  #5c2f2f;
+
+    --ok:         #6ed3a8;
+    --ok-wash:    #142c23;
+    --ok-line:    #2c4d3e;
+
+    --shadow:     0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.28);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--kr);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+
+/* ---- 머리말 -------------------------------------------------------- */
+
+.page-head { margin-bottom: 22px; }
+
+.page-head h1 {
+  margin: 0 0 4px;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.page-head .store {
+  margin: 0;
+  color: var(--ink-mute);
+  font-size: 15px;
+}
+
+/* ---- 공통 카드 ------------------------------------------------------ */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 20px 22px;
+  margin-bottom: 18px;
+}
+
+.card > h2 {
+  margin: 0 0 14px;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.card > h2 .sub {
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--ink-mute);
+  margin-left: 6px;
+}
+
+/* ---- 지금 상태 ------------------------------------------------------ */
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.fact {
+  background: var(--sunk);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.fact dt {
+  margin: 0 0 2px;
+  font-size: 13px;
+  color: var(--ink-mute);
+}
+
+.fact dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.fact dd .unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-mute);
+  margin-left: 3px;
+}
+
+/* 기간 뱃지 — 색으로 지금이 어느 기간인지 한눈에 */
+.phase { display: inline-block; padding: 0 8px; border-radius: 6px; }
+.phase-before { background: var(--warn-wash);   color: var(--warn);   border: 1px solid var(--warn-line); }
+.phase-pre    { background: var(--accent-wash); color: var(--accent); border: 1px solid var(--line); }
+.phase-main   { background: var(--ok-wash);     color: var(--ok);     border: 1px solid var(--ok-line); }
+
+/* ---- 지금 할 일 ----------------------------------------------------- */
+
+.now {
+  border-left: 4px solid var(--accent);
+  background: var(--accent-wash);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.now.warn { border-left-color: var(--warn); background: var(--warn-wash); }
+.now.ok   { border-left-color: var(--ok);   background: var(--ok-wash); }
+
+.now h3 { margin: 0 0 4px; font-size: 16px; }
+.now p  { margin: 0; font-size: 15px; color: var(--ink-soft); }
+.now p + p { margin-top: 6px; }
+
+/* ---- 링크 줄 -------------------------------------------------------- */
+
+.links { list-style: none; margin: 0; padding: 0; }
+
+.links li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.links li:first-child { border-top: 0; }
+
+.links .step {
+  flex: 0 0 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.links .text { flex: 1 1 auto; min-width: 0; }
+
+.links .text b { display: block; font-size: 15px; font-weight: 600; }
+
+.links .text small {
+  display: block;
+  color: var(--ink-mute);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.links .go,
+.links .copy {
+  flex: 0 0 auto;
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.links .copy {
+  background: transparent;
+  color: var(--accent);
+}
+
+.links .go:hover, .links .copy:hover { opacity: .88; }
+
+/* ---- 안내 문단 ------------------------------------------------------ */
+
+.note {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--ink-mute);
+}
+
+.note.stop {
+  background: var(--stop-wash);
+  border: 1px solid var(--stop-line);
+  color: var(--stop);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+details.check {
+  margin-top: 14px;
+  background: var(--sunk);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+details.check summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+details.check ul { margin: 10px 0 4px; padding-left: 20px; }
+details.check li { font-size: 14.5px; color: var(--ink-soft); margin: 5px 0; }
+
+.foot {
+  margin-top: 26px;
+  font-size: 13px;
+  color: var(--ink-mute);
+  text-align: center;
+}
+
+.foot a { color: var(--ink-mute); }
+
+@media (max-width: 560px) {
+  .wrap { padding: 20px 14px 48px; }
+  .links li { flex-wrap: wrap; }
+  .links .text { flex: 1 1 100%; order: 2; }
+  .links .step { order: 1; }
+  .links .go, .links .copy { order: 3; }
+}

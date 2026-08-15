@@ -183,6 +183,7 @@ SETTING_FIELDS = [
     ("사전행사시작", "pre_start", True, "2026-08-17"),
     ("본행사시작", "main_start", True, "2026-09-05"),
     ("사전행사조건", "pre_note", False, "삼성/KB국민/비씨/신한카드 결제 시"),
+    ("응답시트주소", "sheet_url", False, "https://docs.google.com/spreadsheets/d/…/edit"),
 ]
 
 # 관리자가 조금 다르게 적어도 알아듣도록
@@ -197,6 +198,9 @@ SETTING_ALIASES = {
     "사전행사시작일": "사전행사시작", "사전행사": "사전행사시작",
     "본행사시작일": "본행사시작", "본행사": "본행사시작",
     "사전행사안내": "사전행사조건", "사전행사카드": "사전행사조건",
+    "응답시트": "응답시트주소", "주문내역": "응답시트주소", "주문내역주소": "응답시트주소",
+    "구글시트": "응답시트주소", "구글시트주소": "응답시트주소", "시트주소": "응답시트주소",
+    "응답시트링크": "응답시트주소",
 }
 
 BENEFIT_KEY_RE = re.compile(r"^구매혜택0*(\d+)$")
@@ -327,6 +331,11 @@ def load_settings(path):
         problems.append((values["catalog"][1], out["catalog"],
                          "카탈로그 주소는 http 로 시작하는 products.json 주소여야 합니다."))
 
+    # 관리자 페이지에서 새 탭으로 여는 주소다. http 가 아니면 링크가 죽으므로 여기서 잡는다.
+    if out.get("sheet_url") and not out["sheet_url"].startswith("http"):
+        problems.append((values["sheet_url"][1], out["sheet_url"],
+                         "응답 시트 주소는 http 로 시작하는 주소여야 합니다. 쓰지 않으시면 줄째로 비워 두세요."))
+
     if problems:
         # 줄 번호 순으로. 줄이 아예 없는 항목(번호 0)은 맨 뒤에 모아 보여 준다.
         problems.sort(key=lambda p: (p[0] == 0, p[0]))
@@ -354,6 +363,9 @@ def load_settings(path):
         "pre_start": out["pre_start"],
         "main_start": out["main_start"],
         "pre_note": out.get("pre_note", ""),
+        "links": {
+            "responseSheet": out.get("sheet_url", ""),
+        },
         "benefit_overrides": benefits,
     }
 
@@ -568,13 +580,20 @@ def resolve_benefits(used, memory, overrides, root):
     return resolved, notes, unknown
 
 
-def write_store_js(store, season):
-    """매장 정보를 주문서가 읽는 전역으로 내보낸다."""
+def write_store_js(store, season, links):
+    """매장 정보와 관리자 페이지가 쓰는 링크를 전역으로 내보낸다.
+
+    SITE_LINKS 는 admin.html 만 읽는다. 주문서에도 같이 실리지만 쓰지 않는다 -
+    파일을 하나 더 늘리는 대신 이미 모든 화면이 읽는 store.js 에 얹었다.
+    """
     body = json.dumps(store, ensure_ascii=False, indent=2).replace("\n", "\n")
+    link_body = json.dumps(links, ensure_ascii=False, indent=2).replace("\n", "\n")
     text = (
         "// 매장 정보 (시즌설정.txt 에서 자동 생성 - 직접 편집하지 마세요)\n"
         "// 시즌: %s\n\n"
-        "const STORE_INFO = %s;\n" % (season, body)
+        "const STORE_INFO = %s;\n\n"
+        "// 관리자 페이지(admin.html)가 여는 주소. 시즌설정.txt 에서 옵니다.\n"
+        "const SITE_LINKS = %s;\n" % (season, body, link_body)
     )
     with io.open(STORE_JS, "w", encoding="utf-8", newline="\r\n") as f:
         f.write(text)
@@ -1210,7 +1229,7 @@ def main():
     market, n_pre, n_main, conflicts = write_products_js(
         catalog, cfg["season"], cfg["catalog"],
         cfg["pre_start"], cfg["main_start"], cfg["pre_note"], categories)
-    write_store_js(cfg["store"], cfg["season"])
+    write_store_js(cfg["store"], cfg["season"], cfg["links"])
     print("   상품 %d개, 시세반영 %d개 %s" % (len(catalog), len(market), market))
     print("   행사: 사전행사 %d개 (%s ~) / 본행사 %d개 (%s ~)"
           % (n_pre, cfg["pre_start"], n_main, cfg["main_start"]))

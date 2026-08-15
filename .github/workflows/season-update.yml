@@ -97,5 +97,6 @@ jobs:
             echo "### 갱신 완료" >> $GITHUB_STEP_SUMMARY
             echo "1~2분 뒤 주문서에 반영됩니다. 열려 있던 화면은 Ctrl+F5 로 새로고침하세요." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "https://muttul58-coder.github.io/GS25_Order/order_form.html" >> $GITHUB_STEP_SUMMARY
+            echo "- 관리자 홈 (시즌·행사·확인 목록): https://muttul58-coder.github.io/GS25_Order/admin.html" >> $GITHUB_STEP_SUMMARY
+            echo "- 주문서: https://muttul58-coder.github.io/GS25_Order/order_form.html" >> $GITHUB_STEP_SUMMARY
           fi

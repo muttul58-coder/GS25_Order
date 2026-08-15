@@ -480,6 +480,7 @@
     <a href="#s3"><span class="n">03</span><span>실행</span></a>
     <a href="#s4" class="stop"><span class="n">04</span><span>확인</span></a>
     <div class="spine-label" style="margin-top:20px">참고</div>
+    <a href="#links"><span class="n">★</span><span>관리자 홈</span></a>
     <a href="#preview"><span class="n">＋</span><span>행사 미리보기</span></a>
     <a href="#trouble"><span class="n">！</span><span>실패했을 때</span></a>
     <a href="#faq"><span class="n">？</span><span>자주 묻는 것</span></a>
@@ -522,7 +523,33 @@
     </section>
 
     <section id="links">
-      <h2>즐겨찾기 6개</h2>
+      <h2>즐겨찾기는 이것 하나 — 관리자 홈</h2>
+      <a class="open" href="https://muttul58-coder.github.io/GS25_Order/admin.html">
+        👉 관리자 홈 열기 <span class="fav">즐겨찾기 0</span>
+      </a>
+      <p>아래 주소들이 <strong>전부 이 안에 버튼으로</strong> 들어 있습니다.
+        그것보다 중요한 건, 열자마자 <strong>지금 어떤 상태인지</strong>를 먼저 보여준다는 점입니다.</p>
+      <ul>
+        <li>지금 올라가 있는 <strong>시즌 이름</strong>과 상품 개수</li>
+        <li>오늘이 <strong>행사 시작 전 / 사전행사 / 본행사</strong> 중 어디인지, 다음 날짜까지 며칠 남았는지</li>
+        <li><strong>마지막으로 갱신한 날짜</strong></li>
+        <li>그래서 <strong>지금 무엇을 하면 되는지</strong> 한 문단</li>
+      </ul>
+      <div class="note">
+        <span class="tag">왜 만들었나</span>
+        1년에 두 번만 하는 일이라 “지금 이게 정상인가?” 부터 헷갈리게 됩니다.
+        그 답을 매뉴얼에서 찾지 않고 화면에서 바로 보시라고 만든 화면입니다.
+        값은 전부 현재 데이터에서 읽어오므로 시즌이 바뀌어도 저절로 맞습니다.
+      </div>
+      <div class="note stop">
+        <span class="tag">공유 주의</span>
+        이 주소는 <strong>비밀번호가 없습니다.</strong> 주소를 아는 사람은 누구나 열 수 있으니
+        <strong>관리자만 즐겨찾기</strong> 하시고, 점원·손님에게는 <strong>주문서 주소만</strong> 알려주세요.
+        (관리자 홈의 주문서 칸에 <strong>주소 복사</strong> 버튼이 있습니다.)
+      </div>
+
+      <h3>관리자 홈 안에 들어 있는 주소들</h3>
+      <p class="sub">직접 열고 싶을 때만 쓰시면 됩니다. 아래 본문에서 “즐겨찾기 3” 처럼 부르는 것이 이 번호입니다.</p>
       <div class="links">
         <a class="link-card" href="https://github.com/muttul58-coder/GS25_Order/upload/main/BarcodeSource"><span class="n">1</span><span><span class="t">PDF 올리기</span><br><span class="u">github.com/muttul58-coder/GS25_Order/upload/main/BarcodeSource</span></span></a>
         <a class="link-card" href="https://github.com/muttul58-coder/GS25_Order/edit/main/시즌설정.txt"><span class="n">2</span><span><span class="t">설정 고치기</span><br><span class="u">github.com/muttul58-coder/GS25_Order/edit/main/시즌설정.txt</span></span></a>
@@ -630,11 +657,18 @@
 
 사전행사 시작: 2027-01-05                   ← 고침 (준비 B)
 본행사 시작: 2027-01-20                     ← 고침 (준비 B)
-사전행사 조건: 삼성/KB국민/비씨/신한카드 결제 시   ← 고침 (준비 B)</code></pre>
+사전행사 조건: 삼성/KB국민/비씨/신한카드 결제 시   ← 고침 (준비 B)
+
+응답 시트 주소: https://docs.google.com/spreadsheets/...   ← 한 번만 적으면 계속 씀</code></pre>
       <p>
         <strong>보통 고치는 건 아래 6줄뿐입니다.</strong> 위의 매장 3줄은 담당자나 전화번호가
         바뀌었을 때만 고치시면 됩니다 (주문서 맨 위에 그대로 표시됩니다).
         다 고치면 아래 <strong>Commit changes</strong> 를 누릅니다.
+      </p>
+      <p>
+        <strong>응답 시트 주소</strong>는 주문이 쌓이는 구글 스프레드시트 주소로, 시즌과 상관없이
+        한 번만 적어두면 됩니다. <strong>관리자 홈</strong>에 “주문 내역 보기” 버튼으로 나옵니다.
+        쓰지 않으시면 쌍점 뒤를 비워 두셔도 됩니다.
       </p>
 
       <h3>너무 조심하지 않으셔도 됩니다</h3>
