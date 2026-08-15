@@ -774,6 +774,16 @@ def catalog_image_url(catalog_url):
     return "%s/goods/" % root
 
 
+def catalog_icon_url(catalog_url):
+    """안내 아이콘이 있는 곳 (뒤에 <번호>.png 를 붙인다).
+
+    행사 비율을 읽어낼 때 쓰는 그 아이콘들과 같은 폴더다
+    (<루트>/icons/benefit_<번호>.png).
+    """
+    root = catalog_url.rsplit("/", 1)[0]
+    return "%s/icons/benefit_" % root
+
+
 def check_picture_names(catalog):
     """사진 파일 이름이 <상품코드>.webp 규칙을 지키는지 확인한다.
 
@@ -832,6 +842,17 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
         if desc:
             fields.append('"desc": %s' % json.dumps(desc, ensure_ascii=False))
 
+        # 행사가 아닌 안내 아이콘(냉장·냉동·무료배송 등).
+        # 무슨 그림인지는 이미지 안에 글자로만 있어서 글로 옮길 수 없다.
+        # 카탈로그가 하는 것처럼 그림 그대로 상세 창에 보여 준다.
+        #
+        # attached(본행사)만 본다. attached_e(사전행사)에만 있는 안내 아이콘은
+        # 2026 추석 기준 하나도 없었고, 행사 비율은 이미 글자로 따로 보여 주므로
+        # 여기에 행사 아이콘까지 넣으면 사전행사 기간에 두 값이 어긋나 보인다.
+        info_icons = [n for n in benefit_codes(r.get("attached")) if n in BENEFIT_OTHER]
+        if info_icons:
+            fields.append('"icons": %s' % json.dumps(info_icons))
+
         # 분류(카탈로그 목록에서 이 상품이 들어 있는 묶음)
         if isinstance(r.get("sort"), int) and r["sort"] > 0:
             fields.append('"cat": %d' % r["sort"])
@@ -852,14 +873,16 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
         "  mainStart: \"%s\",  // 이 날부터 본행사(eventMain) 적용\n"
         "  preNote: %s,\n"
         "  catalogSearch: %s,  // 카탈로그 검색 주소 (뒤에 상품코드가 붙는다)\n"
-        "  catalogImage: %s   // 상품 사진 주소 (뒤에 <상품코드>.webp 가 붙는다)\n"
+        "  catalogImage: %s,  // 상품 사진 주소 (뒤에 <상품코드>.webp 가 붙는다)\n"
+        "  catalogIcons: %s   // 안내 아이콘 주소 (뒤에 <번호>.png 가 붙는다)\n"
         "};\n\n"
         % (season, source_desc, len(catalog), len(market),
            n_pre, pre_start, n_main, main_start,
            json.dumps(season, ensure_ascii=False),
            pre_start, main_start, json.dumps(pre_note, ensure_ascii=False),
            json.dumps(catalog_search_url(source_desc), ensure_ascii=False),
-           json.dumps(catalog_image_url(source_desc), ensure_ascii=False))
+           json.dumps(catalog_image_url(source_desc), ensure_ascii=False),
+           json.dumps(catalog_icon_url(source_desc), ensure_ascii=False))
     )
     # 저장소가 CRLF 로 보관돼 있다. LF 로 쓰면 줄바꿈만 바뀐 거대한 diff 가 생긴다.
     with io.open(PRODUCTS_JS, "w", encoding="utf-8", newline="\r\n") as f:

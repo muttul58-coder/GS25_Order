@@ -340,6 +340,19 @@ not invent names in the fallback — a wrong label sends the clerk hunting in th
 group, while a bare number is merely unhelpful. The run prints `[!]` with the reason,
 and separately lists any `sort` value that has no label.
 
+**Info icons (냉장·냉동·무료배송).** The catalog shows these as small chips, and their
+text exists **only inside the icon PNGs** — the same wall as the promotion rates. So the
+detail window renders the catalog's own images (`PROMO_CONFIG.catalogIcons` +
+`<번호>.png`) instead of trying to name them. `products.js` carries the numbers per
+product as `icons`.
+
+Which numbers: exactly those in `attached` that `resolve_benefits()` classified as
+**not** a promotion (`BENEFIT_OTHER`). Promotion icons are deliberately excluded — the
+행사 is shown as text with its period, and the catalog's icon is 본행사-only, so
+including it would contradict the 사전행사 line on the same screen. Only `attached` is
+read, never `attached_e`: in 2026 추석 no info icon appeared solely in `attached_e`.
+Icons are 128×128 with the glyph inset, so they need ~38px of height to stay legible.
+
 **Product detail window.** Clicking a barcode opens `product_detail.html?code=<코드>`
 — photo, name, price, 구성 설명 and both 행사 rates — in a 500×900 popup pinned to the
 right of the screen so the order form stays visible (`catalogSearchLink()` /

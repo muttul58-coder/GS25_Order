@@ -89,6 +89,22 @@
             color: #b45309;
         }
 
+        /* 카탈로그의 안내 아이콘 (냉장·냉동·무료배송 등) */
+        .info-icons {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px;
+            margin: 10px 0 4px;
+        }
+
+        /* 원본이 128x128 정사각형이고 글자는 그 안에 작게 들어 있다.
+           26px 로 두면 "무료배송" 이 읽히지 않는다. */
+        .info-icon {
+            height: 38px;
+            width: auto;
+        }
+
         .badges {
             display: flex;
             flex-wrap: wrap;
@@ -225,6 +241,7 @@ function renderDetail() {
             + '<span class="won"> 원</span></div>');
     }
 
+    parts.push(renderInfoIcons(info, cfg));
     parts.push(renderEventBadges(info, applicable, cfg));
 
     if (info.desc) {
@@ -291,6 +308,25 @@ function normalizeCode(raw) {
     const parts = value.split('-');
     if (!parts[0] || !parts[1]) return '';
     return formatCodeForLookup(parts[0].substring(0, 3) + '-' + parts[1].substring(0, 2));
+}
+
+/**
+ * 냉장·냉동·무료배송 같은 안내 아이콘.
+ *
+ * 무슨 그림인지는 이미지 안에 글자로만 있어서 글로 옮길 수 없다.
+ * 그래서 카탈로그가 쓰는 그림을 그대로 가져다 보여 준다.
+ * 행사 아이콘은 여기 넣지 않는다 - 행사는 아래에 기간별로 따로 보여 주는데,
+ * 카탈로그 아이콘은 본행사 기준이라 사전행사 기간에 두 값이 어긋나 보인다.
+ */
+function renderInfoIcons(info, cfg) {
+    if (!cfg.catalogIcons || !Array.isArray(info.icons) || !info.icons.length) return '';
+
+    const imgs = info.icons.map(function (n) {
+        return '<img class="info-icon" src="'
+            + escapeText(cfg.catalogIcons + encodeURIComponent(n) + '.png')
+            + '" alt="" loading="lazy" onerror="this.remove()">';
+    });
+    return '<div class="info-icons">' + imgs.join('') + '</div>';
 }
 
 /**
