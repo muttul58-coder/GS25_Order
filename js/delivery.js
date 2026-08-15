@@ -182,6 +182,68 @@ function renumberDeliveryProductRows(section) {
 }
 
 /**
+ * 이 행에 더 넣을 수 있는 최대 수량 계산
+ * 지급 수량에서 다른 행(모든 섹션)에 이미 배분된 수량을 뺀 잔량
+ * @param {HTMLElement} row - delivery-product-row 요소
+ * @returns {number|null} - 상한값. 상품 미선택 등 판단 불가하면 null
+ */
+function getDeliveryQuantityLimit(row) {
+    const select = row.querySelector('.delivery-product-code-select');
+    if (!select || !select.value) return null; // 상품을 아직 고르지 않음
+    const code = select.value;
+
+    const found = getOrderProductList().find(p => p.code === code);
+    if (!found) return null; // 주문 목록에 없는 상품 → validate 쪽에서 경고
+
+    // 같은 상품코드를 쓰는 다른 행의 배분량 합산
+    let allocatedElsewhere = 0;
+    document.querySelectorAll('.delivery-product-row').forEach(other => {
+        if (other === row) return;
+        const otherSelect = other.querySelector('.delivery-product-code-select');
+        if (!otherSelect || otherSelect.value !== code) return;
+        allocatedElsewhere += parseInt(other.querySelector('.delivery-product-qty').value) || 0;
+    });
+
+    return Math.max(0, found.qty - allocatedElsewhere);
+}
+
+/**
+ * 배송 수량 입력값을 지급 수량 범위로 제한
+ * 초과 입력은 값 자체를 되돌려 더 이상 올라가지 않게 한다
+ * @param {HTMLInputElement} input - delivery-product-qty 입력 필드
+ * @returns {boolean} - 값을 조정했으면 true
+ */
+function clampDeliveryQuantity(input) {
+    const row = input.closest('.delivery-product-row');
+    if (!row) return false;
+    if (input.value === '') return false; // 지우는 중
+
+    const value = parseInt(input.value);
+    if (isNaN(value)) {
+        input.value = '';
+        return true;
+    }
+
+    // 음수 방지
+    if (value < 0) {
+        input.value = 0;
+        return true;
+    }
+
+    const limit = getDeliveryQuantityLimit(row);
+    if (limit === null || value <= limit) return false;
+
+    input.value = limit;
+    const code = row.querySelector('.delivery-product-code-select').value;
+    if (limit === 0) {
+        showAlert(`⚠️ [${code}] 지급 수량이 다른 행에 모두 배분되어 더 입력할 수 없습니다.`, 'warning');
+    } else {
+        showAlert(`⚠️ [${code}] 배분 가능한 수량은 ${limit}개입니다.`, 'warning');
+    }
+    return true;
+}
+
+/**
  * 배송 상품 수량 합산 검증 및 안내 메시지 표시
  * 각 상품코드별로 주문 수량과 배송 수량 합계를 비교
  */

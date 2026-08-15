@@ -6,10 +6,20 @@ document.addEventListener('input', function(e) {
     if (e.target.matches('#ordererPostal, .sender-postal, .receiver-postal')) {
         e.target.value = e.target.value.replace(/[^0-9]/g, '');
     }
-    // 배송 상품 수량 음수 방지
+    // 배송 상품 수량: 음수 방지 + 지급 수량 초과 방지
+    // 인라인 oninput 이 먼저 실행돼 초과값 기준으로 검증되므로, 값을 되돌린 뒤 다시 검증한다
     if (e.target.matches('.delivery-product-qty')) {
-        if (e.target.value && parseInt(e.target.value) < 0) {
-            e.target.value = 0;
+        if (clampDeliveryQuantity(e.target)) {
+            validateDeliveryQuantities();
+        }
+    }
+});
+
+// 붙여넣기·스피너 등 input 이벤트를 거치지 않는 경로 대비
+document.addEventListener('change', function(e) {
+    if (e.target.matches('.delivery-product-qty')) {
+        if (clampDeliveryQuantity(e.target)) {
+            validateDeliveryQuantities();
         }
     }
 });

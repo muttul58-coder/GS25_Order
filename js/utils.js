@@ -12,15 +12,20 @@ let sectionCounter = 1; // 섹션 번호를 추적하는 카운터
  * @param {string} message - 표시할 메시지
  * @param {string} type - 메시지 타입 ('success', 'warning', 'error')
  */
+let alertHideTimer = null;
+
 function showAlert(message, type = 'success') {
     const alertBox = document.getElementById('alertBox');
     alertBox.textContent = message;
     alertBox.className = `alert ${type}`;
     alertBox.style.display = 'block';
 
-    // 3초 후 자동으로 숨김
-    setTimeout(() => {
+    // 이전 타이머를 지우지 않으면 연속 호출 시 먼저 잡힌 타이머가
+    // 방금 띄운 메시지를 곧바로 숨겨버린다
+    if (alertHideTimer) clearTimeout(alertHideTimer);
+    alertHideTimer = setTimeout(() => {
         alertBox.style.display = 'none';
+        alertHideTimer = null;
     }, 3000);
 }
 
