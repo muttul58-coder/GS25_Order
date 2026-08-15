@@ -79,6 +79,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 ```html
 <!-- CSS -->
 <link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/admin-test.css">
 <link rel="stylesheet" href="css/print.css">
 <link rel="stylesheet" href="css/responsive.css">
 
@@ -128,6 +129,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 | `css/print.css` | `@media print` block: A4 optimization, vertical title columns, element hiding, page break rules |
 | `css/responsive.css` | `@media (max-width: 768px)` and `@media (max-width: 480px)` breakpoints |
 | `css/catalog-panel.css` | `order_split.html` only: two-column split, product cards, phone overlay below 900px |
+| `css/admin-test.css` | Test banner + admin panel. Loaded by **both** `order_form.html` and `order_split.html` — the split shell does not load `main.css`, so keeping these here is what stops the admin UI rendering unstyled there. |
 
 ### Data Flow
 

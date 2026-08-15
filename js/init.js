@@ -59,11 +59,17 @@ function initializePage() {
     // 관리자 테스트 모드 (?admin=1 / ?test=main). 행사 자동 선택에만 영향을 준다.
     initAdminTestMode();
 
-    // 이미 2단 화면(order_split.html) 안에 떠 있으면 "상품 찾기 화면" 링크를 숨긴다.
-    // 그대로 두면 그 안에서 또 2단 화면이 열려 주문서가 겹겹이 쌓인다.
-    if (window.top !== window.self) {
-        const splitLink = document.getElementById('splitViewLink');
-        if (splitLink) splitLink.style.display = 'none';
+    const splitLink = document.getElementById('splitViewLink');
+    if (splitLink) {
+        // 이미 2단 화면(order_split.html) 안에 떠 있으면 숨긴다.
+        // 그대로 두면 그 안에서 또 2단 화면이 열려 주문서가 겹겹이 쌓인다.
+        if (window.top !== window.self) {
+            splitLink.style.display = 'none';
+        } else if (location.search) {
+            // ?admin=1&test=pre 같은 설정을 그대로 들고 넘어간다.
+            // 떼고 가면 미리보던 기간이 사라져 "왜 행사가 다르지" 가 된다.
+            splitLink.href = 'order_split.html' + location.search;
+        }
     }
 
     // 매장 정보 표시
