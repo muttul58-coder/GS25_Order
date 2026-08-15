@@ -609,12 +609,60 @@ function catalogSearchLink(code) {
 
     const a = document.createElement('a');
     a.href = base + encodeURIComponent(code);
+    // 팝업이 막혔을 때를 대비해 평범한 링크로도 동작하게 둔다
     a.target = '_blank';
-    // 새 창에서 원래 주문서 창을 건드리지 못하게 한다
     a.rel = 'noopener noreferrer';
     a.className = 'barcode-link';
-    a.title = code + ' 상품 정보를 카탈로그에서 보기 (새 창)';
+    a.title = code + ' 상품 정보를 카탈로그에서 보기 (새 창)\n상품 그림을 누르면 상세 내용이 나옵니다';
+    a.onclick = function (e) {
+        if (openCatalogPopup(this.href)) e.preventDefault();
+    };
     return a;
+}
+
+// 카탈로그 창 크기. 카탈로그가 모바일 기준으로 만들어져 있어서
+// 좁고 긴 창이 화면에 맞다.
+const CATALOG_POPUP_WIDTH = 500;
+const CATALOG_POPUP_HEIGHT = 900;
+
+/**
+ * 카탈로그를 화면 오른쪽 가운데에 작은 창으로 띄운다.
+ *
+ * 주문서를 가리지 않도록 전체 화면이 아니라 오른쪽에 붙여 둔다.
+ * 창 이름을 고정해서, 여러 상품을 눌러도 창이 쌓이지 않고 같은 창이 바뀐다.
+ *
+ * @param {string} url
+ * @returns {boolean} 팝업을 띄웠으면 true, 막혔으면 false (그때는 링크 기본 동작)
+ */
+function openCatalogPopup(url) {
+    const scr = window.screen || {};
+    const availW = scr.availWidth || scr.width || 1280;
+    const availH = scr.availHeight || scr.height || 800;
+    // availLeft/availTop 은 표준이 아니라 없을 수 있다. 모니터가 여러 대일 때
+    // 이 값이 있어야 주문서가 떠 있는 화면에 같이 뜬다.
+    const baseLeft = (typeof scr.availLeft === 'number') ? scr.availLeft : 0;
+    const baseTop = (typeof scr.availTop === 'number') ? scr.availTop : 0;
+
+    // 화면이 작으면 창이 잘리므로 화면 안으로 줄인다
+    const w = Math.min(CATALOG_POPUP_WIDTH, availW);
+    const h = Math.min(CATALOG_POPUP_HEIGHT, availH);
+    const left = Math.round(baseLeft + availW - w);
+    const top = Math.round(baseTop + (availH - h) / 2);
+
+    const features = `width=${w},height=${h},left=${left},top=${top},`
+        + 'resizable=yes,scrollbars=yes';
+
+    let popup;
+    try {
+        popup = window.open(url, 'gs25Catalog', features);
+    } catch (e) {
+        return false;
+    }
+    if (!popup) return false;  // 팝업 차단됨
+
+    // 이미 열려 있던 창을 재사용한 경우 앞으로 가져온다
+    try { popup.focus(); } catch (e) { /* 다른 출처라 막힐 수 있다 */ }
+    return true;
 }
 
 function updateBarcodeImages() {

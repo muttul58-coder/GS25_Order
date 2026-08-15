@@ -305,6 +305,13 @@ and shows a different product than the barcode scans as. The catalog is a React 
 whose search box navigates to `<root>/products/1/0?search=<코드>`, and the host serves
 `index.html` for any path, so that URL works as an entry point. The `0` is
 `:classId` and must stay 0: a category filter would hide products outside it.
+There is no deep link to a product's detail view — the catalog opens it as a
+modal held in component state, with no URL of its own — so the link lands on the
+search result and the clerk clicks the card. `openCatalogPopup()` opens it as a
+500×900 window pinned to the right of the screen (the catalog is a mobile layout,
+and the order form must stay visible) under a fixed window name so repeated clicks
+reuse one window. The anchor keeps its `href`/`target` so a blocked popup still
+opens normally — `preventDefault()` only runs once `window.open` has succeeded.
 
 **Promotions.** The catalog stores them as 구매혜택 icon numbers in `attached`
 (본행사) / `attached_e` (사전행사); the rate is only readable from the icon image at
