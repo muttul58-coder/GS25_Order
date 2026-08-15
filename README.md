@@ -33,6 +33,7 @@ GS25 편의점 택배 주문서 웹 애플리케이션입니다.
 ```
 GS25_Order/
 ├── order_form.html       # 메인 HTML (구조만, ~330줄)
+├── product_detail.html   # 바코드를 누르면 뜨는 상품 상세 창 (사진·구성·행사)
 ├── css/
 │   ├── main.css          # 화면 스타일
 │   ├── print.css         # A4 인쇄 전용 스타일
@@ -71,12 +72,14 @@ GS25_Order/
 | 파일 | 역할 |
 |------|------|
 | `order_form.html` | HTML 구조만. 스타일과 로직은 `css/`, `js/` 로 분리됨 |
-| `season.json` | **시즌 갱신의 입력값 전부.** 명절마다 여기만 고칩니다 |
+| `product_detail.html` | 바코드를 누르면 새 창으로 뜨는 상품 상세 (사진·구성·행사) |
+| `시즌설정.txt` | **시즌 갱신의 입력값 전부.** 명절마다 여기만 고칩니다 |
+| `season.json` | 구매혜택 아이콘 기억용. 스크립트가 관리하므로 손대지 않습니다 |
 | `config.js` | Google Forms URL 및 Entry ID 설정 |
 | `products.js` | 상품코드-상품명-가격-행사 매핑 + 행사 기간. **자동 생성** |
 | `store.js` | 매장명·담당자·전화번호. 주문서 상단에 표시. **자동 생성** |
 | `BarcodeImgs/` | 상품코드별 바코드 이미지 (예: `08-01.jpg`). **자동 생성** |
-| `tools/update_season.py` | `season.json`을 읽어 위 자동 생성물을 만듭니다 |
+| `tools/update_season.py` | `시즌설정.txt`를 읽어 위 자동 생성물을 만듭니다 |
 | `.github/workflows/season-update.yml` | GitHub에서 버튼으로 갱신을 실행 |
 | `apps_script.js` | Google Sheets에서 실행. 폼 응답을 주문서 시트로 변환 |
 
@@ -275,7 +278,7 @@ Google Forms에 전송되는 JSON 구조:
 
 ## 주의사항
 
-- `config.js`, `products.js`, `css/`, `js/`, `BarcodeImgs/` 는 `order_form.html` 과 **같은 폴더**에 있어야 합니다
+- `config.js`, `products.js`, `product_detail.html`, `css/`, `js/`, `BarcodeImgs/` 는 `order_form.html` 과 **같은 폴더**에 있어야 합니다
 - `products.js` 와 `BarcodeImgs/` 는 자동 생성 파일입니다 — 직접 수정하지 말고 `tools/update_season.py` 로 갱신하세요
 - 코드 수정 시 역할에 맞는 `js/*.js` 또는 `css/*.css` 파일을 편집합니다
 

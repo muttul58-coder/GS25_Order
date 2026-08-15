@@ -593,40 +593,36 @@ function createBarcodeRow() {
 }
 
 /**
- * 바코드를 감쌀 카탈로그 링크. 주소를 모르면 null 을 돌려준다.
+ * 바코드를 감쌀 상품 상세 링크.
  *
- * 주소는 PROMO_CONFIG.catalogSearch 에 시즌마다 새로 생성된다
- * (tools/update_season.py). 여기에 상수로 적어 두면 다음 시즌에
- * 지난 시즌 카탈로그가 열려 엉뚱한 상품을 보여주게 된다.
+ * 상세 화면은 우리가 직접 그린다(product_detail.html). 카탈로그 사이트는
+ * 상세를 주소 없는 팝업으로 띄우기 때문에 그 화면을 바로 열 수 없고,
+ * 다른 사이트라서 창 안을 대신 눌러 줄 수도 없다(동일 출처 정책).
  *
  * @param {string} code - 상품코드 (예: 08-01)
- * @returns {HTMLAnchorElement|null}
+ * @returns {HTMLAnchorElement}
  */
 function catalogSearchLink(code) {
-    const base = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG)
-        ? PROMO_CONFIG.catalogSearch : '';
-    if (!base) return null;
-
     const a = document.createElement('a');
-    a.href = base + encodeURIComponent(code);
+    a.href = 'product_detail.html?code=' + encodeURIComponent(code);
     // 팝업이 막혔을 때를 대비해 평범한 링크로도 동작하게 둔다
     a.target = '_blank';
-    a.rel = 'noopener noreferrer';
+    a.rel = 'noopener';
     a.className = 'barcode-link';
-    a.title = code + ' 상품 정보를 카탈로그에서 보기 (새 창)\n상품 그림을 누르면 상세 내용이 나옵니다';
+    a.title = code + ' 상품 사진과 구성 보기 (새 창)';
     a.onclick = function (e) {
         if (openCatalogPopup(this.href)) e.preventDefault();
     };
     return a;
 }
 
-// 카탈로그 창 크기. 카탈로그가 모바일 기준으로 만들어져 있어서
-// 좁고 긴 창이 화면에 맞다.
+// 상세 창 크기. 세로로 긴 상품 사진과 설명을 한 화면에 담으면서
+// 주문서를 가리지 않는 크기다.
 const CATALOG_POPUP_WIDTH = 500;
 const CATALOG_POPUP_HEIGHT = 900;
 
 /**
- * 카탈로그를 화면 오른쪽 가운데에 작은 창으로 띄운다.
+ * 상세 창을 화면 오른쪽 가운데에 띄운다.
  *
  * 주문서를 가리지 않도록 전체 화면이 아니라 오른쪽에 붙여 둔다.
  * 창 이름을 고정해서, 여러 상품을 눌러도 창이 쌓이지 않고 같은 창이 바뀐다.
@@ -705,15 +701,11 @@ function updateBarcodeImages() {
             img.alt = code;
             img.onerror = function () { this.style.display = 'none'; };
 
+            // 바코드를 누르면 상품 사진과 구성이 새 창으로 뜬다.
+            // 점원이 손님에게 바로 보여줄 때 쓴다.
             const link = catalogSearchLink(code);
-            if (link) {
-                // 바코드를 누르면 카탈로그에서 그 상품을 새 창으로 확인할 수 있다.
-                // 점원이 상품 사진과 구성을 손님에게 보여줄 때 쓴다.
-                link.appendChild(img);
-                slot.appendChild(link);
-            } else {
-                slot.appendChild(img);
-            }
+            link.appendChild(img);
+            slot.appendChild(link);
         });
     });
 }

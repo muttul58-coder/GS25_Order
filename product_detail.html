@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>상품 상세</title>
+
+    <!--
+        주문서에서 바코드를 누르면 열리는 상품 상세 창.
+
+        카탈로그 사이트의 상세 화면을 대신한다. 카탈로그는 상세를 주소 없는
+        팝업(모달)으로 띄우기 때문에 밖에서 그 화면을 바로 열 수 없고,
+        다른 사이트라서 창 안을 대신 눌러 줄 수도 없다(동일 출처 정책).
+        그래서 같은 재료(products.js)로 우리가 직접 그린다.
+
+        상품 사진만 카탈로그 서버에서 가져온다.
+    -->
+
+    <script src="products.js"></script>
+    <!-- 행사 판정을 주문서와 똑같은 코드로 한다. 여기서 다시 구현하면
+         두 화면이 서로 다른 행사를 말하게 된다. -->
+    <script src="js/utils.js"></script>
+    <script src="js/admin-test.js"></script>
+    <script src="js/product.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 16px;
+            background: #f8fafc;
+            color: #0f172a;
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .code {
+            display: inline-block;
+            background: #0891b2;
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            border-radius: 999px;
+        }
+
+        .photo {
+            margin: 12px 0;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .photo img {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        .photo-missing {
+            color: #64748b;
+            font-size: 14px;
+            padding: 40px 10px;
+        }
+
+        h1 {
+            margin: 8px 0;
+            font-size: 20px;
+            line-height: 1.4;
+            word-break: keep-all;
+        }
+
+        .price {
+            font-size: 26px;
+            font-weight: 700;
+            color: #dc2626;
+        }
+
+        .price .won { font-size: 17px; font-weight: 400; color: #0f172a; }
+
+        .market-price {
+            font-size: 15px;
+            font-weight: 700;
+            color: #b45309;
+        }
+
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 10px 0;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .badge.on { background: #0d9488; color: #fff; }
+        .badge.off { background: #f1f5f9; color: #94a3b8; }
+
+        .desc {
+            margin: 14px 0;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #0891b2;
+            border-radius: 8px;
+            word-break: keep-all;
+        }
+
+        .note {
+            margin-top: 14px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .error {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            border-radius: 8px;
+            color: #991b1b;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        /* 테스트 모드 띠 (js/admin-test.js) - 주문서와 같은 모양 */
+        .test-mode-banner {
+            margin: -16px -16px 12px;
+            background: #b91c1c;
+            color: #fff;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .test-mode-off {
+            display: block;
+            margin: 8px auto 0;
+            padding: 4px 12px;
+            border: 1px solid #fff;
+            border-radius: 5px;
+            background: transparent;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="content"></div>
+
+<script>
+/**
+ * 주소의 ?code= 를 읽어 상품 상세를 그린다.
+ */
+function renderDetail() {
+    const content = document.getElementById('content');
+    const raw = (new URLSearchParams(location.search).get('code') || '').trim();
+
+    // 주문서와 같은 방식으로 코드를 다듬는다 (8-1 -> 08-01, 1005 -> 10-05).
+    // formatProductCode() 는 입력칸 요소를 받으므로 여기서는 쓸 수 없다.
+    const code = normalizeCode(raw);
+    const info = code ? getProductInfo(code) : null;
+
+    if (!info) {
+        document.title = '상품을 찾을 수 없음';
+        content.innerHTML = '<div class="error">상품코드 '
+            + escapeText(raw || '(없음)')
+            + ' 을(를) 이번 시즌 카탈로그에서 찾을 수 없습니다.</div>';
+        return;
+    }
+
+    document.title = code + ' ' + info.name;
+
+    const cfg = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG) ? PROMO_CONFIG : {};
+    const applicable = getApplicableEvent(info);
+
+    const parts = [];
+    parts.push('<span class="code">' + escapeText(code) + '</span>');
+
+    // 사진 자리만 잡아 두고 아래에서 채운다 (onerror 를 문자열로 엮으면 깨지기 쉽다)
+    if (cfg.catalogImage) {
+        parts.push('<div class="photo" id="photo"></div>');
+    }
+
+    parts.push('<h1>' + escapeText(info.name) + '</h1>');
+
+    if (info.marketPrice) {
+        parts.push('<div class="market-price">시세반영 상품 — 당일 시세로 단가를 확인해 주세요</div>');
+    } else {
+        parts.push('<div class="price">' + formatNumberWithCommas(info.price)
+            + '<span class="won"> 원</span></div>');
+    }
+
+    parts.push(renderEventBadges(info, applicable, cfg));
+
+    if (info.desc) {
+        parts.push('<div class="desc">' + escapeText(info.desc) + '</div>');
+    }
+
+    parts.push('<div class="note">GS25 ' + escapeText(seasonName())
+        + ' 카탈로그 기준입니다. 사진은 카탈로그에서 가져옵니다.</div>');
+
+    content.innerHTML = parts.join('\n');
+
+    if (cfg.catalogImage) {
+        renderPhoto(document.getElementById('photo'), cfg.catalogImage, code, info.name);
+    }
+}
+
+/**
+ * 상품 사진. 카탈로그 서버에서 가져오므로 못 받아올 수 있다.
+ * 그때도 가격·구성은 이미 화면에 있으니 사진 자리에만 안내를 남긴다.
+ */
+function renderPhoto(box, base, code, name) {
+    if (!box) return;
+
+    const img = document.createElement('img');
+    img.alt = name;
+    img.onerror = function () {
+        box.innerHTML = '';
+        const p = document.createElement('div');
+        p.className = 'photo-missing';
+        p.textContent = '상품 사진을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.';
+        box.appendChild(p);
+    };
+    img.src = base + encodeURIComponent(code) + '.webp';
+    box.appendChild(img);
+}
+
+/**
+ * 주소로 들어온 상품코드를 카탈로그 표기로 맞춘다.
+ *
+ * 주문서에서 누른 링크는 이미 다듬어진 코드지만, 주소를 직접 고쳐
+ * 여는 경우가 있어 같은 규칙을 태운다. 숫자만 들어오면
+ * resolveCodeDigits() 가 카탈로그를 보고 10-05 인지 100-5 인지 가른다.
+ *
+ * @param {string} raw
+ * @returns {string} 정규화된 코드, 형식이 아니면 빈 문자열
+ */
+function normalizeCode(raw) {
+    const value = raw.replace(/[^0-9-]/g, '');
+    if (!value) return '';
+
+    if (!value.includes('-')) {
+        const resolved = resolveCodeDigits(value);
+        return resolved ? resolved.code : '';
+    }
+
+    const parts = value.split('-');
+    if (!parts[0] || !parts[1]) return '';
+    return formatCodeForLookup(parts[0].substring(0, 3) + '-' + parts[1].substring(0, 2));
+}
+
+/**
+ * 사전행사와 본행사를 모두 보여 주되, 지금 적용되는 쪽을 진하게 표시한다.
+ *
+ * 둘 다 보여 주는 이유: 두 기간의 행사가 다른 상품이 601개 중 118개다.
+ * 지금 것만 보여 주면 점원이 "9월부터는 더 준다"를 모른 채 안내하게 된다.
+ */
+function renderEventBadges(info, applicable, cfg) {
+    const rows = [];
+
+    if (!info.eventPre && !info.eventMain) {
+        return '<div class="badges"><span class="badge off">행사 없음</span></div>';
+    }
+
+    if (info.eventPre) {
+        rows.push(badge('사전행사 ' + info.eventPre, applicable.period === 'pre'));
+    }
+    if (info.eventMain) {
+        rows.push(badge('본행사 ' + info.eventMain
+            + (cfg.mainStart ? ' (' + cfg.mainStart + '~)' : ''),
+            applicable.period === 'main'));
+    }
+
+    let html = '<div class="badges">' + rows.join('') + '</div>';
+
+    if (applicable.event) {
+        html += '<div class="note">지금은 <strong>' + escapeText(applicable.event)
+            + '</strong> 이 적용됩니다.'
+            + (applicable.period === 'pre' && cfg.preNote
+                ? ' (' + escapeText(cfg.preNote) + ')' : '')
+            + '</div>';
+    } else {
+        html += '<div class="note">지금은 적용되는 행사가 없습니다.</div>';
+    }
+    return html;
+}
+
+function badge(text, on) {
+    return '<span class="badge ' + (on ? 'on' : 'off') + '">' + escapeText(text) + '</span>';
+}
+
+function seasonName() {
+    const cfg = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG) ? PROMO_CONFIG : {};
+    return cfg.season || (cfg.preStart || '').slice(0, 4);
+}
+
+/**
+ * 상품명·설명은 카탈로그에서 온 남의 글이다. 그대로 HTML 로 넣지 않는다.
+ */
+function escapeText(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // 테스트 모드는 창을 연 탭에서 그대로 넘어온다(sessionStorage).
+    // 상세 창만 실제 날짜로 보이면 주문서와 행사가 달라 보인다.
+    if (typeof renderTestBanner === 'function') renderTestBanner();
+    renderDetail();
+});
+</script>
+</body>
+</html>

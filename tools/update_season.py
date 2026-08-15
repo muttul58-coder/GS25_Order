@@ -666,6 +666,27 @@ def catalog_search_url(catalog_url):
     return "%s/products/1/0?search=" % root
 
 
+def catalog_image_url(catalog_url):
+    """상품 사진이 있는 곳 (뒤에 <상품코드>.webp 를 붙인다).
+
+    카탈로그의 products.json 에 picture 항목이 있지만 2026 추석 601개 전부
+    "<상품코드>.webp" 였다. 코드에서 만들 수 있으므로 601줄을 늘리지 않는다.
+    (혹시 규칙이 깨지는 시즌이 오면 check_picture_names() 가 잡아 준다.)
+    """
+    root = catalog_url.rsplit("/", 1)[0]
+    return "%s/goods/" % root
+
+
+def check_picture_names(catalog):
+    """사진 파일 이름이 <상품코드>.webp 규칙을 지키는지 확인한다.
+
+    이 규칙이 깨지면 상세 창에 사진이 안 뜨거나 - 더 나쁘게는 - 다른 상품
+    사진이 뜬다. 조용히 넘어가면 안 되므로 어긋난 코드를 돌려준다.
+    """
+    return [r["code"] for r in catalog
+            if (r.get("picture") or "") != r["code"] + ".webp"]
+
+
 def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_note):
     entries, market, conflicts = [], [], []
     n_pre = n_main = 0
@@ -695,6 +716,11 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
             fields.append('"eventPre": "%s"' % pre)
         if main:
             fields.append('"eventMain": "%s"' % main)
+        # 상세 창(product_detail.html)에 보여 줄 구성 설명.
+        # 카탈로그 상세 화면과 같은 문구라야 점원이 손님에게 그대로 읽어 줄 수 있다.
+        desc = " ".join((r.get("description") or "").split())
+        if desc:
+            fields.append('"desc": %s' % json.dumps(desc, ensure_ascii=False))
 
         entries.append('  "%s": { %s }' % (code, ", ".join(fields)))
 
@@ -704,15 +730,19 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
         "// 상품 %d개 / 시세반영 상품 %d개 (price 0 + marketPrice)\n"
         "// 행사: 사전행사 %d개 (%s ~) / 본행사 %d개 (%s ~)\n\n"
         "const PROMO_CONFIG = {\n"
+        "  season: %s,\n"
         "  preStart: \"%s\",   // 이 날부터 사전행사(eventPre) 적용\n"
         "  mainStart: \"%s\",  // 이 날부터 본행사(eventMain) 적용\n"
         "  preNote: %s,\n"
-        "  catalogSearch: %s  // 바코드를 누르면 열리는 카탈로그 검색 주소 (뒤에 상품코드가 붙는다)\n"
+        "  catalogSearch: %s,  // 카탈로그 검색 주소 (뒤에 상품코드가 붙는다)\n"
+        "  catalogImage: %s   // 상품 사진 주소 (뒤에 <상품코드>.webp 가 붙는다)\n"
         "};\n\n"
         % (season, source_desc, len(catalog), len(market),
            n_pre, pre_start, n_main, main_start,
+           json.dumps(season, ensure_ascii=False),
            pre_start, main_start, json.dumps(pre_note, ensure_ascii=False),
-           json.dumps(catalog_search_url(source_desc), ensure_ascii=False))
+           json.dumps(catalog_search_url(source_desc), ensure_ascii=False),
+           json.dumps(catalog_image_url(source_desc), ensure_ascii=False))
     )
     # 저장소가 CRLF 로 보관돼 있다. LF 로 쓰면 줄바꿈만 바뀐 거대한 diff 가 생긴다.
     with io.open(PRODUCTS_JS, "w", encoding="utf-8", newline="\r\n") as f:
@@ -966,6 +996,12 @@ def main():
           % (n_pre, cfg["pre_start"], n_main, cfg["main_start"]))
     if conflicts:
         print("   [!] 한 상품에 행사 아이콘이 여러 개: %s" % conflicts[:10])
+    odd_pictures = check_picture_names(catalog)
+    if odd_pictures:
+        print("   [!] 사진 이름이 <상품코드>.webp 가 아닌 상품 %d개: %s"
+              % (len(odd_pictures), odd_pictures[:10]))
+        print("       상세 창에 사진이 안 나오거나 다른 상품 사진이 나옵니다.")
+        print("       tools/update_season.py 의 catalog_image_url() 을 고쳐야 합니다.")
 
     if args.skip_barcodes:
         print("6) 바코드 이미지 렌더링 건너뜀 (--skip-barcodes)")
