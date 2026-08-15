@@ -243,6 +243,90 @@ function clampDeliveryQuantity(input) {
     return true;
 }
 
+// 수정 직전의 지급 수량 (증가/감소를 구분해 안내 문구를 고르기 위함)
+let lastGivenByCode = {};
+
+/**
+ * 현재 지급 수량을 기억해 둔다
+ * 수량/행사 필드에 포커스가 들어오는 시점, 즉 "고치기 직전" 값이 기준이 된다
+ */
+function rememberGivenQuantities() {
+    lastGivenByCode = {};
+    getOrderProductList().forEach(p => { lastGivenByCode[p.code] = p.qty; });
+}
+
+/**
+ * 주문 수량/행사가 바뀌었을 때 배송 배분을 지급 수량에 맞춰 정리
+ * - 지급 수량이 줄면 초과분을 자동으로 깎는다 (마지막 행부터)
+ * - 지급 수량이 늘면 값은 건드리지 않고 수정하라고 안내한다
+ *
+ * 주문 수량 입력의 'input' 이 아니라 'change'(입력 확정) 에서만 호출한다.
+ * 한 글자씩 반응하면 "5 -> 1 -> 12" 처럼 고쳐 쓰는 중간 상태에서
+ * 배송 수량이 1로 깎여 되돌릴 수 없게 된다.
+ */
+function reconcileDeliveryQuantities() {
+    const givenByCode = {};
+    getOrderProductList().forEach(p => { givenByCode[p.code] = p.qty; });
+
+    // 상품코드별 배송 행 수집 (모든 섹션)
+    const rowsByCode = {};
+    document.querySelectorAll('.delivery-product-row').forEach(row => {
+        const code = row.querySelector('.delivery-product-code-select').value;
+        if (!code) return;
+        if (!rowsByCode[code]) rowsByCode[code] = [];
+        rowsByCode[code].push(row);
+    });
+
+    const reduced = [];
+    const shortfall = [];
+
+    for (const code in rowsByCode) {
+        const limit = givenByCode[code];
+        if (limit === undefined) continue; // 주문에서 사라진 상품 → refresh 가 정리
+
+        const rows = rowsByCode[code];
+        const total = rows.reduce((sum, r) =>
+            sum + (parseInt(r.querySelector('.delivery-product-qty').value) || 0), 0);
+        if (total === 0) continue; // 아직 배분 전 → 안내 불필요
+
+        if (total > limit) {
+            // 마지막 행부터 깎아 먼저 입력한 배분을 최대한 보존
+            let excess = total - limit;
+            for (let i = rows.length - 1; i >= 0 && excess > 0; i--) {
+                const input = rows[i].querySelector('.delivery-product-qty');
+                const value = parseInt(input.value) || 0;
+                const cut = Math.min(value, excess);
+                if (cut > 0) {
+                    input.value = value - cut;
+                    excess -= cut;
+                }
+            }
+            reduced.push(`[${code}] ${total}→${limit}개`);
+        } else if (total < limit) {
+            const previous = lastGivenByCode[code];
+            shortfall.push({
+                text: `[${code}] ${total}/${limit}개`,
+                increased: previous !== undefined && limit > previous
+            });
+        }
+    }
+
+    lastGivenByCode = givenByCode;
+
+    refreshAllDeliveryProductSelects(); // 콤보 옵션 갱신 + 검증 메시지 갱신
+
+    if (reduced.length > 0) {
+        showAlert(`⚠️ 지급 수량이 줄어 배송 수량을 자동 조정했습니다. ${reduced.join(', ')}`, 'warning');
+    } else if (shortfall.length > 0) {
+        const grew = shortfall.some(s => s.increased);
+        const detail = shortfall.map(s => s.text).join(', ');
+        showAlert(grew
+            ? `⚠️ 지급 수량이 늘었습니다. 배송 정보의 수량을 수정해 주세요. ${detail}`
+            : `⚠️ 배송 수량이 지급 수량과 다릅니다. 배송 정보의 수량을 확인해 주세요. ${detail}`,
+            'warning');
+    }
+}
+
 /**
  * 배송 상품 수량 합산 검증 및 안내 메시지 표시
  * 각 상품코드별로 주문 수량과 배송 수량 합계를 비교

@@ -317,6 +317,14 @@ function attachRowEventListeners(row) {
         validateDeliveryQuantities();
     });
 
+    // 고치기 직전 지급 수량을 기억 (증가/감소 판단 기준)
+    quantity.addEventListener('focus', rememberGivenQuantities);
+
+    // 입력이 확정됐을 때만 배송 배분을 정리한다 (타이핑 중간값으로 깎이면 복구 불가)
+    quantity.addEventListener('change', () => {
+        reconcileDeliveryQuantities();
+    });
+
     // 수량 필드에서 Enter 시 다음 행의 상품코드로 이동 (없으면 새 행 추가)
     quantity.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
@@ -338,9 +346,10 @@ function attachRowEventListeners(row) {
     // 행사 변경 시 금액/지급수량 재계산
     // 행사가 바뀌면 지급 수량이 달라지므로 배송 배분도 다시 확인해야 한다
     if (eventType) {
+        eventType.addEventListener('focus', rememberGivenQuantities);
         eventType.addEventListener('change', () => {
             calculateRowTotal(row);
-            refreshAllDeliveryProductSelects();
+            reconcileDeliveryQuantities();
         });
     }
 
