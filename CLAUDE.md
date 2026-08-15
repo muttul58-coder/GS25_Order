@@ -249,8 +249,11 @@ edits it in the GitHub web editor, and a single missing comma used to break the 
 file with an error message they could not read. There is nothing to unbalance in a
 line format. `.github/workflows/season-update.yml` runs `tools/update_season.py` on
 manual dispatch, commits the generated files, and GitHub Pages redeploys from `main`.
-`docs/관리자안내.md` is the admin-facing guide — keep it in sync with any change to
-`시즌설정.txt`'s fields or the workflow's inputs. Do not reintroduce required CLI flags
+`docs/관리자안내.md` is the admin-facing guide and the source of truth for the
+procedure — keep it in sync with any change to `시즌설정.txt`'s fields or the
+workflow's inputs. `docs/manual.html` is the same content as a standalone page
+served by GitHub Pages (`/GS25_Order/docs/manual.html`); it is hand-maintained
+alongside the markdown, so change both together or the admin reads stale steps. Do not reintroduce required CLI flags
 for season data, and do not move admin-supplied values back into JSON: both lose the
 "no developer needed" property.
 

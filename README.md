@@ -57,7 +57,9 @@ GS25_Order/
 ├── .github/workflows/
 │   └── season-update.yml # "시즌 갱신" 버튼 (GitHub Actions)
 ├── docs/
-│   └── 관리자안내.md      # 명절마다 갱신하는 방법 (개발 지식 불필요)
+│   ├── 관리자안내.md      # 명절마다 갱신하는 방법 (개발 지식 불필요) — 기준 문서
+│   └── manual.html       # 위 내용의 웹 매뉴얼 (GitHub Pages 로 바로 열림)
+├── 시즌설정.txt          # 관리자가 고치는 유일한 파일 (이름: 값 형식)
 ├── tools/
 │   └── update_season.py  # 시즌 상품/바코드 일괄 갱신
 ├── apps_script.js        # Google Apps Script (시트 자동 생성)
@@ -324,19 +326,21 @@ Google Forms에 전송되는 JSON 구조:
 따라서 상품 데이터와 바코드 이미지는 **반드시 함께** 갱신해야 합니다.
 한쪽만 바꾸면 주문서에 찍힌 바코드가 다른 상품으로 스캔됩니다.
 
-**개발자 없이 갱신할 수 있습니다.** 고치는 파일은 `season.json` 하나,
-실행은 GitHub **Actions → 시즌 갱신 → Run workflow** 버튼 한 번입니다.
+**개발자 없이 갱신할 수 있습니다.** 고치는 파일은 `시즌설정.txt` 하나(쉼표·괄호가
+없는 `이름: 값` 형식), 실행은 GitHub **Actions → 시즌 갱신 → Run workflow** 버튼 한 번입니다.
 
-> 📖 **화면 그대로 따라 하는 안내: [docs/관리자안내.md](docs/관리자안내.md)**
+> 📖 **웹 매뉴얼 (보기 편한 버전): <https://muttul58-coder.github.io/GS25_Order/docs/manual.html>**
+> 같은 내용의 문서 버전: [docs/관리자안내.md](docs/관리자안내.md)
 
 ### 바로가기 (즐겨찾기용)
 
 | 순서 | 하는 일 | 주소 |
 |---|---|---|
 | 1 | PDF 올리기 | [BarcodeSource 업로드](https://github.com/muttul58-coder/GS25_Order/upload/main/BarcodeSource) |
-| 2 | 설정 고치기 | [season.json 편집](https://github.com/muttul58-coder/GS25_Order/edit/main/season.json) |
+| 2 | 설정 고치기 | [시즌설정.txt 편집](https://github.com/muttul58-coder/GS25_Order/edit/main/시즌설정.txt) |
 | 3 | 갱신 실행 | [시즌 갱신 워크플로](https://github.com/muttul58-coder/GS25_Order/actions/workflows/season-update.yml) |
 | 4 | 결과 확인 | [주문서](https://muttul58-coder.github.io/GS25_Order/order_form.html) |
+| 5 | 행사 미리보기 | [관리자 모드](https://muttul58-coder.github.io/GS25_Order/order_form.html?admin=1) |
 
 1·2·3번은 GitHub 로그인 상태여야 버튼이 보입니다.
 
