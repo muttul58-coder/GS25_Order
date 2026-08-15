@@ -1,5 +1,13 @@
         /* 모바일 반응형 스타일 */
         @media (max-width: 768px) {
+    /* 좁은 화면에서는 제목 옆에 둘 자리가 없다. 아래로 내린다. */
+    .split-view-link {
+        position: static;
+        display: inline-block;
+        transform: none;
+        margin-top: 10px;
+    }
+
             body {
                 padding: 10px;
             }

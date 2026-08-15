@@ -144,10 +144,20 @@ function showCategoryIndex() {
 
     const cfg = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG) ? PROMO_CONFIG : {};
 
-    appendCategoryGroup(list, 'pre',
-        '사전행사 (' + (cfg.preStart || '') + ' ~ ' + shiftBefore(cfg.mainStart) + ')');
-    appendCategoryGroup(list, 'main',
+    const n = appendCategoryGroup(list, 'pre',
+        '사전행사 (' + (cfg.preStart || '') + ' ~ ' + shiftBefore(cfg.mainStart) + ')')
+        + appendCategoryGroup(list, 'main',
         '본행사 (' + (cfg.mainStart || '') + ' ~)');
+
+    // 카탈로그가 분류 정보를 안 주는 시즌이면 여기가 텅 빈다.
+    // 빈 화면으로 두면 점원이 고장인 줄 알고 멈춘다 - 검색은 멀쩡하다고 알려 준다.
+    if (!n) {
+        list.innerHTML = '<div class="catalog-empty">'
+            + '이번 시즌 카탈로그에는 분류 정보가 없습니다.<br>'
+            + '위 검색창으로 상품 이름이나 코드를 찾아 주세요.</div>';
+        const count = document.getElementById('catalogCount');
+        if (count) count.textContent = '분류 정보 없음';
+    }
 
     updateCategoryButton();
 }
@@ -160,9 +170,13 @@ function shiftBefore(date) {
     return shiftDate(date, -1);
 }
 
+/**
+ * 분류 한 묶음을 그린다
+ * @returns {number} 그린 분류 개수
+ */
 function appendCategoryGroup(list, kind, title) {
     const rows = categoryList(kind);
-    if (!rows.length) return;
+    if (!rows.length) return 0;
 
     const head = document.createElement('div');
     head.className = 'cat-group';
@@ -188,6 +202,8 @@ function appendCategoryGroup(list, kind, title) {
         };
         list.appendChild(item);
     });
+
+    return rows.length;
 }
 
 /**
@@ -559,6 +575,20 @@ function initCatalogPanel() {
     // 테스트 모드가 켜져 있으면 여기에도 띠를 그린다.
     // 패널의 행사 표시도 그 기준 날짜를 따르기 때문이다.
     if (typeof initAdminTestMode === 'function') initAdminTestMode();
+
+    // 주문서(iframe)와 이 화면은 따로 뜬다. 주소의 ?test= 로 테스트 모드를
+    // 켜는 순간, 주문서가 이미 다 떠 있었다면 그쪽에는 띠가 없다.
+    // 늦게 뜨든 먼저 뜨든 같은 화면이 되도록 뜬 뒤에 한 번 더 맞춘다.
+    const frame = document.getElementById('orderFrame');
+    if (frame) {
+        frame.addEventListener('load', function () {
+            try {
+                if (typeof frame.contentWindow.renderTestBanner === 'function') {
+                    frame.contentWindow.renderTestBanner();
+                }
+            } catch (e) { /* 접근이 막히면 그냥 둔다 */ }
+        });
+    }
 
     const input = document.getElementById('catalogQuery');
     let timer = null;

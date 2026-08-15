@@ -59,6 +59,13 @@ function initializePage() {
     // 관리자 테스트 모드 (?admin=1 / ?test=main). 행사 자동 선택에만 영향을 준다.
     initAdminTestMode();
 
+    // 이미 2단 화면(order_split.html) 안에 떠 있으면 "상품 찾기 화면" 링크를 숨긴다.
+    // 그대로 두면 그 안에서 또 2단 화면이 열려 주문서가 겹겹이 쌓인다.
+    if (window.top !== window.self) {
+        const splitLink = document.getElementById('splitViewLink');
+        if (splitLink) splitLink.style.display = 'none';
+    }
+
     // 매장 정보 표시
     applyStoreInfo();
 

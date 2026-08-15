@@ -16,6 +16,12 @@ let alertHideTimer = null;
 
 function showAlert(message, type = 'success') {
     const alertBox = document.getElementById('alertBox');
+    // 이 파일은 주문서 말고 다른 화면(상세 창, 2단 화면)에서도 불려 온다.
+    // 알림 자리가 없다고 예외가 나면 부른 쪽의 나머지 일까지 중단된다.
+    if (!alertBox) {
+        console.log('[알림] ' + message);
+        return;
+    }
     alertBox.textContent = message;
     alertBox.className = `alert ${type}`;
     alertBox.style.display = 'block';

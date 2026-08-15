@@ -618,6 +618,46 @@ def load_catalog(source):
     return json.loads(raw)
 
 
+def check_catalog_shape(catalog):
+    """새 시즌 카탈로그가 우리가 아는 모양인지 먼저 확인한다.
+
+    GS25 가 항목 이름을 바꾸면(예: price -> amount) 그냥 두면 두 가지로 끝난다.
+      - code/name/price 는 파이썬 오류(KeyError)로 터진다. 관리자는 영어
+        오류만 보고 무슨 일인지 알 수 없다.
+      - attached 처럼 .get() 으로 읽는 것은 **조용히 빈 값**이 된다.
+        행사가 전부 '없음' 인 products.js 가 만들어져도 아무도 모른다.
+
+    그래서 여기서 먼저 보고, 한국어로 무엇이 없는지 말하고 멈춘다.
+    """
+    if not isinstance(catalog, list) or not catalog:
+        sys.exit("[!] 카탈로그에 상품이 없습니다. '카탈로그 주소'가 맞는지 확인하세요.")
+
+    required = ["code", "name", "price"]
+    missing = {}
+    for row in catalog:
+        if not isinstance(row, dict):
+            sys.exit("[!] 카탈로그 모양이 예상과 다릅니다 (상품이 목록이 아닙니다).")
+        for key in required:
+            if key not in row:
+                missing.setdefault(key, 0)
+                missing[key] += 1
+
+    if missing:
+        sys.exit("[!] 카탈로그에 꼭 필요한 항목이 없습니다: %s\n"
+                 "    GS25 가 카탈로그 데이터의 항목 이름을 바꾼 것 같습니다.\n"
+                 "    이번 시즌은 개발자 확인이 필요합니다."
+                 % ", ".join("%s (%d개 상품)" % (k, n) for k, n in sorted(missing.items())))
+
+    # 있어도 되지만, 통째로 비면 조용히 기능이 사라지는 것들
+    for key, what in (("attached", "행사"),
+                      ("sort", "분류"),
+                      ("description", "구성 설명")):
+        if not any(str(row.get(key) or "").strip() for row in catalog):
+            print("   [!] 카탈로그의 '%s' 가 전부 비어 있습니다 - %s 가 하나도 안 나옵니다."
+                  % (key, what))
+            print("       지난 시즌에는 있던 항목이라면 개발자 확인이 필요합니다.")
+
+
 def load_categories(catalog_url):
     """카탈로그의 분류 이름표를 가져온다.
 
@@ -1089,6 +1129,7 @@ def main():
     except Exception as e:
         sys.exit("[!] 카탈로그를 읽지 못했습니다: %s\n"
                  "    시즌설정.txt 의 '카탈로그 주소'가 맞는지, 브라우저에서 열리는지 확인하세요." % e)
+    check_catalog_shape(catalog)
     web = {r["code"]: r for r in catalog}
     print("   상품 %d개" % len(web))
 

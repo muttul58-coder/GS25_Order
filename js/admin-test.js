@@ -97,12 +97,39 @@ function setTestPromoDate(date) {
 }
 
 /**
+ * 주문서가 iframe 안에 있으면(order_split.html) 그 창, 아니면 null.
+ * @returns {Window|null}
+ */
+function orderFrameWindow() {
+    const frame = document.getElementById('orderFrame');
+    try {
+        if (frame && frame.contentWindow
+            && typeof frame.contentWindow.refreshAllRowEvents === 'function') {
+            return frame.contentWindow;
+        }
+    } catch (e) { /* 다른 출처면 접근이 막힌다 */ }
+    return null;
+}
+
+/**
  * 이미 입력된 상품 행들의 행사를 새 기준 날짜로 다시 채운다.
  *
  * 점원이 직접 고른 행사도 함께 덮어쓴다. 테스트 모드는 "지금 이 날짜면
  * 자동으로 뭐가 선택되나"를 보는 기능이므로 그게 맞다.
  */
 function refreshAllRowEvents() {
+    // 2단 화면(order_split.html)에서는 주문서가 iframe 안에 있다.
+    // 여기(바깥 문서)에는 상품 표가 없으므로, 안쪽에 대신 시켜야 한다.
+    // 이걸 빼먹으면 화면 위 띠는 "사전행사" 라고 하는데 표의 행사는 본행사
+    // 그대로 남는다 - 점원이 잘못된 지급수량을 약속하게 된다.
+    const inner = orderFrameWindow();
+    if (inner) {
+        // 인쇄되는 빨간 띠도 안쪽 문서의 것이다. 함께 다시 그린다.
+        if (typeof inner.renderTestBanner === 'function') inner.renderTestBanner();
+        inner.refreshAllRowEvents();
+        return;
+    }
+
     document.querySelectorAll('.product-row').forEach(row => {
         const codeInput = row.querySelector('.product-code');
         if (!codeInput || !codeInput.value.trim()) return;
@@ -119,7 +146,10 @@ function refreshAllRowEvents() {
     if (typeof updateProductTotals === 'function') updateProductTotals();
     // 배송 상품 배정은 지급수량 기준이라, 지급수량이 줄면 함께 조정해야 한다
     if (typeof reconcileDeliveryQuantities === 'function') reconcileDeliveryQuantities();
-    if (typeof refreshDeliveryProductSelects === 'function') refreshDeliveryProductSelects();
+    // 섹션 하나짜리 refreshDeliveryProductSelects(section) 이 아니라
+    // 모든 배송 섹션을 도는 쪽을 불러야 한다. 인자 없이 부르면 그 안에서
+    // undefined.querySelectorAll 로 터진다.
+    if (typeof refreshAllDeliveryProductSelects === 'function') refreshAllDeliveryProductSelects();
 }
 
 /**
