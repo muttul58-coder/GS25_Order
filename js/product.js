@@ -592,6 +592,31 @@ function createBarcodeRow() {
     return tr;
 }
 
+/**
+ * 바코드를 감쌀 카탈로그 링크. 주소를 모르면 null 을 돌려준다.
+ *
+ * 주소는 PROMO_CONFIG.catalogSearch 에 시즌마다 새로 생성된다
+ * (tools/update_season.py). 여기에 상수로 적어 두면 다음 시즌에
+ * 지난 시즌 카탈로그가 열려 엉뚱한 상품을 보여주게 된다.
+ *
+ * @param {string} code - 상품코드 (예: 08-01)
+ * @returns {HTMLAnchorElement|null}
+ */
+function catalogSearchLink(code) {
+    const base = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG)
+        ? PROMO_CONFIG.catalogSearch : '';
+    if (!base) return null;
+
+    const a = document.createElement('a');
+    a.href = base + encodeURIComponent(code);
+    a.target = '_blank';
+    // 새 창에서 원래 주문서 창을 건드리지 못하게 한다
+    a.rel = 'noopener noreferrer';
+    a.className = 'barcode-link';
+    a.title = code + ' 상품 정보를 카탈로그에서 보기 (새 창)';
+    return a;
+}
+
 function updateBarcodeImages() {
     const tbody = document.getElementById('productTableBody');
     const table = document.getElementById('productTable');
@@ -631,7 +656,16 @@ function updateBarcodeImages() {
             img.src = 'BarcodeImgs/' + code + '.jpg';
             img.alt = code;
             img.onerror = function () { this.style.display = 'none'; };
-            slot.appendChild(img);
+
+            const link = catalogSearchLink(code);
+            if (link) {
+                // 바코드를 누르면 카탈로그에서 그 상품을 새 창으로 확인할 수 있다.
+                // 점원이 상품 사진과 구성을 손님에게 보여줄 때 쓴다.
+                link.appendChild(img);
+                slot.appendChild(link);
+            } else {
+                slot.appendChild(img);
+            }
         });
     });
 }

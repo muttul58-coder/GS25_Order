@@ -6,7 +6,8 @@
 const PROMO_CONFIG = {
   preStart: "2026-08-15",   // 이 날부터 사전행사(eventPre) 적용
   mainStart: "2026-09-05",  // 이 날부터 본행사(eventMain) 적용
-  preNote: "삼성/KB국민/비씨/신한카드 결제 시"
+  preNote: "삼성/KB국민/비씨/신한카드 결제 시",
+  catalogSearch: "https://gs25mobile.com/2026_2nd/products/1/0?search="  // 바코드를 누르면 열리는 카탈로그 검색 주소 (뒤에 상품코드가 붙는다)
 };
 
 const PRODUCTS_DATA = {

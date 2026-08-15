@@ -338,6 +338,13 @@
                 text-align: center;
             }
 
+            /* 인쇄물에서는 링크 표시가 남으면 안 된다 */
+            .barcode-link {
+                box-shadow: none !important;
+                transform: none !important;
+                text-decoration: none !important;
+            }
+
             .barcode-slot img {
                 height: 80px !important;
                 max-width: 100% !important;

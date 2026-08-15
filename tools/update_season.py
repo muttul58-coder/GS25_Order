@@ -648,6 +648,24 @@ def promo_of(field):
     return hits[0], len(set(hits)) > 1
 
 
+def catalog_search_url(catalog_url):
+    """카탈로그 사이트에서 상품코드로 검색한 화면의 주소 (뒤에 코드를 붙여 쓴다).
+
+    카탈로그는 React 단일 페이지 앱이고, 검색창에 입력하면
+    <루트>/products/1/0?search=<검색어> 로 이동한다. 그 주소를 직접 열어도
+    같은 화면이 나오므로 (서버가 어떤 경로든 index.html 을 돌려준다)
+    주문서의 바코드에서 바로 연결할 수 있다.
+
+    1/0 은 라우트의 :page/:classId 로, "본행사 목록 · 분류 제한 없음" 을 뜻한다.
+    분류를 걸면 그 분류에 없는 상품이 검색되지 않으므로 0 이어야 한다.
+
+    시즌마다 루트가 바뀌므로(2026_2nd → 2027_1st …) 상수로 두지 않고
+    카탈로그 주소에서 만들어 products.js 에 적어 둔다.
+    """
+    root = catalog_url.rsplit("/", 1)[0]
+    return "%s/products/1/0?search=" % root
+
+
 def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_note):
     entries, market, conflicts = [], [], []
     n_pre = n_main = 0
@@ -688,11 +706,13 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
         "const PROMO_CONFIG = {\n"
         "  preStart: \"%s\",   // 이 날부터 사전행사(eventPre) 적용\n"
         "  mainStart: \"%s\",  // 이 날부터 본행사(eventMain) 적용\n"
-        "  preNote: %s\n"
+        "  preNote: %s,\n"
+        "  catalogSearch: %s  // 바코드를 누르면 열리는 카탈로그 검색 주소 (뒤에 상품코드가 붙는다)\n"
         "};\n\n"
         % (season, source_desc, len(catalog), len(market),
            n_pre, pre_start, n_main, main_start,
-           pre_start, main_start, json.dumps(pre_note, ensure_ascii=False))
+           pre_start, main_start, json.dumps(pre_note, ensure_ascii=False),
+           json.dumps(catalog_search_url(source_desc), ensure_ascii=False))
     )
     # 저장소가 CRLF 로 보관돼 있다. LF 로 쓰면 줄바꿈만 바뀐 거대한 diff 가 생긴다.
     with io.open(PRODUCTS_JS, "w", encoding="utf-8", newline="\r\n") as f:

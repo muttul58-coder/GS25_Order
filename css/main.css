@@ -941,6 +941,23 @@
             object-fit: contain;
         }
 
+        /* 바코드를 누르면 카탈로그가 새 창으로 열린다 */
+        .barcode-link {
+            display: inline-block;
+            border-radius: 4px;
+            transition: box-shadow 0.15s, transform 0.15s;
+        }
+
+        .barcode-link:hover {
+            box-shadow: 0 0 0 2px #0891b2;
+            transform: translateY(-1px);
+        }
+
+        .barcode-link:focus-visible {
+            outline: 2px solid #0891b2;
+            outline-offset: 2px;
+        }
+
         /* 검증 오류 메시지 스타일 */
         .validation-error-list {
             background-color: #ffebee;
