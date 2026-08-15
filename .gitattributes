@@ -4,6 +4,11 @@
 *.yaml text eol=lf
 *.sh text eol=lf
 
+# 시즌 갱신이 리눅스에서 읽고/쓰는 두 파일. 줄바꿈이 환경마다 달라지면
+# 내용이 같은데도 파일 전체가 바뀐 diff 로 잡힌다.
+시즌설정.txt text eol=lf
+season.json text eol=lf
+
 # 나머지(html/css/js/md/json)는 규칙을 두지 않는다.
 # 이 저장소는 CRLF 로 보관돼 있어서, 규칙을 걸면 전체가 재정규화되며
 # 줄바꿈만 바뀐 수천 줄짜리 diff 가 생긴다.

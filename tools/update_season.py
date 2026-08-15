@@ -5,19 +5,25 @@
 때문에 products.js 와 BarcodeImgs/ 를 **함께** 갈아끼워야 한다. 한쪽만 바꾸면
 주문서에 엉뚱한 바코드가 찍혀 다른 상품이 배송된다.
 
-설정은 저장소 루트의 season.json 한 곳에 모여 있다. 명절마다 그 파일만 고치면
-되고, 보통은 GitHub Actions 의 "시즌 갱신"이 이 스크립트를 대신 실행한다.
+관리자가 고치는 파일은 저장소 루트의 **시즌설정.txt** 하나다. "이름: 값" 한 줄
+형식이라 쉼표나 괄호가 없고, 따라서 쉼표 하나로 전체가 깨지는 일이 없다.
+보통은 GitHub Actions 의 "시즌 갱신"이 이 스크립트를 대신 실행한다.
+
+season.json 은 이제 **스크립트가 관리하는 기억 파일**이다 (직접 고치지 않는다).
+구매혜택 아이콘 번호마다 행사 비율과 그림 지문을 쌓아 두어, 다음 시즌에 번호가
+바뀌어도 같은 그림이면 알아서 인계한다.
 
 사용법:
-    python tools/update_season.py                    # season.json 사용
+    python tools/update_season.py                    # 시즌설정.txt 사용
     python tools/update_season.py --skip-barcodes    # products.js 만 다시 생성
 
 하는 일:
-    0. season.json 에서 매장 정보/시즌/행사 기간/구매혜택 표를 읽음
+    0. 시즌설정.txt 에서 매장 정보/시즌/행사 기간을 읽음
     1. 바코드북 PDF에서 상품코드와 위치를 추출
     2. 카탈로그 JSON을 내려받아 상품명/가격/구매혜택을 가져옴
     3. 두 소스의 상품명을 교차 검증 (불일치하면 경고)
-    4. 구매혜택 아이콘 번호를 행사(N+M)로 해석 (모르는 번호가 있으면 중단)
+    4. 구매혜택 아이콘을 그림 지문으로 대조해 행사(N+M)로 해석
+       (지문도 처음 보는 아이콘이면 중단)
     5. products.js + store.js 생성
     6. BarcodeImgs/ 를 비우고 코드별 바코드 이미지를 다시 렌더링
 
@@ -26,7 +32,9 @@
 from __future__ import print_function
 
 import argparse
+import difflib
 import glob
+import hashlib
 import io
 import json
 import os
@@ -51,6 +59,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BARCODE_DIR = os.path.join(REPO, "BarcodeImgs")
 PRODUCTS_JS = os.path.join(REPO, "products.js")
 STORE_JS = os.path.join(REPO, "store.js")
+SETTINGS_TXT = os.path.join(REPO, "시즌설정.txt")
 SEASON_JSON = os.path.join(REPO, "season.json")
 ICON_SHEET = os.path.join(REPO, "unknown_benefit_icons.png")
 
@@ -67,16 +76,17 @@ CODE_RE = re.compile(r"^\d{2,3}-\d{2}$")
 EPS = 1.5
 
 # ---------------------------------------------------------------------------
-# 구매혜택 아이콘 -> 행사(N+M).  season.json 의 '구매혜택'에서 채워진다.
+# 구매혜택 아이콘 -> 행사(N+M).
 #
 # 카탈로그의 attached / attached_e 는 아이콘 번호 목록이고, 실제 그림은
 # <카탈로그 루트>/icons/benefit_<번호>.png 에 있다. 행사 비율은 그림 안에
-# 글자로만 적혀 있어 자동으로 읽을 수 없다. 그래서 사람이 한 번 보고
-# season.json 에 적어 두는 구조다.
+# 글자로만 적혀 있어 자동으로 읽을 수 없다.
 #
-# ★ 시즌이 바뀌면 번호 체계가 달라질 수 있다. 모르는 번호를 발견하면
-#   아이콘을 한 장에 모아 저장하고 멈춘다. 확인 없이 넘기려면
-#   --allow-unknown-benefits (권장하지 않음).
+# ★ 시즌이 바뀌면 번호 체계가 달라진다. 그래서 번호가 아니라 **그림**을
+#   기억한다 (season.json 의 '지문'). 지난 시즌 12번과 이번 시즌 37번이
+#   같은 그림이면 비율을 그대로 인계하고, 지문까지 처음 보는 아이콘만
+#   사람에게 묻는다. 확인 없이 넘기려면 --allow-unknown-benefits
+#   (권장하지 않음 - 모르는 아이콘은 조용히 '없음'이 되어 덤을 빠뜨린다).
 # ---------------------------------------------------------------------------
 BENEFIT_PROMO = {}
 BENEFIT_OTHER = set()
@@ -149,60 +159,420 @@ def read_pdf(pdf_path):
     return positions, names
 
 
-def load_season_config(path):
-    """season.json 을 읽어 스크립트가 쓰는 형태로 바꾼다.
+# ---------------------------------------------------------------------------
+# 관리자 입력 파일 (시즌설정.txt)
+#
+# 예전에는 관리자가 season.json 을 직접 고쳤는데, 쉼표 하나만 빠져도 파일
+# 전체가 깨지고 오류 메시지도 관리자에게는 읽히지 않았다. 그래서 사람이 쓰는
+# 파일은 "이름: 값" 한 줄 형식으로 바꿨다 - 쉼표도 괄호도 없으니 구조가
+# 깨질 수가 없고, 틀린 줄이 있으면 그 줄 번호만 짚어 주면 된다.
+#
+# 오타는 조용히 넘기지 않는다. 모르는 이름이 있으면 비슷한 이름을 제안하고
+# 멈춘다 ("사전행사시작"을 "사전행사시자"로 적으면 값이 없는 셈이 되어
+# 엉뚱한 날짜로 배포되기 때문이다).
+# ---------------------------------------------------------------------------
 
-    관리자가 손으로 고치는 파일이라 한글 키를 쓴다. 빠진 항목이 있으면
-    무엇이 없는지 정확히 알려주고 멈춘다 (조용히 기본값으로 넘어가면
-    엉뚱한 날짜/행사로 주문서가 배포된다).
+# (정규화된 이름, 내부 이름, 필수 여부, 예시)
+SETTING_FIELDS = [
+    ("매장이름", "store_name", True, "LG 생산기술원점"),
+    ("매장담당자", "store_manager", True, "홍길동"),
+    ("매장전화번호", "store_phone", True, "010-0000-0000"),
+    ("시즌이름", "season", True, "2026 추석"),
+    ("카탈로그주소", "catalog", True, "https://gs25mobile.com/2026_2nd/products.json"),
+    ("바코드PDF", "pdf", True, "BarcodeSource/20260815.pdf"),
+    ("사전행사시작", "pre_start", True, "2026-08-17"),
+    ("본행사시작", "main_start", True, "2026-09-05"),
+    ("사전행사조건", "pre_note", False, "삼성/KB국민/비씨/신한카드 결제 시"),
+]
+
+# 관리자가 조금 다르게 적어도 알아듣도록
+SETTING_ALIASES = {
+    "매장명": "매장이름", "점포이름": "매장이름", "점포명": "매장이름",
+    "담당자": "매장담당자", "담당자이름": "매장담당자",
+    "전화번호": "매장전화번호", "매장연락처": "매장전화번호", "연락처": "매장전화번호",
+    "시즌": "시즌이름", "명절": "시즌이름",
+    "카탈로그": "카탈로그주소", "카탈로그URL": "카탈로그주소", "카탈로그링크": "카탈로그주소",
+    "바코드파일": "바코드PDF", "바코드PDF파일": "바코드PDF", "바코드북": "바코드PDF",
+    "PDF": "바코드PDF",
+    "사전행사시작일": "사전행사시작", "사전행사": "사전행사시작",
+    "본행사시작일": "본행사시작", "본행사": "본행사시작",
+    "사전행사안내": "사전행사조건", "사전행사카드": "사전행사조건",
+}
+
+BENEFIT_KEY_RE = re.compile(r"^구매혜택0*(\d+)$")
+NO_PROMO_WORDS = {"없음", "없슴", "아님", "행사아님", "해당없음", "해당사항없음", "X", "-"}
+
+
+def norm_key(text):
+    """줄 앞부분(이름)을 비교용으로 다듬는다: 공백 제거 + 영문 대문자."""
+    return re.sub(r"\s+", "", text).upper()
+
+
+def clean_value(text):
+    """값에서 따옴표와 끝 쉼표를 걷어낸다.
+
+    JSON 을 고치던 습관으로 `"2026 추석",` 처럼 적어도 그대로 통하게 한다.
+    """
+    v = text.strip()
+    v = re.sub(r"[,，]+$", "", v).strip()
+    pairs = [('"', '"'), ("'", "'"), ("“", "”"), ("‘", "’")]
+    for a, b in pairs:
+        if len(v) >= 2 and v[0] == a and v[-1] == b:
+            return v[1:-1].strip()
+    return v
+
+
+def normalize_date(value):
+    """2026.8.17 / 2026/08/17 / 2026-8-17 을 2026-08-17 로. 못 읽으면 None."""
+    v = re.sub(r"[.‧/\s]+", "-", value.strip()).strip("-")
+    v = re.sub(r"[년월]", "-", v).replace("일", "").strip("-")
+    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", v)
+    if not m:
+        return None
+    y, mo, d = (int(x) for x in m.groups())
+    if not (1 <= mo <= 12 and 1 <= d <= 31):
+        return None
+    return "%04d-%02d-%02d" % (y, mo, d)
+
+
+def normalize_benefit(value):
+    """'2+1' / '2 + 1' / '없음' 을 표준형으로. 못 읽으면 None."""
+    t = re.sub(r"\s+", "", value).replace("＋", "+").replace("＋", "+")
+    if t.upper() in NO_PROMO_WORDS:
+        return "없음"
+    m = re.match(r"^(\d+)\+(\d+)$", t)
+    if not m:
+        return None
+    return "%d+%d" % (int(m.group(1)), int(m.group(2)))
+
+
+def load_settings(path):
+    """시즌설정.txt 를 읽어 스크립트가 쓰는 형태로 바꾼다.
+
+    틀린 줄을 만나도 바로 멈추지 않고 끝까지 읽어 **한 번에 모두** 알려준다.
+    한 줄 고치고 다시 돌리기를 반복하지 않게 하기 위해서다.
     """
     if not os.path.exists(path):
-        sys.exit("[!] 설정 파일이 없습니다: %s" % path)
-    with io.open(path, encoding="utf-8") as f:
-        try:
-            cfg = json.load(f)
-        except ValueError as e:
-            sys.exit("[!] season.json 형식이 잘못됐습니다 (쉼표/따옴표 확인): %s" % e)
+        sys.exit("[!] 설정 파일이 없습니다: %s" % os.path.basename(path))
 
-    def need(section, key):
-        if section not in cfg:
-            sys.exit('[!] season.json 에 "%s" 항목이 없습니다.' % section)
-        value = cfg[section].get(key)
-        if value in (None, ""):
-            sys.exit('[!] season.json 의 "%s > %s" 값이 비어 있습니다.' % (section, key))
-        return value
+    with io.open(path, encoding="utf-8-sig") as f:
+        lines = f.read().splitlines()
 
-    benefit = cfg.get("구매혜택", {})
-    promo = {}
-    for k, v in (benefit.get("행사") or {}).items():
-        if not str(k).isdigit():
-            continue  # "_설명" 같은 주석 키는 건너뛴다
-        if not re.match(r"^\d+\+\d+$", str(v)):
-            sys.exit('[!] 행사 표기가 잘못됐습니다: 아이콘 %s -> "%s" (예: "2+1")' % (k, v))
-        promo[int(k)] = str(v)
+    known = {name: internal for name, internal, _, _ in SETTING_FIELDS}
+    optional = set(name for name, _, required, _ in SETTING_FIELDS if not required)
+    values, benefits, problems, seen = {}, {}, [], {}
+
+    for no, raw in enumerate(lines, 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+
+        m = re.match(r"^([^:：=]+)[:：=](.*)$", line)
+        if not m:
+            problems.append((no, raw, "'이름: 값' 형식이 아닙니다. 이름 뒤에 쌍점(:)을 넣어 주세요."))
+            continue
+
+        key, value = norm_key(m.group(1)), clean_value(m.group(2))
+        key = SETTING_ALIASES.get(key, key)
+
+        bm = BENEFIT_KEY_RE.match(key)
+        if bm:
+            rate = normalize_benefit(value)
+            if rate is None:
+                problems.append((no, raw,
+                                 "구매혜택은 '2+1' 처럼 적거나, 덤이 아니면 '없음' 이라고 적어 주세요."))
+            else:
+                benefits[int(bm.group(1))] = rate
+            continue
+
+        if key not in known:
+            hint = difflib.get_close_matches(key, list(known) + ["구매혜택12"], 1, 0.5)
+            tail = ("  '%s' 을(를) 쓰시려던 것 같습니다." % hint[0]) if hint else ""
+            problems.append((no, raw, "모르는 이름입니다.%s" % tail))
+            continue
+
+        if key in seen:
+            problems.append((no, raw, "'%s' 이(가) %d번째 줄에도 있습니다. 하나만 남겨 주세요."
+                             % (key, seen[key])))
+            continue
+        seen[key] = no
+
+        if value == "":
+            # 필수가 아닌 항목(사전행사 조건)은 비워 두어도 된다
+            if key in optional:
+                continue
+            problems.append((no, raw, "값이 비어 있습니다."))
+            continue
+        values[known[key]] = (value, no)
+
+    # 필수 항목 확인
+    for name, internal, required, sample in SETTING_FIELDS:
+        if required and internal not in values:
+            problems.append((0, "", "'%s' 줄이 없습니다. 이렇게 한 줄 추가하세요 ->  %s: %s"
+                             % (name, name, sample)))
+
+    # 값 형식 확인
+    out = {internal: v for internal, (v, _) in values.items()}
+    for internal, label in (("pre_start", "사전행사 시작"), ("main_start", "본행사 시작")):
+        if internal not in out:
+            continue
+        fixed = normalize_date(out[internal])
+        if fixed is None:
+            problems.append((values[internal][1], out[internal],
+                             "%s 은(는) 2026-08-17 처럼 적어 주세요." % label))
+        else:
+            out[internal] = fixed
+
+    if "catalog" in out and not out["catalog"].startswith("http"):
+        problems.append((values["catalog"][1], out["catalog"],
+                         "카탈로그 주소는 http 로 시작하는 products.json 주소여야 합니다."))
+
+    if problems:
+        # 줄 번호 순으로. 줄이 아예 없는 항목(번호 0)은 맨 뒤에 모아 보여 준다.
+        problems.sort(key=lambda p: (p[0] == 0, p[0]))
+        print("[!] %s 을(를) 읽지 못했습니다. 아래 %d곳을 고쳐 주세요.\n"
+              % (os.path.basename(path), len(problems)))
+        for no, raw, why in problems:
+            if no:
+                print("  %d번째 줄:  %s" % (no, raw.strip()))
+            print("      -> %s\n" % why)
+        sys.exit(1)
+
+    if out["pre_start"] > out["main_start"]:
+        sys.exit("[!] 사전행사 시작(%s)이 본행사 시작(%s)보다 늦습니다. 날짜를 확인해 주세요."
+                 % (out["pre_start"], out["main_start"]))
 
     return {
         "store": {
-            "name": need("매장", "이름"),
-            "manager": need("매장", "담당자"),
-            "phone": need("매장", "전화번호"),
+            "name": out["store_name"],
+            "manager": out["store_manager"],
+            "phone": out["store_phone"],
         },
-        "season": need("시즌", "이름"),
-        "catalog": need("시즌", "카탈로그주소"),
-        "pdf": need("시즌", "바코드PDF"),
-        "pre_start": need("행사기간", "사전행사시작"),
-        "main_start": need("행사기간", "본행사시작"),
-        "pre_note": cfg.get("행사기간", {}).get("사전행사조건", ""),
-        "promo": promo,
-        "other": set(int(n) for n in (benefit.get("행사아님") or [])),
+        "season": out["season"],
+        "catalog": out["catalog"],
+        "pdf": out["pdf"],
+        "pre_start": out["pre_start"],
+        "main_start": out["main_start"],
+        "pre_note": out.get("pre_note", ""),
+        "benefit_overrides": benefits,
     }
+
+
+def migrate_old_json(json_path, txt_path):
+    """시즌설정.txt 가 없고 옛 season.json 만 있으면 자동으로 옮겨 준다.
+
+    관리자가 손으로 다시 옮겨 적다가 값을 흘리는 일이 없게 하기 위한 것이다.
+    """
+    if os.path.exists(txt_path) or not os.path.exists(json_path):
+        return False
+    try:
+        with io.open(json_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except (ValueError, IOError):
+        return False
+    store, season, period = cfg.get("매장"), cfg.get("시즌"), cfg.get("행사기간")
+    if not (isinstance(store, dict) and isinstance(season, dict) and isinstance(period, dict)):
+        return False
+
+    rows = [
+        ("매장 이름", store.get("이름", "")),
+        ("매장 담당자", store.get("담당자", "")),
+        ("매장 전화번호", store.get("전화번호", "")),
+        ("시즌 이름", season.get("이름", "")),
+        ("카탈로그 주소", season.get("카탈로그주소", "")),
+        ("바코드 PDF", season.get("바코드PDF", "")),
+        ("사전행사 시작", period.get("사전행사시작", "")),
+        ("본행사 시작", period.get("본행사시작", "")),
+        ("사전행사 조건", period.get("사전행사조건", "")),
+    ]
+    text = ("# 예전 season.json 에서 자동으로 옮겨 적었습니다.\n"
+            "# 앞으로는 이 파일만 고치시면 됩니다. 쉼표나 괄호는 필요 없습니다.\n\n")
+    text += "".join("%s: %s\n" % r for r in rows)
+    with io.open(txt_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+    return True
+
+
+# ---------------------------------------------------------------------------
+# 구매혜택 기억 파일 (season.json) - 스크립트가 쓰고 읽는다
+# ---------------------------------------------------------------------------
+
+def load_benefit_memory(path):
+    """{번호: {"행사", "지문", "대략"}} 형태의 기억을 읽는다. 옛 형식도 받아들인다."""
+    if not os.path.exists(path):
+        return {}
+    try:
+        with io.open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (ValueError, IOError) as e:
+        print("   (season.json 을 읽지 못해 기억 없이 시작합니다: %s)" % e)
+        return {}
+
+    section = data.get("구매혜택")
+    if not isinstance(section, dict):
+        return {}
+
+    memory = {}
+    for key, val in section.items():          # 새 형식
+        if str(key).isdigit() and isinstance(val, dict):
+            memory[int(key)] = {
+                "행사": str(val.get("행사") or "없음"),
+                "지문": val.get("지문") or "",
+                "대략": val.get("대략") or "",
+            }
+
+    old_promo = section.get("행사")            # 옛 형식 (지문 없음)
+    if isinstance(old_promo, dict):
+        for key, val in old_promo.items():
+            if str(key).isdigit():
+                memory.setdefault(int(key), {"행사": str(val), "지문": "", "대략": ""})
+    for n in (section.get("행사아님") or []):
+        try:
+            memory.setdefault(int(n), {"행사": "없음", "지문": "", "대략": ""})
+        except (TypeError, ValueError):
+            pass
+    return memory
+
+
+def save_benefit_memory(path, memory, season):
+    body = {}
+    for n in sorted(memory):
+        body[str(n)] = {
+            "행사": memory[n]["행사"],
+            "지문": memory[n].get("지문", ""),
+            "대략": memory[n].get("대략", ""),
+        }
+    data = {
+        "_설명": "자동 생성 파일입니다. 직접 고치지 마세요.",
+        "_고칠파일": "관리자가 고치는 파일은 시즌설정.txt 입니다.",
+        "_내용": ("구매혜택 아이콘 번호 -> 행사 비율. '지문'은 아이콘 그림을 알아보기 위한 값이라, "
+                  "다음 시즌에 번호가 바뀌어도 같은 그림이면 자동으로 인계됩니다."),
+        "마지막시즌": season,
+        "구매혜택": body,
+    }
+    with io.open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+
+
+# ---------------------------------------------------------------------------
+# 아이콘 그림 지문
+# ---------------------------------------------------------------------------
+
+_ICON_CACHE = {}
+
+
+def icon_fingerprint(root, n):
+    """아이콘 그림의 (정확지문, 대략지문). 내려받지 못하면 (None, None).
+
+    정확지문은 픽셀이 하나도 다르지 않을 때만 일치한다. 행사 아이콘은
+    '2+1' 과 '3+1' 처럼 글자 한 자만 다른 경우가 많아서, 비슷한 그림을
+    같다고 보면 엉뚱한 수량이 나간다. 그래서 **자동 인계는 정확지문으로만**
+    하고, 대략지문은 사람에게 "이것과 비슷합니다" 라고 힌트를 줄 때만 쓴다.
+    """
+    if n in _ICON_CACHE:
+        return _ICON_CACHE[n]
+    exact = rough = None
+    try:
+        data = urlopen("%s/icons/benefit_%d.png" % (root, n), timeout=20).read()
+        im = Image.open(BytesIO(data)).convert("RGB")
+        h = hashlib.sha256()
+        h.update(("%dx%d|" % im.size).encode("ascii"))
+        h.update(im.tobytes())
+        exact = h.hexdigest()[:32]
+
+        px = list(im.convert("L").resize((9, 8), Image.LANCZOS).getdata())
+        bits = 0
+        for row in range(8):
+            for col in range(8):
+                left, right = px[row * 9 + col], px[row * 9 + col + 1]
+                bits = (bits << 1) | (1 if left > right else 0)
+        rough = "%016x" % bits
+    except Exception:
+        pass
+    _ICON_CACHE[n] = (exact, rough)
+    return _ICON_CACHE[n]
+
+
+def rough_distance(a, b):
+    if not a or not b:
+        return 64
+    return bin(int(a, 16) ^ int(b, 16)).count("1")
+
+
+def resolve_benefits(used, memory, overrides, root):
+    """쓰인 아이콘 번호마다 행사 비율을 정한다.
+
+    우선순위
+      1. 시즌설정.txt 에 관리자가 직접 적은 값
+      2. 그림 지문이 정확히 같은 지난 기억 (번호가 바뀌어도 인계된다)
+      3. 지문이 아직 없는 같은 번호의 기억 (지문 도입 전 자료)
+      4. 아이콘을 내려받지 못했으나 같은 번호의 기억이 있는 경우
+
+    번호는 그대로인데 그림이 바뀐 경우는 인계하지 않는다. 조용히 넘기면
+    작년 비율로 올해 주문이 나가기 때문에, 가장 확인이 필요한 경우다.
+
+    @returns (번호->비율, 알림 목록, 모르는 번호 목록[(번호, 사유, 힌트)])
+    """
+    by_print = {}
+    for n, rec in memory.items():
+        if rec.get("지문"):
+            by_print.setdefault(rec["지문"], (n, rec["행사"]))
+
+    resolved, notes, unknown = {}, [], []
+
+    for n in sorted(used):
+        if n in overrides:
+            resolved[n] = overrides[n]
+            notes.append("%2d번 -> %-4s (시즌설정.txt 에 적으신 값)" % (n, overrides[n]))
+            continue
+
+        exact, rough = icon_fingerprint(root, n)
+        prev = memory.get(n)
+
+        if exact and exact in by_print:
+            src, rate = by_print[exact]
+            resolved[n] = rate
+            if src == n:
+                notes.append("%2d번 -> %-4s (지난 시즌과 같은 그림)" % (n, rate))
+            else:
+                notes.append("%2d번 -> %-4s (지난 시즌 %d번과 같은 그림 - 번호만 바뀜)"
+                             % (n, rate, src))
+            continue
+
+        if prev and not prev.get("지문"):
+            resolved[n] = prev["행사"]
+            notes.append("%2d번 -> %-4s (예전 기록, 이번에 그림도 기억함)" % (n, prev["행사"]))
+            continue
+
+        if prev and not exact:
+            resolved[n] = prev["행사"]
+            notes.append("%2d번 -> %-4s (그림을 못 받아 기억한 값 사용)" % (n, prev["행사"]))
+            continue
+
+        if prev:
+            why = "번호는 그대로인데 아이콘 그림이 바뀌었습니다 (지난 기록: %s)" % prev["행사"]
+        else:
+            why = "처음 보는 아이콘입니다"
+
+        hint = ""
+        best, best_d = None, 99
+        for m, rec in memory.items():
+            d = rough_distance(rough, rec.get("대략"))
+            if d < best_d:
+                best, best_d = m, d
+        if best is not None and best_d <= 10:
+            hint = "지난 %d번(%s)과 비슷해 보입니다. 같은 것인지 확인하세요." % (
+                best, memory[best]["행사"])
+        unknown.append((n, why, hint))
+
+    return resolved, notes, unknown
 
 
 def write_store_js(store, season):
     """매장 정보를 주문서가 읽는 전역으로 내보낸다."""
     body = json.dumps(store, ensure_ascii=False, indent=2).replace("\n", "\n")
     text = (
-        "// 매장 정보 (season.json 에서 자동 생성 - 직접 편집하지 마세요)\n"
+        "// 매장 정보 (시즌설정.txt 에서 자동 생성 - 직접 편집하지 마세요)\n"
         "// 시즌: %s\n\n"
         "const STORE_INFO = %s;\n" % (season, body)
     )
@@ -214,7 +584,7 @@ def save_unknown_icon_sheet(catalog_url, codes):
     """모르는 혜택 아이콘을 한 장에 모아 저장한다 (번호와 함께).
 
     번호만 알려주면 관리자가 주소를 하나씩 열어야 한다. 그림 한 장이면
-    바로 보고 season.json 에 옮겨 적을 수 있다.
+    바로 보고 시즌설정.txt 에 옮겨 적을 수 있다.
     """
     root = catalog_url.rsplit("/", 1)[0]
     try:
@@ -259,15 +629,12 @@ def benefit_codes(field):
 
 
 def scan_benefits(catalog):
-    """카탈로그에 쓰인 혜택 번호를 모아 미확인 번호를 골라낸다.
-
-    @returns (사용된 번호 집합, 표에 없는 번호 집합)
-    """
+    """카탈로그에 실제로 쓰인 혜택 아이콘 번호 집합."""
     used = set()
     for r in catalog:
         used |= set(benefit_codes(r.get("attached")))
         used |= set(benefit_codes(r.get("attached_e")))
-    return used, used - set(BENEFIT_PROMO) - BENEFIT_OTHER
+    return used
 
 
 def promo_of(field):
@@ -471,23 +838,25 @@ def main():
     global BENEFIT_PROMO, BENEFIT_OTHER
 
     ap = argparse.ArgumentParser(description="시즌 상품/바코드 일괄 갱신")
-    ap.add_argument("--config", default=SEASON_JSON,
-                    help="설정 파일 (기본: season.json)")
+    ap.add_argument("--config", default=SETTINGS_TXT,
+                    help="관리자 설정 파일 (기본: 시즌설정.txt)")
     ap.add_argument("--allow-unknown-benefits", action="store_true",
                     help="처음 보는 구매혜택 아이콘이 있어도 계속 진행")
     ap.add_argument("--skip-barcodes", action="store_true",
                     help="바코드 이미지는 건드리지 않고 products.js 만 다시 만든다")
     args = ap.parse_args()
 
-    print("0) 설정 읽는 중: %s" % args.config)
-    cfg = load_season_config(args.config)
-    BENEFIT_PROMO = cfg["promo"]
-    BENEFIT_OTHER = cfg["other"]
+    if migrate_old_json(SEASON_JSON, args.config):
+        print("   예전 season.json 의 설정을 %s 로 옮겼습니다."
+              % os.path.basename(args.config))
+
+    print("0) 설정 읽는 중: %s" % os.path.basename(args.config))
+    cfg = load_settings(args.config)
     pdf_path = cfg["pdf"] if os.path.isabs(cfg["pdf"]) else os.path.join(REPO, cfg["pdf"])
     if not os.path.exists(pdf_path):
         sys.exit("[!] 바코드 PDF가 없습니다: %s\n"
-                 "    season.json 의 '바코드PDF' 경로와 실제 올린 파일 이름이 같은지 확인하세요."
-                 % cfg["pdf"])
+                 "    %s 의 '바코드 PDF' 줄과 BarcodeSource/ 에 올린 파일 이름이 같은지 확인하세요."
+                 % (cfg["pdf"], os.path.basename(args.config)))
     print("   매장: %s / %s / %s"
           % (cfg["store"]["name"], cfg["store"]["manager"], cfg["store"]["phone"]))
     print("   시즌: %s  (사전행사 %s ~, 본행사 %s ~)"
@@ -503,7 +872,7 @@ def main():
         catalog = load_catalog(cfg["catalog"])
     except Exception as e:
         sys.exit("[!] 카탈로그를 읽지 못했습니다: %s\n"
-                 "    season.json 의 '카탈로그주소'가 맞는지, 브라우저에서 열리는지 확인하세요." % e)
+                 "    시즌설정.txt 의 '카탈로그 주소'가 맞는지, 브라우저에서 열리는지 확인하세요." % e)
     web = {r["code"]: r for r in catalog}
     print("   상품 %d개" % len(web))
 
@@ -521,25 +890,51 @@ def main():
     if only_pdf or only_web or mismatch:
         print("   [!] 두 소스가 완전히 일치하지 않습니다. 위 목록을 확인하세요.")
 
-    print("4) 구매혜택 아이콘 확인")
-    used, unknown = scan_benefits(catalog)
-    print("   사용된 혜택 번호 %d개 / 행사로 해석 %d개"
-          % (len(used), len(used & set(BENEFIT_PROMO))))
+    print("4) 구매혜택 아이콘 확인 (그림 지문 대조)")
+    root = cfg["catalog"].rsplit("/", 1)[0]
+    used = scan_benefits(catalog)
+    memory = load_benefit_memory(SEASON_JSON)
+    resolved, notes, unknown = resolve_benefits(
+        used, memory, cfg["benefit_overrides"], root)
+    for line in notes:
+        print("   %s" % line)
+    print("   사용된 아이콘 %d개 / 알아낸 것 %d개 (그 중 행사 %d개)"
+          % (len(used), len(resolved),
+             len([r for r in resolved.values() if r != "없음"])))
+
     if unknown:
-        root = cfg["catalog"].rsplit("/", 1)[0]
-        print("   [!] 처음 보는 혜택 아이콘 %d개: %s"
-              % (len(unknown), sorted(unknown)))
-        for n in sorted(unknown):
-            print("       %s/icons/benefit_%d.png" % (root, n))
-        sheet = save_unknown_icon_sheet(cfg["catalog"], unknown)
+        setting_name = os.path.basename(args.config)
+        print("   [!] 확인이 필요한 아이콘 %d개" % len(unknown))
+        for n, why, hint in unknown:
+            print("       %d번 - %s" % (n, why))
+            print("            %s/icons/benefit_%d.png" % (root, n))
+            if hint:
+                print("            %s" % hint)
+        sheet = save_unknown_icon_sheet(cfg["catalog"], [n for n, _, _ in unknown])
         if sheet:
             print("   모아 놓은 그림: %s" % os.path.basename(sheet))
-        print("   그림을 보고 season.json 의 '구매혜택'에 추가하세요.")
-        print("     - 1+1, 2+1 처럼 덤을 주는 아이콘 -> '행사' 에 \"번호\": \"2+1\"")
-        print("     - 무료배송/냉장/할인 등 나머지    -> '행사아님' 목록에 번호만")
+        print("   그림을 보고 %s 아래쪽에 한 줄씩 추가한 뒤 다시 실행하세요." % setting_name)
+        for n, _, _ in unknown:
+            print("       구매혜택 %d: 2+1        <- 덤을 주면 비율, 아니면 '없음'" % n)
         if not args.allow_unknown_benefits:
-            print("   행사를 잘못 넣으면 청구액이 틀어지므로 여기서 멈춥니다.")
+            print("   행사를 잘못 넣으면 실제 배송 수량이 틀어지므로 여기서 멈춥니다.")
             return 1
+        print("   [!] --allow-unknown-benefits 로 계속합니다 (모르는 아이콘은 '없음' 처리).")
+
+    BENEFIT_PROMO = {n: r for n, r in resolved.items() if r != "없음"}
+    BENEFIT_OTHER = set(n for n, r in resolved.items() if r == "없음")
+
+    # 이번에 알아낸 내용을 기억에 반영한다 (다음 시즌 자동 인계용).
+    # 쓰이지 않은 옛 번호도 그대로 남겨 둔다 - 그림이 돌아올 수 있다.
+    for n, rate in resolved.items():
+        exact, rough = icon_fingerprint(root, n)
+        prev = memory.get(n, {})
+        memory[n] = {
+            "행사": rate,
+            "지문": exact or prev.get("지문", ""),
+            "대략": rough or prev.get("대략", ""),
+        }
+    save_benefit_memory(SEASON_JSON, memory, cfg["season"])
 
     print("5) products.js / store.js 생성")
     market, n_pre, n_main, conflicts = write_products_js(

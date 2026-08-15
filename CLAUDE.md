@@ -26,8 +26,8 @@ GS25 convenience store parcel order management web application (Korean language)
 
 | File | Purpose |
 |---|---|
-| `products.js` | Product database — exports globals `PRODUCTS_DATA` (601 items: name, price, 행사) and `PROMO_CONFIG` (promotion period dates). Generated from `season.json`. |
-| `store.js` | Exports global `STORE_INFO` (store name, manager, phone) rendered in the page header. Generated from `season.json`. |
+| `products.js` | Product database — exports globals `PRODUCTS_DATA` (601 items: name, price, 행사) and `PROMO_CONFIG` (promotion period dates). Generated from `시즌설정.txt`. |
+| `store.js` | Exports global `STORE_INFO` (store name, manager, phone) rendered in the page header. Generated from `시즌설정.txt`. |
 | `config.js` | Google Forms endpoint URL and entry IDs — exports global `GOOGLE_FORM_CONFIG` |
 
 ## File Structure
@@ -232,17 +232,32 @@ has to make it good.
 
 **`products.js`, `store.js` and `BarcodeImgs/` are generated — do not hand-edit them.**
 
-**The refresh is meant to run without a developer.** All inputs live in `season.json`
-(Korean keys, hand-edited by the store admin); `.github/workflows/season-update.yml`
-runs `tools/update_season.py` on manual dispatch, commits the generated files, and
-GitHub Pages redeploys from `main`. `docs/관리자안내.md` is the admin-facing guide —
-keep it in sync with any change to `season.json`'s shape or the workflow's inputs.
-Do not reintroduce required CLI flags for season data: anything the admin must supply
-belongs in `season.json`, or the "no developer needed" property is lost.
+**The refresh is meant to run without a developer.** All admin inputs live in
+`시즌설정.txt` — a flat `이름: 값` line format, deliberately **not** JSON: the admin
+edits it in the GitHub web editor, and a single missing comma used to break the whole
+file with an error message they could not read. There is nothing to unbalance in a
+line format. `.github/workflows/season-update.yml` runs `tools/update_season.py` on
+manual dispatch, commits the generated files, and GitHub Pages redeploys from `main`.
+`docs/관리자안내.md` is the admin-facing guide — keep it in sync with any change to
+`시즌설정.txt`'s fields or the workflow's inputs. Do not reintroduce required CLI flags
+for season data, and do not move admin-supplied values back into JSON: both lose the
+"no developer needed" property.
 
-Config errors must fail loudly with a Korean message naming the offending field —
-`load_season_config()` exits rather than falling back to defaults, because a silent
-default would deploy wrong dates or promotions to a live store.
+`load_settings()` is deliberately lenient about *form* and strict about *identity*.
+It accepts `:` `：` `=`, quotes, trailing commas, and `2027.1.5` / `2027/01/05` dates;
+it also accepts short aliases (`담당자`, `카탈로그 링크`). But an unrecognised field name
+is an error with a `difflib` suggestion, never a silent skip — `사전행사시자` must not
+quietly become "no pre-event date". Problems are collected and reported **all at once**
+with line numbers so the admin does not fix-and-rerun one line at a time.
+
+Config errors must fail loudly with a Korean message naming the offending line —
+never fall back to defaults, because a silent default would deploy wrong dates or
+promotions to a live store.
+
+**`season.json` is no longer the admin's file.** It is now script-managed memory:
+`{아이콘 번호: {행사, 지문, 대략}}`. `migrate_old_json()` converts a pre-existing
+old-shape `season.json` into `시즌설정.txt` automatically, and `load_benefit_memory()`
+still reads the old `행사`/`행사아님` shape, so neither needs to be kept by hand.
 
 The GS25 catalog is replaced wholesale every 설날/추석. Codes are reused for
 *different* products across seasons (in the 2026 추석 change, 371 of the carried-over
@@ -251,7 +266,7 @@ regenerated **together**. Updating only one of them prints a barcode that scans 
 a different product than the order form shows.
 
 1. Drop the new barcode-book PDF into `BarcodeSource/`
-2. Point `season.json` at it and at the season's catalog JSON
+2. Point `시즌설정.txt` at it and at the season's catalog JSON
    (`<catalog-root>/products.json`, e.g. `https://gs25mobile.com/2026_2nd/products.json`),
    and set the 행사 dates
 3. Run the **시즌 갱신** workflow (or `python tools/update_season.py` locally)
@@ -270,12 +285,26 @@ the clerk for the day's price instead of pre-filling 0.
 
 **Promotions.** The catalog stores them as 구매혜택 icon numbers in `attached`
 (본행사) / `attached_e` (사전행사); the rate is only readable from the icon image at
-`<catalog-root>/icons/benefit_<n>.png`, so `season.json`'s `구매혜택 > 행사` /
-`행사아님` are a hand-made table — **the one step that cannot be automated.**
-**Icon numbering is season-specific.** The script stops when it meets a number in
-neither list, downloads those icons into a single labelled contact sheet
-(`unknown_benefit_icons.png`, uploaded by the workflow as an artifact), and tells the
-admin to transcribe them. `--allow-unknown-benefits` skips the check, but an
+`<catalog-root>/icons/benefit_<n>.png` — **the one step that cannot be fully automated.**
+
+Because **icon numbering is season-specific**, the script keys its memory on the
+*image*, not the number. `icon_fingerprint()` returns two hashes and they have
+different jobs:
+
+- **지문** — SHA-256 of the raw RGB pixels. Used for automatic carry-over, and *only*
+  this. If last season's #12 and this season's #37 are pixel-identical, the rate
+  transfers and the admin does nothing.
+- **대략** — an 8×8 dHash, used **only** to phrase a hint to a human. Never to decide
+  a rate. This is not caution for its own sake: the real `2+1` and `3+1` icons differ
+  by a single glyph and sit 7 bits apart, well inside any sane "same image" threshold.
+  A perceptual match here would silently ship the wrong count.
+
+`resolve_benefits()` stops for two cases: an unseen fingerprint, and — importantly —
+a **known number whose image changed**, which would otherwise apply last season's rate
+to this season's promotion. Unknown icons are downloaded into a single labelled contact
+sheet (`unknown_benefit_icons.png`, uploaded by the workflow as an artifact) and the
+script prints the exact `구매혜택 <n>: <rate>` lines to paste into `시즌설정.txt`, where
+an admin entry always overrides. `--allow-unknown-benefits` skips the check, but an
 unrecognised promotion silently becomes 없음 and the clerk ships the wrong count.
 
 Take the 행사 dates from the season's 사전행사 banner at
