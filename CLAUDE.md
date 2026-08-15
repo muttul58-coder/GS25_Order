@@ -340,9 +340,20 @@ a different product than the order form shows.
    and set the 행사 dates
 3. Run the **시즌 갱신** workflow (or `python tools/update_season.py` locally)
 
-The script cross-checks product names between the PDF and the catalog JSON, and
-fails if the code sets do not line up 1:1. Any non-zero exit or `[!]` line means
-the two sources disagree — resolve before deploying.
+Step 3 cross-checks the PDF against the catalog JSON and **stops the run** — before
+anything is generated, so a failed update leaves the live form untouched — when either
+the code sets do not line up 1:1 **or** a shared code carries a different 상품명 in the
+two sources. The barcode that gets printed comes from the PDF while the name and price
+on screen come from the catalog, so a name disagreement means the paper and the screen
+may be describing different goods. This used to print `[!]` and carry on, which let a
+green check ship a mismatch; a stop is always the safe direction here. `--allow-name-mismatch`
+overrides it and is deliberately **not** exposed as a workflow input — an admin should
+never be able to click past this, and the failure message says so. On the real 2026 추석
+data the check is 601/601 exact after whitespace stripping, so the strictness costs
+nothing in practice.
+
+Only the name has a second source. **Price does not** — it exists only in the catalog,
+which is why the admin checklist still asks for a five-code price spot check by eye.
 
 Barcode rendering is deterministic: re-running with the same PDF reproduces all 601
 JPEGs byte-for-byte, so the workflow's commit stays empty unless something genuinely

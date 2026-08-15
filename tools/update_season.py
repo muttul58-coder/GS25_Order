@@ -1117,6 +1117,9 @@ def main():
                     help="관리자 설정 파일 (기본: 시즌설정.txt)")
     ap.add_argument("--allow-unknown-benefits", action="store_true",
                     help="처음 보는 구매혜택 아이콘이 있어도 계속 진행")
+    ap.add_argument("--allow-name-mismatch", action="store_true",
+                    help="PDF와 카탈로그의 상품명이 달라도 계속 진행 "
+                         "(띄어쓰기·표기 차이임을 눈으로 확인했을 때만)")
     ap.add_argument("--skip-barcodes", action="store_true",
                     help="바코드 이미지는 건드리지 않고 products.js 만 다시 만든다")
     args = ap.parse_args()
@@ -1161,10 +1164,41 @@ def main():
     print("   PDF에만 있는 코드: %d %s" % (len(only_pdf), only_pdf[:10]))
     print("   카탈로그에만 있는 코드: %d %s" % (len(only_web), only_web[:10]))
     print("   상품명 불일치: %d" % len(mismatch))
-    for m in mismatch[:10]:
-        print("      %s  pdf=%r  web=%r" % m)
-    if only_pdf or only_web or mismatch:
-        print("   [!] 두 소스가 완전히 일치하지 않습니다. 위 목록을 확인하세요.")
+
+    # 여기서 멈추는 이유:
+    #   PDF(바코드)와 카탈로그(상품명·가격)는 서로 다른 출처인데, 주문서는 둘을
+    #   상품코드로 이어 붙인다. 같은 코드에 다른 이름이 적혀 있다는 것은
+    #   "인쇄된 바코드와 화면의 상품이 다른 물건" 일 수 있다는 뜻이다.
+    #   그러면 손님은 화면에서 본 것과 다른 물건을 받는다.
+    #
+    #   예전에는 [!] 로 찍기만 하고 그대로 진행해서, 초록 체크가 떴는데도
+    #   이름이 어긋난 채 배포될 수 있었다. 갱신이 실패하면 주문서는 이전
+    #   상태 그대로이므로, 넘어가는 쪽보다 멈추는 쪽이 언제나 안전하다.
+    if only_pdf or only_web:
+        print("   [!] PDF와 카탈로그의 상품코드 목록이 다릅니다. 갱신을 멈춥니다.")
+        print("       두 파일이 같은 시즌 것이 맞는지 확인하세요.")
+        print("       (바코드 PDF 는 시즌설정.txt 의 '바코드 PDF',")
+        print("        카탈로그는 '카탈로그 주소' 줄입니다.)")
+        return 1
+
+    if mismatch:
+        print("   [!] 같은 상품코드인데 이름이 다른 상품이 %d개 있습니다." % len(mismatch))
+        for c, a, b in mismatch[:20]:
+            print("       %s" % c)
+            print("           PDF   : %s" % a)
+            print("           카탈로그: %s" % b)
+        if len(mismatch) > 20:
+            print("       ... 외 %d개" % (len(mismatch) - 20))
+        print("       인쇄되는 바코드는 PDF 쪽, 화면에 뜨는 이름·가격은 카탈로그 쪽에서")
+        print("       옵니다. 둘이 다르면 손님이 화면과 다른 물건을 받을 수 있습니다.")
+        print("       두 파일이 같은 시즌 것이 맞는지 먼저 확인하세요.")
+        if not args.allow_name_mismatch:
+            print("       갱신을 멈춥니다. 주문서는 이전 상태 그대로입니다.")
+            print("       띄어쓰기나 표기만 다른 것이 확실하다면 개발자 확인이 필요합니다.")
+            return 1
+        print("       (--allow-name-mismatch 로 그대로 진행합니다)")
+    else:
+        print("   [OK] PDF ↔ 카탈로그 상품 %d개 이름까지 일치" % len(pdf_codes))
 
     print("4) 구매혜택 아이콘 확인 (그림 지문 대조)")
     root = cfg["catalog"].rsplit("/", 1)[0]
