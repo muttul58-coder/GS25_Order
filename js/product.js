@@ -424,24 +424,29 @@ function calculateGivenQuantity(quantity, eventValue) {
  * 오늘 기준으로 적용되는 행사를 고른다
  *
  * 카탈로그는 사전행사와 본행사의 행사율을 따로 준다 (2026 추석은 601개 중
- * 118개가 서로 다르다). 본행사 시작일부터 eventMain, 그 전에는 eventPre.
+ * 118개가 서로 다르다). 기간은 products.js 의 PROMO_CONFIG 에서 온다.
+ *   ~ 사전행사 시작 전 : 행사 없음
+ *   사전행사 ~ 본행사 전 : eventPre
+ *   본행사 ~            : eventMain
  *
  * @param {Object} productInfo - PRODUCTS_DATA 항목
- * @returns {string} 행사 값 ("2+1" 등). 해당 없으면 빈 문자열
+ * @returns {{event: string, period: string}} period 는 'none'|'pre'|'main'
  */
 function getApplicableEvent(productInfo) {
-    if (!productInfo) return '';
+    if (!productInfo) return { event: '', period: 'none' };
 
-    const mainStart = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG)
-        ? PROMO_CONFIG.mainStart : null;
-    // 문자열 비교로 충분하다 (둘 다 YYYY-MM-DD)
-    const isMainPeriod = mainStart ? (getTodayDate() >= mainStart) : true;
+    const cfg = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG) ? PROMO_CONFIG : {};
+    const today = getTodayDate(); // 날짜 형식이 같으므로 문자열 비교로 충분
 
-    if (isMainPeriod) {
-        return productInfo.eventMain || '';
+    if (cfg.mainStart && today >= cfg.mainStart) {
+        return { event: productInfo.eventMain || '', period: 'main' };
+    }
+    // 사전행사가 아직 시작되지 않았으면 어떤 행사도 적용되지 않는다
+    if (cfg.preStart && today < cfg.preStart) {
+        return { event: '', period: 'none' };
     }
     // 사전행사 기간: 사전행사 대상이 아니면 행사 없음
-    return productInfo.eventPre || '';
+    return { event: productInfo.eventPre || '', period: 'pre' };
 }
 
 /**
@@ -452,28 +457,28 @@ function getApplicableEvent(productInfo) {
  *
  * @param {HTMLElement} row - 상품 행
  * @param {Object} productInfo - PRODUCTS_DATA 항목
- * @returns {string} 실제로 선택된 행사 값 (없으면 빈 문자열)
+ * @returns {{event: string, period: string}} 실제로 선택된 행사
  */
 function applyCatalogEvent(row, productInfo) {
     const select = row.querySelector('.event-type');
-    if (!select) return '';
+    if (!select) return { event: '', period: 'none' };
 
-    const event = getApplicableEvent(productInfo);
-    if (!event) {
+    const applicable = getApplicableEvent(productInfo);
+    if (!applicable.event) {
         select.value = '';
-        return '';
+        return applicable;
     }
 
     // 콤보박스에 없는 비율이면 항목을 만들어 준다.
     // 시즌마다 행사 종류가 바뀌므로 목록에 없다고 조용히 '없음'이 되면 안 된다.
-    if (!select.querySelector(`option[value="${event}"]`)) {
+    if (!select.querySelector(`option[value="${applicable.event}"]`)) {
         const option = document.createElement('option');
-        option.value = event;
-        option.textContent = event;
+        option.value = applicable.event;
+        option.textContent = applicable.event;
         select.appendChild(option);
     }
-    select.value = event;
-    return event;
+    select.value = applicable.event;
+    return applicable;
 }
 
 /**
@@ -720,11 +725,17 @@ function attachProductCodeFormatting(row) {
                     }
                 }
 
-                if (appliedEvent) {
-                    showAlert(`🎁 [${formattedCode}] ${appliedEvent} 행사 상품입니다. 행사가 다르면 직접 바꿔주세요.`, 'success');
+                if (appliedEvent.event) {
+                    // 사전행사 혜택은 조건부인 경우가 있다(2026 추석은 특정 카드 결제 건).
+                    // 조건을 빼고 알리면 점원이 덤을 약속했다가 못 주게 된다.
+                    const preNote = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG)
+                        ? PROMO_CONFIG.preNote : '';
+                    const condition = (appliedEvent.period === 'pre' && preNote)
+                        ? ` (사전행사 · ${preNote})` : '';
+                    showAlert(`🎁 [${formattedCode}] ${appliedEvent.event} 행사 상품입니다${condition}. 행사가 다르면 직접 바꿔주세요.`, 'success');
                 }
 
-                console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.marketPrice ? '시세반영' : productInfo.price + '원'}, 행사: ${appliedEvent || '없음'})`);
+                console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.marketPrice ? '시세반영' : productInfo.price + '원'}, 행사: ${appliedEvent.event || '없음'}/${appliedEvent.period})`);
             } else {
                 // 상품을 찾지 못한 경우
                 productNameInput.value = '';

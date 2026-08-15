@@ -88,9 +88,15 @@ BENEFIT_OTHER = {
     38, 39, 41, 42, 43, 44, 45, 46, 47, 49, 50, 53, 54, 55,
 }
 
-# 본행사 시작일. 이 날부터 attached(본행사) 혜택이, 그 전에는
-# attached_e(사전행사) 혜택이 적용된다. --main-start 로 바꿀 수 있다.
+# 행사 기간. 카탈로그 사이트의 사전행사 안내 배너에 적혀 있다.
+#   2026 추석: 사전 구매 증정 행사 2026.08.17(월) ~ 2026.09.04(금), 19일간
+#   → 사전행사 시작 08-17, 본행사 시작 09-05 (사전행사 종료 다음 날)
+# 사전행사 시작 전에는 아직 어떤 행사도 적용되지 않는다.
+DEFAULT_PRE_START = "2026-08-17"
 DEFAULT_MAIN_START = "2026-09-05"
+
+# 사전행사 혜택의 조건. 2026 추석 사전행사는 특정 카드 결제 건에만 적용된다.
+DEFAULT_PRE_NOTE = "삼성/KB국민/비씨/신한카드 결제 시"
 
 
 def decid(s):
@@ -201,7 +207,7 @@ def promo_of(field):
     return hits[0], len(set(hits)) > 1
 
 
-def write_products_js(catalog, season, source_desc, main_start):
+def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_note):
     entries, market, conflicts = [], [], []
     n_pre = n_main = 0
 
@@ -237,10 +243,15 @@ def write_products_js(catalog, season, source_desc, main_start):
         "// GS25 %s 상품 데이터 (tools/update_season.py 자동 생성 - 직접 편집하지 마세요)\n"
         "// 출처: %s\n"
         "// 상품 %d개 / 시세반영 상품 %d개 (price 0 + marketPrice)\n"
-        "// 행사: 사전행사 %d개 / 본행사 %d개 (본행사 시작 %s)\n\n"
-        "const PROMO_CONFIG = { mainStart: \"%s\" };\n\n"
+        "// 행사: 사전행사 %d개 (%s ~) / 본행사 %d개 (%s ~)\n\n"
+        "const PROMO_CONFIG = {\n"
+        "  preStart: \"%s\",   // 이 날부터 사전행사(eventPre) 적용\n"
+        "  mainStart: \"%s\",  // 이 날부터 본행사(eventMain) 적용\n"
+        "  preNote: %s\n"
+        "};\n\n"
         % (season, source_desc, len(catalog), len(market),
-           n_pre, n_main, main_start, main_start)
+           n_pre, pre_start, n_main, main_start,
+           pre_start, main_start, json.dumps(pre_note, ensure_ascii=False))
     )
     # 저장소가 CRLF 로 보관돼 있다. LF 로 쓰면 줄바꿈만 바뀐 거대한 diff 가 생긴다.
     with io.open(PRODUCTS_JS, "w", encoding="utf-8", newline="\r\n") as f:
@@ -388,8 +399,12 @@ def main():
     ap.add_argument("--catalog", required=True,
                     help="카탈로그 products.json URL 또는 로컬 경로")
     ap.add_argument("--season", default="", help='예: "2026 추석"')
+    ap.add_argument("--pre-start", default=DEFAULT_PRE_START,
+                    help="사전행사 시작일 YYYY-MM-DD (그 전에는 행사 없음)")
     ap.add_argument("--main-start", default=DEFAULT_MAIN_START,
                     help="본행사 시작일 YYYY-MM-DD (이 날부터 본행사 행사 적용)")
+    ap.add_argument("--pre-note", default=DEFAULT_PRE_NOTE,
+                    help="사전행사 적용 조건 안내 문구 (빈 문자열이면 표시 안 함)")
     ap.add_argument("--allow-unknown-benefits", action="store_true",
                     help="처음 보는 구매혜택 아이콘이 있어도 계속 진행")
     ap.add_argument("--skip-barcodes", action="store_true",
@@ -437,10 +452,11 @@ def main():
 
     print("5) products.js 생성")
     market, n_pre, n_main, conflicts = write_products_js(
-        catalog, args.season or "시즌", args.catalog, args.main_start)
+        catalog, args.season or "시즌", args.catalog,
+        args.pre_start, args.main_start, args.pre_note)
     print("   상품 %d개, 시세반영 %d개 %s" % (len(catalog), len(market), market))
-    print("   행사: 사전행사 %d개 / 본행사 %d개 (본행사 시작 %s)"
-          % (n_pre, n_main, args.main_start))
+    print("   행사: 사전행사 %d개 (%s ~) / 본행사 %d개 (%s ~)"
+          % (n_pre, args.pre_start, n_main, args.main_start))
     if conflicts:
         print("   [!] 한 상품에 행사 아이콘이 여러 개: %s" % conflicts[:10])
 

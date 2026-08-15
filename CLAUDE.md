@@ -184,10 +184,17 @@ when a product code is looked up. The clerk can always override it — store-lev
 promotions do not always match the catalog.
 
 **사전행사 vs 본행사.** The catalog carries two different rates per product and they
-disagree for 118 of the 601 items. `getApplicableEvent()` picks `eventPre` before
-`PROMO_CONFIG.mainStart` and `eventMain` from that date on (both are generated into
-`products.js`). Getting this wrong silently overcharges or undercharges, so the date
-is data, not a hardcoded constant in the JS.
+disagree for 118 of the 601 items. `getApplicableEvent()` returns `{event, period}`
+by comparing today against `PROMO_CONFIG.preStart` / `.mainStart` (both generated into
+`products.js`): nothing before 사전행사 opens, `eventPre` during it, `eventMain` from
+본행사 on. Getting this wrong silently ships the wrong count, so the dates are data,
+not constants in the JS. For 2026 추석 the periods come from the catalog site's own
+banner — 08-17~09-04 사전행사 (127품목, matching the extracted count exactly), 09-05~ 본행사.
+
+`PROMO_CONFIG.preNote` carries the 사전행사 condition (2026 추석: the bonus only applies
+to 삼성/KB국민/비씨/신한 card payments) and is appended to the auto-select toast. Do not
+drop it — a clerk who promises a bonus that the payment method does not qualify for
+has to make it good.
 
 ### Color Scheme (section theming)
 
@@ -254,8 +261,10 @@ the clerk for the day's price instead of pre-filling 0.
 script stops when it meets a number in neither table and prints the icon URLs — open
 them, read the label, extend the table. `--allow-unknown-benefits` skips the check,
 but an unrecognised promotion silently becomes 없음 and the clerk ships the wrong
-count. Set `--main-start` to the season's 본행사 start date (printed on the dated
-icons, e.g. "9월 5일부터").
+count. Set `--pre-start` / `--main-start` / `--pre-note` from the season's 사전행사
+banner at `<catalog-root>/headers/event_header_1.png` and `<catalog-root>/events/event_1.jpg`;
+the dated icons ("9월 5일부터") corroborate the 본행사 date, and the banner's 품목 count
+is a free check on the extracted `eventPre` total.
 
 Dependencies: `pip install pdfplumber pymupdf pillow`
 

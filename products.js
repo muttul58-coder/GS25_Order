@@ -1,9 +1,13 @@
 // GS25 2026 추석 상품 데이터 (tools/update_season.py 자동 생성 - 직접 편집하지 마세요)
 // 출처: https://gs25mobile.com/2026_2nd/products.json
 // 상품 601개 / 시세반영 상품 10개 (price 0 + marketPrice)
-// 행사: 사전행사 127개 / 본행사 290개 (본행사 시작 2026-09-05)
+// 행사: 사전행사 127개 (2026-08-17 ~) / 본행사 290개 (2026-09-05 ~)
 
-const PROMO_CONFIG = { mainStart: "2026-09-05" };
+const PROMO_CONFIG = {
+  preStart: "2026-08-17",   // 이 날부터 사전행사(eventPre) 적용
+  mainStart: "2026-09-05",  // 이 날부터 본행사(eventMain) 적용
+  preNote: "삼성/KB국민/비씨/신한카드 결제 시"
+};
 
 const PRODUCTS_DATA = {
   "08-01": { "name": "NO.9)명품한우한마리세트", "price": 998000 },
