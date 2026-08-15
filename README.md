@@ -48,10 +48,16 @@ GS25_Order/
 │   ├── print-image.js    # 인쇄 레이아웃, 이미지 저장, 카톡 공유
 │   ├── submit.js         # Google Forms 전송
 │   └── init.js           # 초기화
+├── season.json           # ★ 시즌 설정 (매장정보/날짜/링크/행사표) — 관리자가 고치는 유일한 파일
 ├── config.js             # Google Forms 설정 (URL, Entry ID)
 ├── products.js           # 상품 데이터 (601개) — 자동 생성
+├── store.js              # 매장 정보 — 자동 생성
 ├── BarcodeImgs/          # 바코드 이미지 (601개) — 자동 생성
 ├── BarcodeSource/        # 시즌 바코드북 PDF (생성 원본)
+├── .github/workflows/
+│   └── season-update.yml # "시즌 갱신" 버튼 (GitHub Actions)
+├── docs/
+│   └── 관리자안내.md      # 명절마다 갱신하는 방법 (개발 지식 불필요)
 ├── tools/
 │   └── update_season.py  # 시즌 상품/바코드 일괄 갱신
 ├── apps_script.js        # Google Apps Script (시트 자동 생성)
@@ -63,10 +69,13 @@ GS25_Order/
 | 파일 | 역할 |
 |------|------|
 | `order_form.html` | HTML 구조만. 스타일과 로직은 `css/`, `js/` 로 분리됨 |
+| `season.json` | **시즌 갱신의 입력값 전부.** 명절마다 여기만 고칩니다 |
 | `config.js` | Google Forms URL 및 Entry ID 설정 |
-| `products.js` | 상품코드-상품명-가격-행사 매핑 + 본행사 시작일. **자동 생성** |
+| `products.js` | 상품코드-상품명-가격-행사 매핑 + 행사 기간. **자동 생성** |
+| `store.js` | 매장명·담당자·전화번호. 주문서 상단에 표시. **자동 생성** |
 | `BarcodeImgs/` | 상품코드별 바코드 이미지 (예: `08-01.jpg`). **자동 생성** |
-| `tools/update_season.py` | 바코드북 PDF + 카탈로그로 상품/바코드를 함께 갱신 |
+| `tools/update_season.py` | `season.json`을 읽어 위 자동 생성물을 만듭니다 |
+| `.github/workflows/season-update.yml` | GitHub에서 버튼으로 갱신을 실행 |
 | `apps_script.js` | Google Sheets에서 실행. 폼 응답을 주문서 시트로 변환 |
 
 ---
@@ -315,36 +324,59 @@ Google Forms에 전송되는 JSON 구조:
 따라서 상품 데이터와 바코드 이미지는 **반드시 함께** 갱신해야 합니다.
 한쪽만 바꾸면 주문서에 찍힌 바코드가 다른 상품으로 스캔됩니다.
 
-1. 새 바코드북 PDF를 `BarcodeSource/`에 넣습니다
-2. 해당 시즌 카탈로그의 `products.json` 주소를 확인합니다
-   (예: `https://gs25mobile.com/2026_2nd/products.json`)
-3. 아래 명령을 실행합니다
+**개발자 없이 갱신할 수 있습니다.** 고치는 파일은 `season.json` 하나,
+실행은 GitHub **Actions → 시즌 갱신 → Run workflow** 버튼 한 번입니다.
 
-```bash
-python tools/update_season.py BarcodeSource/20260815.pdf --catalog https://gs25mobile.com/2026_2nd/products.json --season "2026 추석" --main-start 2026-09-05
+> 📖 **화면 그대로 따라 하는 안내: [docs/관리자안내.md](docs/관리자안내.md)**
+
+1. 새 바코드북 PDF를 `BarcodeSource/`에 올립니다 (GitHub 웹에서 드래그)
+2. `season.json`에서 시즌 이름·카탈로그 주소·PDF 파일명·행사 기간을 고칩니다
+3. Actions 탭에서 **시즌 갱신**을 실행합니다
+
+나머지(PDF 해석 → 카탈로그 대조 → `products.js`/`store.js` 생성 → 바코드 601장 렌더링
+→ 커밋 → 배포)는 자동으로 진행됩니다.
+
+### `season.json`
+
+```json
+{
+  "매장":   { "이름": "...", "담당자": "...", "전화번호": "..." },
+  "시즌":   { "이름": "2026 추석",
+             "카탈로그주소": "https://gs25mobile.com/2026_2nd/products.json",
+             "바코드PDF": "BarcodeSource/20260815.pdf" },
+  "행사기간": { "사전행사시작": "2026-08-17",
+             "본행사시작": "2026-09-05",
+             "사전행사조건": "삼성/KB국민/비씨/신한카드 결제 시" },
+  "구매혜택": { "행사": { "12": "2+1", ... }, "행사아님": [1, 3, 4, ...] }
+}
 ```
 
-스크립트가 PDF와 카탈로그의 상품명을 교차 검증하고, 상품 수와 바코드 수가
-1:1로 맞지 않으면 실패합니다. `[!]` 표시가 나오면 배포 전에 원인을 확인하세요.
-
-주요 옵션:
-
-| 옵션 | 설명 |
-|------|------|
-| `--pre-start` | 사전행사 시작일. 그 전에는 행사가 자동 선택되지 않습니다 |
-| `--main-start` | 본행사 시작일. 이 날부터 본행사 행사율이 적용됩니다 |
-| `--pre-note` | 사전행사 조건 안내 문구 (예: 카드 결제 조건) |
-| `--skip-barcodes` | 바코드는 그대로 두고 `products.js`만 다시 만듭니다 |
-| `--allow-unknown-benefits` | 모르는 구매혜택 아이콘이 있어도 진행 (권장하지 않음) |
-
+매장 정보는 `store.js`로 생성되어 주문서 상단에 표시됩니다.
 행사 기간과 조건은 카탈로그 사이트의 **사전행사 안내 배너**에 적혀 있습니다
 (`<카탈로그 루트>/headers/event_header_1.png`, `<카탈로그 루트>/events/event_1.jpg`).
 
-**행사 정보에 대하여** — 카탈로그는 행사를 아이콘 번호로만 줍니다. 비율(`2+1` 등)은
-아이콘 그림 안에 글자로 적혀 있어 자동으로 읽을 수 없으므로,
-`tools/update_season.py`의 `BENEFIT_PROMO` 표를 사람이 눈으로 보고 만들어 둡니다.
-**아이콘 번호 체계는 시즌마다 달라질 수 있습니다.** 스크립트가 모르는 번호를 만나면
-아이콘 주소를 출력하고 멈추니, 그림을 열어 확인한 뒤 표에 추가하세요.
-본행사 시작일은 날짜가 박힌 아이콘(예: "9월 5일부터")에서 확인할 수 있습니다.
+### 사람이 확인해야 하는 단 한 가지 — 구매혜택 아이콘
+
+카탈로그는 행사를 **아이콘 번호로만** 줍니다. 비율(`2+1` 등)은 아이콘 **그림 안의 글자**라
+자동으로 읽을 수 없어, `season.json`의 `구매혜택` 표에 사람이 한 번 적어둡니다.
+아이콘 번호 체계는 시즌마다 달라질 수 있습니다.
+
+**모르는 번호가 나오면 갱신이 멈추고**, 해당 아이콘들을 번호와 함께 한 장의 그림
+(`확인이-필요한-아이콘` 아티팩트)으로 만들어 줍니다. 그림을 보고 `season.json`에
+옮겨 적은 뒤 다시 실행하면 됩니다. 행사를 잘못 넣으면 청구액과 배송 개수가
+틀어지므로, 확인 전에는 진행하지 않도록 막아둔 것입니다.
+
+### 직접 실행하기 (개발자용)
+
+```bash
+python tools/update_season.py                  # season.json 사용
+python tools/update_season.py --skip-barcodes  # products.js/store.js 만 재생성
+```
+
+| 옵션 | 설명 |
+|------|------|
+| `--config` | 설정 파일 경로 (기본 `season.json`) |
+| `--skip-barcodes` | 바코드는 그대로 두고 `products.js`/`store.js`만 다시 만듭니다 |
+| `--allow-unknown-benefits` | 모르는 구매혜택 아이콘이 있어도 진행 (권장하지 않음) |
 
 필요 패키지: `pip install pdfplumber pymupdf pillow`

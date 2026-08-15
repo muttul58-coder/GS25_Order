@@ -16,6 +16,8 @@
     <script src="products.js"></script>
     <!-- 구글 폼 설정 파일 - config.js 파일이 같은 폴더에 있어야 합니다 -->
     <script src="config.js"></script>
+    <!-- 매장 정보 - season.json 에서 자동 생성 -->
+    <script src="store.js"></script>
     <!-- 이미지 캡쳐용 html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -43,7 +45,8 @@
 
         <!-- 상단 정보 - 담당자 및 주문 일시 -->
         <div class="top-info">
-            <div class="shop-info">
+            <!-- store.js 의 STORE_INFO 로 채워집니다. 아래 내용은 파일이 없을 때의 대비값 -->
+            <div class="shop-info" id="shopInfo">
                 LG 생산기술원점&nbsp;&nbsp;&nbsp;담당 : 양창호&nbsp;&nbsp;&nbsp;휴대전화 : 010-7568-3522
             </div>
             <div class="date-info">

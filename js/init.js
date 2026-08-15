@@ -29,11 +29,35 @@ document.addEventListener('change', function(e) {
 // ========================================
 
 /**
+ * 매장 정보 표시 (store.js 의 STORE_INFO)
+ *
+ * season.json 을 고치고 시즌 갱신을 돌리면 여기까지 반영된다.
+ * store.js 가 없으면 HTML 에 적힌 기존 내용을 그대로 둔다.
+ */
+function applyStoreInfo() {
+    if (typeof STORE_INFO === 'undefined' || !STORE_INFO) return;
+
+    const gap = '   ';
+    const parts = [];
+    if (STORE_INFO.name) parts.push(STORE_INFO.name);
+    if (STORE_INFO.manager) parts.push('담당 : ' + STORE_INFO.manager);
+    if (STORE_INFO.phone) parts.push('휴대전화 : ' + STORE_INFO.phone);
+    if (parts.length === 0) return;
+
+    const box = document.getElementById('shopInfo');
+    if (box) box.textContent = parts.join(gap);
+    if (STORE_INFO.name) document.title = '주문서 - ' + STORE_INFO.name;
+}
+
+/**
  * 페이지 로드 시 초기화 작업 수행
  */
 function initializePage() {
     // products.js 파일 로드 상태 확인
     checkProductsDataLoaded();
+
+    // 매장 정보 표시
+    applyStoreInfo();
 
     // 현재 날짜/시간 표시
     updateDateTime();

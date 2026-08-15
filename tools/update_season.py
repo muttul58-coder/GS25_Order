@@ -5,20 +5,23 @@
 때문에 products.js 와 BarcodeImgs/ 를 **함께** 갈아끼워야 한다. 한쪽만 바꾸면
 주문서에 엉뚱한 바코드가 찍혀 다른 상품이 배송된다.
 
+설정은 저장소 루트의 season.json 한 곳에 모여 있다. 명절마다 그 파일만 고치면
+되고, 보통은 GitHub Actions 의 "시즌 갱신"이 이 스크립트를 대신 실행한다.
+
 사용법:
-    python tools/update_season.py BarcodeSource/20260815.pdf \
-        --catalog https://gs25mobile.com/2026_2nd/products.json \
-        --season "2026 추석"
+    python tools/update_season.py                    # season.json 사용
+    python tools/update_season.py --skip-barcodes    # products.js 만 다시 생성
 
 하는 일:
-    1. 바코드북 PDF에서 상품코드 601개와 위치를 추출
+    0. season.json 에서 매장 정보/시즌/행사 기간/구매혜택 표를 읽음
+    1. 바코드북 PDF에서 상품코드와 위치를 추출
     2. 카탈로그 JSON을 내려받아 상품명/가격/구매혜택을 가져옴
     3. 두 소스의 상품명을 교차 검증 (불일치하면 경고)
     4. 구매혜택 아이콘 번호를 행사(N+M)로 해석 (모르는 번호가 있으면 중단)
-    5. products.js 생성
+    5. products.js + store.js 생성
     6. BarcodeImgs/ 를 비우고 코드별 바코드 이미지를 다시 렌더링
 
-의존성: pip install pdfplumber pymupdf
+의존성: pip install pdfplumber pymupdf pillow
 """
 from __future__ import print_function
 
@@ -47,6 +50,9 @@ except ImportError:  # py2
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BARCODE_DIR = os.path.join(REPO, "BarcodeImgs")
 PRODUCTS_JS = os.path.join(REPO, "products.js")
+STORE_JS = os.path.join(REPO, "store.js")
+SEASON_JSON = os.path.join(REPO, "season.json")
+ICON_SHEET = os.path.join(REPO, "unknown_benefit_icons.png")
 
 OUT_W = 600        # 출력 이미지 가로 픽셀
 BAR_TRIM = 0.45    # 막대 위쪽에서 잘라낼 비율 (아래 55% + 숫자만 사용)
@@ -61,42 +67,19 @@ CODE_RE = re.compile(r"^\d{2,3}-\d{2}$")
 EPS = 1.5
 
 # ---------------------------------------------------------------------------
-# 구매혜택 아이콘 -> 행사(N+M)
+# 구매혜택 아이콘 -> 행사(N+M).  season.json 의 '구매혜택'에서 채워진다.
 #
 # 카탈로그의 attached / attached_e 는 아이콘 번호 목록이고, 실제 그림은
 # <카탈로그 루트>/icons/benefit_<번호>.png 에 있다. 행사 비율은 그림 안에
-# 글자로만 적혀 있어 자동으로 읽을 수 없다. 아래 표는 2026 추석 아이콘을
-# 직접 열어 보고 만든 것이다.
+# 글자로만 적혀 있어 자동으로 읽을 수 없다. 그래서 사람이 한 번 보고
+# season.json 에 적어 두는 구조다.
 #
-# ★ 시즌이 바뀌면 번호 체계가 달라질 수 있다. 갱신할 때 스크립트가 모르는
-#   번호를 발견하면 멈추고 아이콘 주소를 알려주니, 그림을 열어 확인한 뒤
-#   아래 두 표에 추가할 것. 확인 없이 넘기려면 --allow-unknown-benefits.
+# ★ 시즌이 바뀌면 번호 체계가 달라질 수 있다. 모르는 번호를 발견하면
+#   아이콘을 한 장에 모아 저장하고 멈춘다. 확인 없이 넘기려면
+#   --allow-unknown-benefits (권장하지 않음).
 # ---------------------------------------------------------------------------
-BENEFIT_PROMO = {
-    2: "3+1", 6: "10+1", 7: "5+1", 8: "4+1", 9: "9+1", 10: "1+1",
-    11: "7+1", 12: "2+1", 19: "6+1", 33: "8+1",
-    48: "7+3", 51: "2+2", 52: "3+2",
-    # 같은 비율이지만 "9월 5일부터" 문구가 함께 박힌 아이콘 (본행사용)
-    15: "3+1", 30: "5+1", 31: "7+1", 32: "9+1", 34: "10+1",
-    35: "8+1", 36: "2+1", 37: "4+1", 40: "1+1",
-}
-
-# 행사가 아닌 아이콘 (무료배송 조건, 냉장/냉동, 할인율, 증정품, 한정수량 등).
-# 주문서의 '행사' 칸은 덤으로 주는 개수만 다루므로 여기 있는 것은 무시한다.
-BENEFIT_OTHER = {
-    1, 3, 4, 5, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-    38, 39, 41, 42, 43, 44, 45, 46, 47, 49, 50, 53, 54, 55,
-}
-
-# 행사 기간. 카탈로그 사이트의 사전행사 안내 배너에 적혀 있다.
-#   2026 추석: 사전 구매 증정 행사 2026.08.17(월) ~ 2026.09.04(금), 19일간
-#   → 사전행사 시작 08-17, 본행사 시작 09-05 (사전행사 종료 다음 날)
-# 사전행사 시작 전에는 아직 어떤 행사도 적용되지 않는다.
-DEFAULT_PRE_START = "2026-08-17"
-DEFAULT_MAIN_START = "2026-09-05"
-
-# 사전행사 혜택의 조건. 2026 추석 사전행사는 특정 카드 결제 건에만 적용된다.
-DEFAULT_PRE_NOTE = "삼성/KB국민/비씨/신한카드 결제 시"
+BENEFIT_PROMO = {}
+BENEFIT_OTHER = set()
 
 
 def decid(s):
@@ -164,6 +147,97 @@ def read_pdf(pdf_path):
                 names[code] = name
     doc.close()
     return positions, names
+
+
+def load_season_config(path):
+    """season.json 을 읽어 스크립트가 쓰는 형태로 바꾼다.
+
+    관리자가 손으로 고치는 파일이라 한글 키를 쓴다. 빠진 항목이 있으면
+    무엇이 없는지 정확히 알려주고 멈춘다 (조용히 기본값으로 넘어가면
+    엉뚱한 날짜/행사로 주문서가 배포된다).
+    """
+    if not os.path.exists(path):
+        sys.exit("[!] 설정 파일이 없습니다: %s" % path)
+    with io.open(path, encoding="utf-8") as f:
+        try:
+            cfg = json.load(f)
+        except ValueError as e:
+            sys.exit("[!] season.json 형식이 잘못됐습니다 (쉼표/따옴표 확인): %s" % e)
+
+    def need(section, key):
+        if section not in cfg:
+            sys.exit('[!] season.json 에 "%s" 항목이 없습니다.' % section)
+        value = cfg[section].get(key)
+        if value in (None, ""):
+            sys.exit('[!] season.json 의 "%s > %s" 값이 비어 있습니다.' % (section, key))
+        return value
+
+    benefit = cfg.get("구매혜택", {})
+    promo = {}
+    for k, v in (benefit.get("행사") or {}).items():
+        if not str(k).isdigit():
+            continue  # "_설명" 같은 주석 키는 건너뛴다
+        if not re.match(r"^\d+\+\d+$", str(v)):
+            sys.exit('[!] 행사 표기가 잘못됐습니다: 아이콘 %s -> "%s" (예: "2+1")' % (k, v))
+        promo[int(k)] = str(v)
+
+    return {
+        "store": {
+            "name": need("매장", "이름"),
+            "manager": need("매장", "담당자"),
+            "phone": need("매장", "전화번호"),
+        },
+        "season": need("시즌", "이름"),
+        "catalog": need("시즌", "카탈로그주소"),
+        "pdf": need("시즌", "바코드PDF"),
+        "pre_start": need("행사기간", "사전행사시작"),
+        "main_start": need("행사기간", "본행사시작"),
+        "pre_note": cfg.get("행사기간", {}).get("사전행사조건", ""),
+        "promo": promo,
+        "other": set(int(n) for n in (benefit.get("행사아님") or [])),
+    }
+
+
+def write_store_js(store, season):
+    """매장 정보를 주문서가 읽는 전역으로 내보낸다."""
+    body = json.dumps(store, ensure_ascii=False, indent=2).replace("\n", "\n")
+    text = (
+        "// 매장 정보 (season.json 에서 자동 생성 - 직접 편집하지 마세요)\n"
+        "// 시즌: %s\n\n"
+        "const STORE_INFO = %s;\n" % (season, body)
+    )
+    with io.open(STORE_JS, "w", encoding="utf-8", newline="\r\n") as f:
+        f.write(text)
+
+
+def save_unknown_icon_sheet(catalog_url, codes):
+    """모르는 혜택 아이콘을 한 장에 모아 저장한다 (번호와 함께).
+
+    번호만 알려주면 관리자가 주소를 하나씩 열어야 한다. 그림 한 장이면
+    바로 보고 season.json 에 옮겨 적을 수 있다.
+    """
+    root = catalog_url.rsplit("/", 1)[0]
+    try:
+        from PIL import ImageDraw
+        tiles = []
+        for n in sorted(codes):
+            data = urlopen("%s/icons/benefit_%d.png" % (root, n)).read()
+            tiles.append((n, Image.open(BytesIO(data)).convert("RGB")))
+        if not tiles:
+            return None
+        cell, cols = 150, min(6, len(tiles))
+        rows = (len(tiles) + cols - 1) // cols
+        sheet = Image.new("RGB", (cols * cell, rows * (cell + 22)), "white")
+        draw = ImageDraw.Draw(sheet)
+        for i, (n, im) in enumerate(tiles):
+            x, y = (i % cols) * cell, (i // cols) * (cell + 22)
+            sheet.paste(im.resize((cell - 10, cell - 10), Image.LANCZOS), (x + 5, y + 20))
+            draw.text((x + 6, y + 4), "%d번" % n, fill="black")
+        sheet.save(ICON_SHEET)
+        return ICON_SHEET
+    except Exception as e:
+        print("   (아이콘 모음 이미지를 만들지 못했습니다: %s)" % e)
+        return None
 
 
 def load_catalog(source):
@@ -394,30 +468,42 @@ def render_barcodes(pdf_path, positions):
 
 
 def main():
+    global BENEFIT_PROMO, BENEFIT_OTHER
+
     ap = argparse.ArgumentParser(description="시즌 상품/바코드 일괄 갱신")
-    ap.add_argument("pdf", help="바코드북 PDF (예: BarcodeSource/20260815.pdf)")
-    ap.add_argument("--catalog", required=True,
-                    help="카탈로그 products.json URL 또는 로컬 경로")
-    ap.add_argument("--season", default="", help='예: "2026 추석"')
-    ap.add_argument("--pre-start", default=DEFAULT_PRE_START,
-                    help="사전행사 시작일 YYYY-MM-DD (그 전에는 행사 없음)")
-    ap.add_argument("--main-start", default=DEFAULT_MAIN_START,
-                    help="본행사 시작일 YYYY-MM-DD (이 날부터 본행사 행사 적용)")
-    ap.add_argument("--pre-note", default=DEFAULT_PRE_NOTE,
-                    help="사전행사 적용 조건 안내 문구 (빈 문자열이면 표시 안 함)")
+    ap.add_argument("--config", default=SEASON_JSON,
+                    help="설정 파일 (기본: season.json)")
     ap.add_argument("--allow-unknown-benefits", action="store_true",
                     help="처음 보는 구매혜택 아이콘이 있어도 계속 진행")
     ap.add_argument("--skip-barcodes", action="store_true",
                     help="바코드 이미지는 건드리지 않고 products.js 만 다시 만든다")
     args = ap.parse_args()
 
-    print("1) PDF 읽는 중: %s" % args.pdf)
-    positions, pdf_names = read_pdf(args.pdf)
+    print("0) 설정 읽는 중: %s" % args.config)
+    cfg = load_season_config(args.config)
+    BENEFIT_PROMO = cfg["promo"]
+    BENEFIT_OTHER = cfg["other"]
+    pdf_path = cfg["pdf"] if os.path.isabs(cfg["pdf"]) else os.path.join(REPO, cfg["pdf"])
+    if not os.path.exists(pdf_path):
+        sys.exit("[!] 바코드 PDF가 없습니다: %s\n"
+                 "    season.json 의 '바코드PDF' 경로와 실제 올린 파일 이름이 같은지 확인하세요."
+                 % cfg["pdf"])
+    print("   매장: %s / %s / %s"
+          % (cfg["store"]["name"], cfg["store"]["manager"], cfg["store"]["phone"]))
+    print("   시즌: %s  (사전행사 %s ~, 본행사 %s ~)"
+          % (cfg["season"], cfg["pre_start"], cfg["main_start"]))
+
+    print("1) PDF 읽는 중: %s" % cfg["pdf"])
+    positions, pdf_names = read_pdf(pdf_path)
     pdf_codes = {p[1] for p in positions}
     print("   상품코드 %d개" % len(pdf_codes))
 
-    print("2) 카탈로그 읽는 중: %s" % args.catalog)
-    catalog = load_catalog(args.catalog)
+    print("2) 카탈로그 읽는 중: %s" % cfg["catalog"])
+    try:
+        catalog = load_catalog(cfg["catalog"])
+    except Exception as e:
+        sys.exit("[!] 카탈로그를 읽지 못했습니다: %s\n"
+                 "    season.json 의 '카탈로그주소'가 맞는지, 브라우저에서 열리는지 확인하세요." % e)
     web = {r["code"]: r for r in catalog}
     print("   상품 %d개" % len(web))
 
@@ -440,23 +526,29 @@ def main():
     print("   사용된 혜택 번호 %d개 / 행사로 해석 %d개"
           % (len(used), len(used & set(BENEFIT_PROMO))))
     if unknown:
-        root = args.catalog.rsplit("/", 1)[0]
+        root = cfg["catalog"].rsplit("/", 1)[0]
         print("   [!] 처음 보는 혜택 아이콘 %d개: %s"
               % (len(unknown), sorted(unknown)))
         for n in sorted(unknown):
             print("       %s/icons/benefit_%d.png" % (root, n))
-        print("   그림을 열어 확인한 뒤 BENEFIT_PROMO / BENEFIT_OTHER 에 추가하세요.")
+        sheet = save_unknown_icon_sheet(cfg["catalog"], unknown)
+        if sheet:
+            print("   모아 놓은 그림: %s" % os.path.basename(sheet))
+        print("   그림을 보고 season.json 의 '구매혜택'에 추가하세요.")
+        print("     - 1+1, 2+1 처럼 덤을 주는 아이콘 -> '행사' 에 \"번호\": \"2+1\"")
+        print("     - 무료배송/냉장/할인 등 나머지    -> '행사아님' 목록에 번호만")
         if not args.allow_unknown_benefits:
             print("   행사를 잘못 넣으면 청구액이 틀어지므로 여기서 멈춥니다.")
             return 1
 
-    print("5) products.js 생성")
+    print("5) products.js / store.js 생성")
     market, n_pre, n_main, conflicts = write_products_js(
-        catalog, args.season or "시즌", args.catalog,
-        args.pre_start, args.main_start, args.pre_note)
+        catalog, cfg["season"], cfg["catalog"],
+        cfg["pre_start"], cfg["main_start"], cfg["pre_note"])
+    write_store_js(cfg["store"], cfg["season"])
     print("   상품 %d개, 시세반영 %d개 %s" % (len(catalog), len(market), market))
     print("   행사: 사전행사 %d개 (%s ~) / 본행사 %d개 (%s ~)"
-          % (n_pre, args.pre_start, n_main, args.main_start))
+          % (n_pre, cfg["pre_start"], n_main, cfg["main_start"]))
     if conflicts:
         print("   [!] 한 상품에 행사 아이콘이 여러 개: %s" % conflicts[:10])
 
@@ -465,7 +557,7 @@ def main():
         return 0
 
     print("6) 바코드 이미지 렌더링")
-    written, skipped, fallback = render_barcodes(args.pdf, positions)
+    written, skipped, fallback = render_barcodes(pdf_path, positions)
     print("   %d개 생성, 건너뜀 %d개 %s" % (len(written), len(skipped), skipped[:10]))
     if fallback:
         print("   [!] 바코드를 못 찾아 셀 통째로 사용한 코드 %d개: %s"
