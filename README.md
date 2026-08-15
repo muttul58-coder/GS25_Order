@@ -329,9 +329,22 @@ Google Forms에 전송되는 JSON 구조:
 
 > 📖 **화면 그대로 따라 하는 안내: [docs/관리자안내.md](docs/관리자안내.md)**
 
-1. 새 바코드북 PDF를 `BarcodeSource/`에 올립니다 (GitHub 웹에서 드래그)
+### 바로가기 (즐겨찾기용)
+
+| 순서 | 하는 일 | 주소 |
+|---|---|---|
+| 1 | PDF 올리기 | [BarcodeSource 업로드](https://github.com/muttul58-coder/GS25_Order/upload/main/BarcodeSource) |
+| 2 | 설정 고치기 | [season.json 편집](https://github.com/muttul58-coder/GS25_Order/edit/main/season.json) |
+| 3 | 갱신 실행 | [시즌 갱신 워크플로](https://github.com/muttul58-coder/GS25_Order/actions/workflows/season-update.yml) |
+| 4 | 결과 확인 | [주문서](https://muttul58-coder.github.io/GS25_Order/order_form.html) |
+
+1·2·3번은 GitHub 로그인 상태여야 버튼이 보입니다.
+
+### 절차
+
+1. 새 바코드북 PDF를 `BarcodeSource/`에 올립니다 (끌어다 놓기)
 2. `season.json`에서 시즌 이름·카탈로그 주소·PDF 파일명·행사 기간을 고칩니다
-3. Actions 탭에서 **시즌 갱신**을 실행합니다
+3. **시즌 갱신**을 실행합니다
 
 나머지(PDF 해석 → 카탈로그 대조 → `products.js`/`store.js` 생성 → 바코드 601장 렌더링
 → 커밋 → 배포)는 자동으로 진행됩니다.
