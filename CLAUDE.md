@@ -27,7 +27,7 @@ GS25 convenience store parcel order management web application (Korean language)
 | File | Purpose |
 |---|---|
 | `products.js` | Product database — exports globals `PRODUCTS_DATA` (601 items: name, price, 행사, 구성 설명) and `PROMO_CONFIG` (season name, promotion period dates, catalog addresses). Generated from `시즌설정.txt`. |
-| `store.js` | Exports global `STORE_INFO` (store name, manager, phone) rendered in the page header. Generated from `시즌설정.txt`. |
+| `store.js` | Exports globals `STORE_INFO` (store name, manager, phone) rendered in the page header, and `SITE_LINKS` (currently just `responseSheet`, read only by `admin.html`). Generated from `시즌설정.txt`. |
 | `config.js` | Google Forms endpoint URL and entry IDs — exports global `GOOGLE_FORM_CONFIG` |
 
 ## File Structure
@@ -37,6 +37,7 @@ GS25_Order/
 ├── order_form.html       # Main HTML (~330 lines, HTML only)
 ├── product_detail.html   # Barcode click target — product photo/구성/행사 popup
 ├── order_split.html      # 상품 찾기 panel (left) + order form in an iframe (right)
+├── admin.html            # 관리자 홈 — current-state readout + every admin link (not linked from the order form)
 ├── css/
 │   ├── main.css          # Screen styles: layout, forms, tables, buttons, alerts (~854 lines)
 │   ├── print.css         # Print-only @media print styles for A4 (~476 lines)
@@ -120,6 +121,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 | `js/admin-test.js` | `getPromoDate()`, `getTestPromoDate()`, `setTestPromoDate()`, `describePromoPeriod()`, `refreshAllRowEvents()`, `renderTestBanner()`, `buildAdminPanel()`, `toggleAdminPanel()`, `initAdminTestMode()` | Admin preview of a different 행사 period (`?admin=1`, `?test=main`) |
 | `js/init.js` | `initializePage()` | Page initialization: date/time, event listeners, postal filter |
 | `js/catalog-panel.js` | `searchProducts()`, `runSearch()`, `buildCard()`, `addToOrder()`, `missingFieldOf()`, `openCatalog()`, `closeCatalog()` | `order_split.html` only: product search panel, 담기 into the order-form iframe |
+| `js/admin-home.js` | `repoSlug()`, `siteUrl()`, `catalogSite()`, `countProducts()`, `renderStatus()`, `renderNow()`, `renderLinks()`, `loadLastUpdate()`, `copyLink()` | `admin.html` only: current-state readout, link assembly, 주소 복사 |
 
 ### CSS Module Details
 
@@ -129,6 +131,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 | `css/print.css` | `@media print` block: A4 optimization, vertical title columns, element hiding, page break rules |
 | `css/responsive.css` | `@media (max-width: 768px)` and `@media (max-width: 480px)` breakpoints |
 | `css/catalog-panel.css` | `order_split.html` only: two-column split, product cards, phone overlay below 900px |
+| `css/admin-home.css` | `admin.html` only. Deliberately duplicates `docs/manual.html`'s color tokens so the two admin-facing screens match; rename tokens in one and fix the other. |
 | `css/admin-test.css` | Test banner + admin panel. Loaded by **both** `order_form.html` and `order_split.html` — the split shell does not load `main.css`, so keeping these here is what stops the admin UI rendering unstyled there. |
 
 ### Data Flow
@@ -209,6 +212,25 @@ paints a red banner that **also prints** (`.test-mode-banner` is deliberately no
 period must call `calculateRowTotal()` per row, not just `updateProductTotals()`:
 the latter only sums, so 지급수량 would keep the old promotion's value.
 
+**Test mode spans two documents in `order_split.html`** — the shell and the embedded
+order form each run `admin-test.js` against one shared `sessionStorage`, so each draws
+its own banner. Two rules keep them from disagreeing:
+
+- `setTestPromoDate()` propagates **both** ways. Downward via `refreshAllRowEvents()` →
+  `orderFrameWindow()`; upward via `shellWindow()`, which repaints the shell's banner and
+  admin panel. Without the upward half, turning test mode off from inside the frame
+  cleared the date and the frame's banner but left the shell's red band and its
+  "테스트 중" label standing — the screen claimed a test was running when it was not,
+  which is the exact failure the banner exists to prevent.
+- The frame's banner is `display:none` on screen (`.test-mode-banner.framed`) because
+  the shell already shows one; stacking two is just noise. It comes back **in print**,
+  since the printed document is the iframe. Do not delete the framed banner instead of
+  hiding it — then a test printout would look like a real order form.
+
+`shellWindow()` tests `typeof parent.renderTestBanner === 'function'`, not merely that a
+parent exists: that both proves same-origin access and means the outer document really
+does paint a banner to defer to.
+
 `PROMO_CONFIG.preNote` carries the 사전행사 condition (2026 추석: the bonus only applies
 to 삼성/KB국민/비씨/신한 card payments) and is appended to the auto-select toast. Do not
 drop it — a clerk who promises a bonus that the payment method does not qualify for
@@ -262,6 +284,33 @@ served by GitHub Pages (`/GS25_Order/docs/manual.html`); it is hand-maintained
 alongside the markdown, so change both together or the admin reads stale steps. Do not reintroduce required CLI flags
 for season data, and do not move admin-supplied values back into JSON: both lose the
 "no developer needed" property.
+
+**관리자 홈 (`admin.html`).** The refresh runs twice a year, so by the time it comes
+round the admin has forgotten not *where the links are* but *what normal looks like* —
+which season is live, whether 행사 not being auto-selected today is a bug or the
+calendar. Every one of those answers already exists in `products.js` / `store.js`, so
+this page reads them: season, product count, 사전/본행사 dates with their item counts,
+which period today falls in, days to the next one, and a "지금 할 일" paragraph that
+changes with the period. **Never hard-code a season-dependent value into this page** —
+a hand-written date becomes a lie the moment the season turns, and this is the one
+screen the admin trusts to tell them the truth.
+
+It reuses `describePromoPeriod()` from `js/admin-test.js` rather than deciding periods
+itself, for the same reason `product_detail.html` does: two implementations means two
+screens that can disagree. GitHub links are assembled from `repoSlug()`, which reads
+owner/repo out of `location` (falling back to a constant off GitHub Pages), so the
+addresses are not written down a fourth time after the README and the two manuals.
+"마지막 갱신" comes from the GitHub commits API for `products.js` and fails soft —
+writing a timestamp into the repo instead would make every run produce a commit, which
+would destroy the "an unchanged rebuild commits nothing" check that catches bad barcode
+diffs.
+
+GitHub Pages cannot password-protect anything, so this page is obscurity, not security:
+`noindex`, and **the order form must never link to it**. That is acceptable because the
+GitHub links inside it require a login to do anything, and the rest are already public.
+Do not "solve" this by moving the site off Pages — that would take the whole
+no-developer property with it. The 주문서/상품 찾기 addresses sit in their own section
+with 주소 복사 buttons, because those are the two the clerk is meant to receive.
 
 `load_settings()` is deliberately lenient about *form* and strict about *identity*.
 It accepts `:` `：` `=`, quotes, trailing commas, and `2027.1.5` / `2027/01/05` dates;

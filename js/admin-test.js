@@ -89,6 +89,16 @@ function setTestPromoDate(date) {
     updateAdminPanelState();
     refreshAllRowEvents();
 
+    // 2단 화면에서는 이 함수가 iframe(주문서) 안에서 불릴 수 있다. 바깥 화면에도
+    // 같은 빨간 띠와 관리자 메뉴가 있으므로 함께 고쳐야 한다.
+    // 빼먹으면 안쪽 '테스트 끄기'를 눌렀을 때 테스트는 실제로 꺼졌는데 바깥 띠만
+    // 남는다 - 화면이 "아직 테스트 중" 이라고 거짓말을 하게 된다.
+    const shell = shellWindow();
+    if (shell) {
+        shell.renderTestBanner();
+        if (typeof shell.updateAdminPanelState === 'function') shell.updateAdminPanelState();
+    }
+
     if (date) {
         showAlert(`🔧 테스트 모드: ${date} (${describePromoPeriod(date)}) 기준으로 봅니다.`, 'info');
     } else {
@@ -106,6 +116,24 @@ function orderFrameWindow() {
         if (frame && frame.contentWindow
             && typeof frame.contentWindow.refreshAllRowEvents === 'function') {
             return frame.contentWindow;
+        }
+    } catch (e) { /* 다른 출처면 접근이 막힌다 */ }
+    return null;
+}
+
+/**
+ * 반대 방향. 이 문서가 2단 화면의 iframe 안이면 바깥(껍데기) 창, 아니면 null.
+ *
+ * 판정 조건을 "부모가 있다" 가 아니라 "부모도 테스트 띠를 그릴 줄 안다" 로 둔다.
+ * 남의 페이지에 끼워졌을 때 엉뚱한 창을 건드리지 않게 하려는 것이고,
+ * 동시에 "바깥에 띠가 이미 있다" 는 뜻이기도 하다.
+ * @returns {Window|null}
+ */
+function shellWindow() {
+    try {
+        if (window.parent && window.parent !== window
+            && typeof window.parent.renderTestBanner === 'function') {
+            return window.parent;
         }
     } catch (e) { /* 다른 출처면 접근이 막힌다 */ }
     return null;
@@ -173,6 +201,13 @@ function renderTestBanner() {
     banner.id = 'testModeBanner';
     banner.className = 'test-mode-banner';
     banner.innerHTML = '';
+
+    // 2단 화면에서는 바깥 화면에도 똑같은 띠가 있다. 화면에 두 줄이 겹쳐 뜨면
+    // 자리만 차지하고 어느 쪽을 눌러야 하는지 헷갈린다. 그래서 안쪽 띠는
+    // 화면에서만 숨기고 인쇄물에는 남긴다 (css/admin-test.css 의 .framed).
+    // 인쇄되는 문서는 iframe 안의 주문서라서, 이 띠를 아예 빼면 테스트로 뽑은
+    // 종이가 진짜 주문서와 구분되지 않는다.
+    if (shellWindow()) banner.classList.add('framed');
 
     const text = document.createElement('span');
     text.textContent =

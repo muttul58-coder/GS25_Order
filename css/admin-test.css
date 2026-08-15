@@ -20,6 +20,22 @@
     border-bottom: 3px solid #7f1d1d;
 }
 
+/* 2단 화면(order_split.html)의 iframe 안에 있는 띠.
+   바깥 화면에 이미 같은 띠가 있으므로 화면에서는 겹쳐 그리지 않는다.
+   인쇄되는 문서는 iframe 안의 주문서이므로 인쇄에서는 반드시 되살린다 -
+   테스트로 뽑은 종이가 진짜 주문서와 구분되지 않으면 안 된다.
+   (print.css 의 .test-mode-banner 가 이미 display:block !important 라 이중으로
+    안전하지만, 그쪽이 바뀌어도 여기서 끊기지 않도록 함께 적어 둔다.) */
+.test-mode-banner.framed {
+    display: none;
+}
+
+@media print {
+    .test-mode-banner.framed {
+        display: block;
+    }
+}
+
 .admin-panel {
     position: fixed;
     right: 16px;
