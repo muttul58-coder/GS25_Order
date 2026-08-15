@@ -56,6 +56,9 @@ function initializePage() {
     // products.js 파일 로드 상태 확인
     checkProductsDataLoaded();
 
+    // 관리자 테스트 모드 (?admin=1 / ?test=main). 행사 자동 선택에만 영향을 준다.
+    initAdminTestMode();
+
     // 매장 정보 표시
     applyStoreInfo();
 

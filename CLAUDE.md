@@ -114,6 +114,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 | `js/section.js` | `addSection()`, `removeSection()`, `renumberSections()` | Delivery section add/delete/reorder |
 | `js/print-image.js` | `addPrintTitleColumn()`, `adjustAddressFontSize()`, `printOnly()`, `saveAsImage()`, `beforeprint`/`afterprint` handlers | A4 print layout with vertical title columns, image capture |
 | `js/submit.js` | `submitOnly()`, `printOrder()`, `submitToGoogleForm()`, `collectOrderData()`, `checkConfigStatus()` | Google Forms submission, order data collection |
+| `js/admin-test.js` | `getPromoDate()`, `getTestPromoDate()`, `setTestPromoDate()`, `describePromoPeriod()`, `refreshAllRowEvents()`, `renderTestBanner()`, `buildAdminPanel()`, `toggleAdminPanel()`, `initAdminTestMode()` | Admin preview of a different 행사 period (`?admin=1`, `?test=main`) |
 | `js/init.js` | `initializePage()` | Page initialization: date/time, event listeners, postal filter |
 
 ### CSS Module Details
@@ -191,6 +192,16 @@ by comparing today against `PROMO_CONFIG.preStart` / `.mainStart` (both generate
 본행사 on. Getting this wrong silently ships the wrong count, so the dates are data,
 not constants in the JS. For 2026 추석 the periods come from the catalog site's own
 banner — 08-17~09-04 사전행사 (127품목, matching the extracted count exactly), 09-05~ 본행사.
+
+**Previewing another period.** `getApplicableEvent()` takes its date from
+`getPromoDate()` (`js/admin-test.js`), not `getTodayDate()` — deliberately, so the
+admin can see the 본행사 view before 09-05 without falsifying the 주문 일시 or
+배송 희망일, which still read the real date. The override is off by default, needs
+`?admin=1` / `?test=main`, lives in `sessionStorage` so it dies with the tab, and
+paints a red banner that **also prints** (`.test-mode-banner` is deliberately not
+`.no-print`) — a test printout must never pass for a real order form. Changing the
+period must call `calculateRowTotal()` per row, not just `updateProductTotals()`:
+the latter only sums, so 지급수량 would keep the old promotion's value.
 
 `PROMO_CONFIG.preNote` carries the 사전행사 condition (2026 추석: the bonus only applies
 to 삼성/KB국민/비씨/신한 card payments) and is appended to the auto-select toast. Do not

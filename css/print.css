@@ -474,6 +474,21 @@
                 display: none !important;
             }
 
+            /* 테스트 모드 띠는 인쇄물에도 반드시 남긴다.
+               테스트로 뽑은 주문서가 진짜와 구분되지 않으면 안 된다.
+               프린터가 배경색을 빼도 읽히도록 테두리와 검은 글자로 찍는다. */
+            .test-mode-banner {
+                display: block !important;
+                background: transparent !important;
+                color: #000 !important;
+                border: 3px solid #000 !important;
+                font-size: 12pt !important;
+                font-weight: 700 !important;
+                padding: 6pt !important;
+                margin-bottom: 6pt !important;
+                text-align: center !important;
+            }
+
             /* 배송 상품 테이블 컬럼 너비 (인쇄 시) - table-layout:fixed 비율 */
             /* 타이틀(3%) / No(5%) / 상품코드(12%) / 상품이름(auto) / 수량(10%) / 작업(0-hidden) */
             .delivery-product-section th:nth-child(2) { width: 5% !important; }

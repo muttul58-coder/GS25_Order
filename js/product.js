@@ -436,7 +436,10 @@ function getApplicableEvent(productInfo) {
     if (!productInfo) return { event: '', period: 'none' };
 
     const cfg = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG) ? PROMO_CONFIG : {};
-    const today = getTodayDate(); // 날짜 형식이 같으므로 문자열 비교로 충분
+    // 날짜 형식이 같으므로 문자열 비교로 충분.
+    // 관리자 테스트 모드가 켜져 있으면 그 기준 날짜를 쓴다 (js/admin-test.js).
+    // 주문 일시·배송 희망일은 여기 영향을 받지 않는다.
+    const today = (typeof getPromoDate === 'function') ? getPromoDate() : getTodayDate();
 
     if (cfg.mainStart && today >= cfg.mainStart) {
         return { event: productInfo.eventMain || '', period: 'main' };
