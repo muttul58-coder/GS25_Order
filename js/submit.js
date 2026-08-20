@@ -199,6 +199,9 @@ function collectOrderData() {
     });
 
     const data = {
+        // 어느 명절 카탈로그로 받은 주문인지. 시트가 바코드 그림 주소를 만들 때
+        // 쓰고(같은 상품코드라도 시즌마다 다른 상품이다), 기록으로도 남는다.
+        시즌: (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG) ? PROMO_CONFIG.season : '',
         주문자정보: {
             성명: document.getElementById('ordererName').value,
             전화번호: document.getElementById('ordererPhone').value,

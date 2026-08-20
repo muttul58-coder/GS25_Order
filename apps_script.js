@@ -15,6 +15,7 @@
  *
  *  JSON 데이터 구조 (order_form.html → collectOrderData):
  *  {
+ *    "시즌": "2026 추석",                                            // 바코드 그림 주소에 쓴다
  *    "주문자정보": { 성명, 전화번호, 우편번호, 기본주소, 상세주소 },
  *    "상품목록": [{ 상품코드, 상품이름, 행사, 수량, 단가, 금액 }],
  *    "배송불가": { 사유, 상품목록: [{ 상품코드, 상품이름, 지급수량 }] },   // 주류만. 없으면 키 자체가 없다
@@ -50,6 +51,22 @@
 
 /** 출력 시트의 총 열 수 */
 var TOTAL_COLS = 9;
+
+/**
+ * 바코드 이미지 주소 (주문서가 올라가 있는 GitHub Pages)
+ *
+ * 예전에는 '상품목록' 시트에 바코드 그림 601장을 붙여 두고 VLOOKUP 으로
+ * 꺼내 썼다. 그 방식은 명절마다 사람이 그림을 전부 다시 붙여야 했고,
+ * 붙이는 방법(셀 안 / 셀 위)이 조금만 달라도 조용히 빈칸이 됐다.
+ *
+ * 지금은 주문서와 같은 그림을 주소로 바로 가져온다. 시즌 갱신이
+ * BarcodeImgs/ 를 다시 만들어 올리면 여기도 저절로 새 바코드가 된다.
+ * 시트에 그림을 붙일 일이 없고, '상품목록' 시트도 필요 없다.
+ *
+ * ※ 시즌이 바뀌어도 주소가 같으면 구글이 옛 그림을 캐시해 둘 수 있다.
+ *   그래서 주소 뒤에 시즌 이름을 붙여 시즌마다 다른 주소가 되게 한다.
+ */
+var BARCODE_BASE = 'https://muttul58-coder.github.io/GS25_Order/BarcodeImgs/';
 
 /** 폼 응답 시트 데이터 행 높이 */
 var FORM_ROW_HEIGHT = 50;
@@ -328,6 +345,8 @@ function deleteAllOrderSheets() {
   var deleteCount = 0;
 
   // 보호할 시트 이름 목록 (첫 번째 시트 + 상품목록)
+  // '상품목록' 은 이제 쓰지 않는다 (바코드는 주소로 가져온다). 남아 있어도
+  // 지우지는 않는다 - 지우는 것은 사람이 판단할 일이다.
   var firstSheetName = sheets[0].getName();
 
   for (var i = sheets.length - 1; i >= 0; i--) {
@@ -424,7 +443,7 @@ function createOrderSheet(sheet, timestamp, orderDateTime, data) {
   r = writeTitle(sheet, r);
   r = writeTimestamps(sheet, r, timestamp, orderDateTime);
   r = writeOrdererSection(sheet, r, data['주문자정보'] || {});
-  r = writeProductSection(sheet, r, data['상품목록'] || []);
+  r = writeProductSection(sheet, r, data['상품목록'] || [], data['시즌'] || '');
   r = writeNoDeliverySection(sheet, r, data['배송불가'] || null);
 
   var sections = data['주문목록'] || [];
@@ -509,8 +528,25 @@ function writeNoDeliverySection(sheet, r, noDelivery) {
   return r + 1;
 }
 
+/**
+ * 상품코드에 해당하는 바코드 그림 주소
+ *
+ * 시즌 이름을 뒤에 붙이는 이유: 명절이 바뀌면 같은 상품코드가 다른 상품을
+ * 가리키므로 그림도 달라진다. 주소가 같으면 구글이 캐시해 둔 옛 그림을
+ * 계속 보여줄 수 있어, 시즌마다 주소가 달라지도록 만든다.
+ * 시즌 이름이 없는 옛 주문은 캐시가 남아 있어도 어차피 옛 그림이 맞다.
+ */
+function barcodeUrl(code, season) {
+  var url = BARCODE_BASE + encodeURIComponent(code) + '.jpg';
+  if (season) {
+    url += '?v=' + encodeURIComponent(season);
+  }
+  return url;
+}
+
+
 // ── 상품 정보 ──
-function writeProductSection(sheet, r, products) {
+function writeProductSection(sheet, r, products, season) {
   if (!products || products.length === 0) return r;
 
   mergeAndSet(sheet, r, 1, 1, TOTAL_COLS, '상품 정보');
@@ -560,11 +596,11 @@ function writeProductSection(sheet, r, products) {
       sheet.getRange(r, 4).setFontColor('#dc2626').setFontWeight('bold');
     }
 
-    // 바코드 이미지: 상품목록 시트에서 VLOOKUP
+    // 바코드 이미지: 주문서와 같은 그림을 주소로 가져온다 (BARCODE_BASE 설명 참고)
     var code = String(prod['상품코드'] || '').trim();
     if (code) {
       sheet.getRange(r, 8)
-        .setFormula('=IFERROR(VLOOKUP("' + code + '",상품목록!B:C,2,FALSE),"")')
+        .setFormula('=IFERROR(IMAGE("' + barcodeUrl(code, season) + '",1),"")')
         .setHorizontalAlignment('center');
     }
 

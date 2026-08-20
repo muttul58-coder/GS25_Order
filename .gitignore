@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 unknown_benefit_icons.png
 .season_prep/
+
+# 구글 시트에서 내려받은 응답 사본 — 손님 이름·전화번호·주소가 들어 있다.
+# 저장소는 공개돼 있으므로 절대 올리지 않는다.
+*.xlsx
