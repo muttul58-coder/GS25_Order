@@ -705,6 +705,25 @@
         쓰지 않으시면 쌍점 뒤를 비워 두셔도 됩니다.
       </p>
 
+      <h3>술(주류)은 적을 게 없습니다 — 막힐 때만 봐주세요</h3>
+      <p>
+        주류는 택배로 못 보내서 주문서가 <strong>매장 수령 안내</strong>를 대신 띄웁니다.
+        어떤 상품이 술인지는 <strong>3단계에서 카탈로그 분류 이름을 보고 알아서 찾습니다</strong>
+        (2026 추석은 <code>양주/와인</code>, <code>소주/전통주</code> — 85품목). 평소엔 적을 것이 없습니다.
+      </p>
+      <p>
+        못 찾으면 <strong>3단계가 멈추면서</strong> 이번 시즌 분류 이름을 전부 보여 줍니다.
+        그때만 그 이름을 보고 한 줄 추가하세요.
+      </p>
+      <pre><code>배송불가 분류: 양주/와인, 소주/전통주      ← 보여준 이름 그대로
+배송불가 분류: 10, 11                     ← 이름이 안 나왔으면 목록의 몇 번째인지 번호로
+배송불가 분류: 없음                        ← 술이 아예 없는 시즌</code></pre>
+      <div class="note warn">
+        <span class="tag">다음 시즌에 반드시 지우세요</span>
+        분류 번호와 이름은 시즌마다 바뀝니다. 지난 시즌 줄을 그대로 두면 엉뚱한 상품이
+        배송 불가가 됩니다. 지워두면 다시 알아서 찾습니다.
+      </div>
+
       <h3>너무 조심하지 않으셔도 됩니다</h3>
       <div class="tw">
         <table>
@@ -972,7 +991,9 @@
         <li><span><span class="grp">2단계</span>시즌설정.txt 6줄 고치기 → Commit changes</span></li>
         <li><span><span class="grp">3단계</span>갱신 실행 (새 PDF면 ‘바코드도 다시만들기’ 체크) → 초록 체크(✓)</span></li>
         <li><span><span class="grp">3단계</span>실행 기록의 상품 수 / 사전행사 품목 수를 배너와 대조</span></li>
+        <li><span><span class="grp">3단계</span>실행 기록의 ‘배송 불가(주류)’ 줄에 분류 이름이 나오는지</span></li>
         <li><span><span class="grp">4단계</span>상품코드 5개의 이름·가격 확인</span></li>
+        <li><span><span class="grp">4단계</span>술 상품코드 1개 넣어보기 → 매장 수령 안내가 뜨는지</span></li>
         <li><span><span class="grp">4단계</span>행사 확인 (본행사 상품은 <code>?admin=1</code> 로 미리보기)</span></li>
         <li class="crit"><span><span class="grp">4단계</span><strong>★ 인쇄해서 바코드를 실제 스캐너로 찍어보기</strong></span></li>
       </ul>

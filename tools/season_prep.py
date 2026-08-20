@@ -136,6 +136,27 @@ def main():
     if market:
         print("   시세반영 상품 %d개: %s" % (len(market), market[:10]))
 
+    # 주류는 택배로 못 보낸다. 이 판단은 분류 이름으로 하는데, 이름은 남의
+    # 압축된 코드에서 긁어오는 것이라 시즌마다 깨질 수 있다. update_season.py 는
+    # 못 정하면 멈추므로, 막힐 곳을 여기서 미리 보여 준다.
+    print("   배송 불가(주류) 분류 확인")
+    categories, cat_error = us.load_categories(products_url)
+    no_delivery, _ = us.resolve_no_delivery(categories, None)
+    nd_codes = us.count_no_delivery(catalog, no_delivery)
+    nd_setting = None
+    if cat_error:
+        print("   [!] 분류 이름을 못 가져왔습니다: %s" % cat_error)
+        print("       카탈로그 목록에서 술이 든 묶음이 몇 번째인지 세어 번호로 적어야 합니다.")
+        nd_setting = "10, 11        # <- 술이 든 묶음 번호로 고치세요"
+    elif no_delivery["labels"]:
+        print("   [OK] %s (%d품목) - 자동으로 찾았습니다. 적을 것 없습니다."
+              % (", ".join(no_delivery["labels"]), len(nd_codes)))
+    else:
+        print("   [!] 술로 보이는 분류가 없습니다. 이름을 보고 직접 정해야 합니다.")
+        for line in us.describe_categories(categories):
+            print("       %s" % line)
+        nd_setting = "<술이 든 분류 이름>   # 술이 없는 시즌이면: 없음"
+
     print("2) 사전행사 배너 내려받기 (행사 날짜는 그림 안에 글자로 있습니다)")
     banners = []
     for name in BANNERS:
@@ -196,6 +217,10 @@ def main():
     print("사전행사 시작: ")
     print("본행사 시작:            # 사전행사 끝난 날 + 1일")
     print("사전행사 조건: ")
+    # 자동으로 찾아냈으면 적을 필요가 없다. 굳이 적어 두면 다음 시즌에
+    # 지난 시즌 분류를 그대로 물려받는 줄이 되어 오히려 위험하다.
+    if nd_setting:
+        print("배송불가 분류: %s" % nd_setting)
     print("-" * 58)
     return 0
 

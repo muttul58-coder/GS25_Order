@@ -121,8 +121,12 @@ function renderStatus() {
     } else if (alcoholCats.labels.length === 0) {
         setHtml('factAlcohol', '0<span class="unit">개 — 주류 분류가 없는 시즌입니다</span>');
     } else {
+        // 출처도 함께 보여 준다. '시즌 갱신'이면 갱신 때 확정돼 사람이 한 번 본 값이고,
+        // '분류 이름'이면 주문서가 그 자리에서 이름을 보고 짐작한 값이다 — 갱신을
+        // 한 번 더 돌리면 확정된다는 뜻이라, 둘을 구분할 수 있어야 한다.
         setHtml('factAlcohol', countAlcoholProducts() + '<span class="unit">개 · '
-            + escapeHtml(alcoholCats.labels.join(', ')) + '</span>');
+            + escapeHtml(alcoholCats.labels.join(', '))
+            + ' · ' + escapeHtml(alcoholCats.source || '') + '</span>');
     }
 
     const store = (typeof STORE_INFO !== 'undefined' && STORE_INFO) || {};

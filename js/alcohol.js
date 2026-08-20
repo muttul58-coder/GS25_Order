@@ -19,12 +19,34 @@ const ALCOHOL_LABEL_PATTERN = /양주|와인|위스키|소주|전통주|증류�
 let alcoholCategoryCache = null;
 
 /**
- * 주류로 볼 분류 번호를 카탈로그 분류 '이름'에서 뽑는다
- * @returns {{main: Set, pre: Set, labels: Array, known: boolean}}
- *          known 이 false 면 분류 이름 자체가 없는 것 — 판별이 불가능한 상태다
+ * 주류로 볼 분류 번호를 정한다
+ *
+ * 1순위는 시즌 갱신이 확정해 준 `PROMO_CONFIG.noDeliveryCats` 다
+ * (`tools/update_season.py`). 갱신은 이 값을 정하지 못하면 아예 멈추므로,
+ * 값이 있다는 것은 사람이 한 번 확인했다는 뜻이다. 관리자가 `시즌설정.txt` 의
+ * `배송 불가 분류` 줄로 직접 정할 수도 있고, 그 값이 여기로 그대로 온다.
+ *
+ * 2순위(아래 이름 맞추기)는 그 값이 아직 없는 products.js — 즉 이 기능이
+ * 생기기 전에 만들어진 파일 — 를 위한 대비책이다. 다음 갱신부터는 쓰이지 않는다.
+ *
+ * @returns {{main: Set, pre: Set, labels: Array, known: boolean, source: string}}
+ *          known 이 false 면 판별이 불가능한 상태다
  */
 function alcoholCategories() {
     if (alcoholCategoryCache) return alcoholCategoryCache;
+
+    const cfg = (typeof PROMO_CONFIG !== 'undefined' && PROMO_CONFIG) ? PROMO_CONFIG : {};
+    if (cfg.noDeliveryCats) {
+        // 비어 있어도(= 술이 없는 시즌) 확정된 값이다. known 은 true 다.
+        alcoholCategoryCache = {
+            main: new Set(cfg.noDeliveryCats.main || []),
+            pre: new Set(cfg.noDeliveryCats.pre || []),
+            labels: (cfg.noDeliveryLabels || []).slice(),
+            known: true,
+            source: '시즌 갱신'
+        };
+        return alcoholCategoryCache;
+    }
 
     const cats = (typeof CATEGORIES !== 'undefined' && CATEGORIES) ? CATEGORIES : null;
     const labels = [];
@@ -43,7 +65,8 @@ function alcoholCategories() {
         main: pick(cats && cats.main),
         pre: pick(cats && cats.pre),
         labels: labels,
-        known: !!cats
+        known: !!cats,
+        source: '분류 이름'
     };
 
     if (!alcoholCategoryCache.known) {

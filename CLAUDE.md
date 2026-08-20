@@ -248,14 +248,28 @@ has to make it good.
 **판별은 카탈로그 분류의 *이름*으로 한다. 번호로 하지 않는다.** 분류 번호는
 시즌마다 다시 매겨지므로 `cat === 10` 같은 상수를 코드에 적으면 다음 시즌에
 조용히 엉뚱한 분류가 주류가 된다 — 그 순간 이 화면은 "배송되는 술"과 "배송 안 되는
-통조림"을 만들어 낸다. `alcoholCategories()`가 `CATEGORIES` 의 라벨을
-`ALCOHOL_LABEL_PATTERN` 으로 걸러 번호 집합을 만든다.
+통조림"을 만들어 낸다.
 
-`CATEGORIES` 는 카탈로그 번들 스크랩이 실패하면 `null` 이 될 수 있다(위의
-**Category browsing** 참고). 그러면 주류를 가려낼 수단이 아예 없으므로 조용히
-넘어가지 않는다: `console.error` 를 남기고, **관리자 홈이 `배송 불가 (주류)` 칸에
-"판별 불가"로 표시한다** — 0 이라고 적으면 관리자는 "이번 시즌엔 술이 없구나"로
-읽는다. 이 칸의 숫자와 분류 이름은 전부 데이터에서 계산한다. 시즌 값을 적지 말 것.
+**정하는 곳은 시즌 갱신이다.** `tools/update_season.py` 의 `resolve_no_delivery()`
+가 `NO_DELIVERY_WORDS` 로 분류 이름을 걸러 `PROMO_CONFIG.noDeliveryCats` /
+`.noDeliveryLabels` 를 `products.js` 에 적고, `alcoholCategories()` 는 그 값을
+읽기만 한다. 주문서가 스스로 이름을 맞춰 보는 경로(`ALCOHOL_LABEL_PATTERN`)는
+**이 필드가 없는 옛 `products.js` 를 위한 대비책일 뿐**이다. 두 낱말 목록은 같아야
+한다 — 한쪽만 고치면 갱신 전과 후가 서로 다른 말을 한다.
+
+갱신은 **정하지 못하면 만들지 않고 멈춘다.** 분류 이름을 못 가져왔거나(스크랩
+실패) 이름 중에 술로 보이는 것이 없으면, 이번 시즌 분류 목록을 전부 찍어 주고
+`시즌설정.txt` 에 `배송불가 분류:` 한 줄을 적으라고 안내한 뒤 종료한다. 이름·번호
+모두 받고, 술이 없는 시즌은 `없음` 이라고 적는다. 관리자가 적은 값은 자동 판별을
+이긴다. 여기서 멈추는 이유는 상품명 불일치와 같다 — 갱신이 멈추면 주문서는 이전
+상태 그대로라 손님이 잘못 안내받는 일은 없지만, 판단 없이 배포하면 술이 배송되는
+상품으로 섞여 들어간다. `tools/season_prep.py` 가 0단계에서 같은 판정을 미리
+보여 주므로, 실제로 이 정지에 걸리는 일은 드물어야 한다.
+
+주문서 쪽 `console.error` 와 **관리자 홈의 `배송 불가 (주류)` 칸**은 그래도 남겨
+둔다. 0 이라고만 적으면 관리자는 "이번 시즌엔 술이 없구나"로 읽으므로 "판별 불가"와
+구분해야 하고, 값의 **출처**(`시즌 갱신` / `분류 이름`)도 함께 보여 준다. 이 칸의
+숫자와 이름은 전부 데이터에서 계산한다. 시즌 값을 적지 말 것.
 
 동작은 두 갈래다:
 
@@ -368,6 +382,12 @@ with line numbers so the admin does not fix-and-rerun one line at a time.
 Config errors must fail loudly with a Korean message naming the offending line —
 never fall back to defaults, because a silent default would deploy wrong dates or
 promotions to a live store.
+
+`배송불가 분류` is optional and normally left absent — the run resolves it from the
+catalog's own category names. It exists so a season whose labels break the automatic
+match can still be fixed without a developer (see **주류 배송 불가** above). It is the
+one field that must **not** be carried over from last season: the numbers change, and
+a stale line would silently mark the wrong categories.
 
 **`season.json` is no longer the admin's file.** It is now script-managed memory:
 `{아이콘 번호: {행사, 지문, 대략}}`. `migrate_old_json()` converts a pre-existing

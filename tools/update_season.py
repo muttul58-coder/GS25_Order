@@ -184,6 +184,7 @@ SETTING_FIELDS = [
     ("본행사시작", "main_start", True, "2026-09-05"),
     ("사전행사조건", "pre_note", False, "삼성/KB국민/비씨/신한카드 결제 시"),
     ("응답시트주소", "sheet_url", False, "https://docs.google.com/spreadsheets/d/…/edit"),
+    ("배송불가분류", "no_delivery", False, "양주/와인, 소주/전통주"),
 ]
 
 # 관리자가 조금 다르게 적어도 알아듣도록
@@ -201,6 +202,8 @@ SETTING_ALIASES = {
     "응답시트": "응답시트주소", "주문내역": "응답시트주소", "주문내역주소": "응답시트주소",
     "구글시트": "응답시트주소", "구글시트주소": "응답시트주소", "시트주소": "응답시트주소",
     "응답시트링크": "응답시트주소",
+    "배송불가": "배송불가분류", "주류분류": "배송불가분류", "택배불가분류": "배송불가분류",
+    "배송제외분류": "배송불가분류", "매장수령분류": "배송불가분류",
 }
 
 BENEFIT_KEY_RE = re.compile(r"^구매혜택0*(\d+)$")
@@ -366,6 +369,9 @@ def load_settings(path):
         "links": {
             "responseSheet": out.get("sheet_url", ""),
         },
+        # 줄이 아예 없으면 None (= 분류 이름에서 자동으로 찾는다).
+        # 빈 값은 위에서 걸러지므로 여기에 "" 가 들어올 일은 없다.
+        "no_delivery": out.get("no_delivery"),
         "benefit_overrides": benefits,
     }
 
@@ -774,6 +780,127 @@ def load_categories(catalog_url):
     return (parsed[0], parsed[1]), None
 
 
+# ---------------------------------------------------------------------------
+#  택배로 보낼 수 없는 분류 (주류)
+# ---------------------------------------------------------------------------
+
+# 주류는 택배로 보낼 수 없다. 주문서는 이 분류의 상품을 배송 배분에서 빼고
+# 매장 수령 안내를 띄운다 (js/alcohol.js).
+#
+# 분류 '번호'는 시즌마다 다시 매겨지므로 번호를 여기 적으면 안 된다.
+# 이름에 들어 있는 낱말로 찾는다. js/alcohol.js 의 ALCOHOL_LABEL_PATTERN 과
+# 같은 목록이어야 한다 - 한쪽만 고치면 갱신 전(주문서가 스스로 이름을 보고
+# 판단하는 대비책)과 갱신 후(여기서 정해 준 값)가 서로 다른 말을 하게 된다.
+NO_DELIVERY_WORDS = ("양주", "와인", "위스키", "소주", "전통주", "증류주",
+                     "막걸리", "약주", "청주", "사케", "맥주", "주류")
+
+# "이번 시즌엔 술이 없다" 를 관리자가 명시적으로 적는 말
+NO_DELIVERY_NONE = ("없음", "없슴", "해당없음", "none", "-")
+
+
+def parse_no_delivery_setting(value):
+    """'배송 불가 분류' 줄을 조각으로 나눈다.
+
+    @returns None  줄이 없음 (= 분류 이름에서 자동으로 찾는다)
+             []    관리자가 '없음' 이라고 적음 (= 이번 시즌엔 주류 없음)
+             [...] 관리자가 적은 분류 이름 또는 번호
+    """
+    if value is None:
+        return None
+    tokens = [t.strip() for t in re.split(r"[,;·/]", value) if t.strip()]
+    if not tokens:
+        return None
+    if len(tokens) == 1 and tokens[0].lower() in NO_DELIVERY_NONE:
+        return []
+    return tokens
+
+
+def resolve_no_delivery(categories, tokens):
+    """택배 배송이 안 되는 분류 번호를 정한다.
+
+    관리자가 적은 값이 있으면 그것이 이긴다. 카탈로그가 분류 이름을
+    "리큐르" 처럼 낯설게 붙인 시즌에도 개발자 없이 넘어갈 수 있어야 한다.
+
+    이름은 조각조각 겹칠 수 있어서(예: '양주/와인' 을 '와인' 으로 적어도
+    통해야 한다) 완전히 같거나 포함되면 맞는 것으로 본다.
+
+    번호로 적은 것은 **본행사 분류 번호**로 본다. 사전행사 묶음에 주류가
+    들어간 시즌은 아직 없었고, 번호가 어느 쪽 것인지 물어볼 방법이 없다.
+
+    @returns ({"pre": [번호...], "main": [번호...], "labels": [이름...],
+               "source": "자동"|"설정"}, [문제 설명...])
+    """
+    pre_rows, main_rows = categories if categories else ([], [])
+    picked_pre, picked_main, labels, problems = set(), set(), [], []
+
+    def remember(label):
+        if label and label not in labels:
+            labels.append(label)
+
+    if tokens is None:
+        for rows, target in ((pre_rows, picked_pre), (main_rows, picked_main)):
+            for num, label in rows:
+                if any(w in label for w in NO_DELIVERY_WORDS):
+                    target.add(num)
+                    remember(label)
+        source = "자동"
+    else:
+        source = "설정"
+        for tok in tokens:
+            if tok.isdigit():
+                num = int(tok)
+                hit = [l for n, l in main_rows if n == num]
+                # 분류 이름을 아예 못 가져온 경우(main_rows 가 비었다)에는
+                # 번호를 확인할 방법이 없으므로 적힌 대로 믿는다.
+                if not hit and main_rows:
+                    problems.append("본행사 분류에 %s번이 없습니다." % tok)
+                    continue
+                picked_main.add(num)
+                if hit:
+                    remember(hit[0])
+                continue
+
+            matched = False
+            for rows, target in ((pre_rows, picked_pre), (main_rows, picked_main)):
+                for num, label in rows:
+                    if tok == label or tok in label:
+                        target.add(num)
+                        remember(label)
+                        matched = True
+            if not matched:
+                problems.append("'%s' 와(과) 이름이 맞는 분류가 없습니다." % tok)
+
+    return ({"pre": sorted(picked_pre), "main": sorted(picked_main),
+             "labels": labels, "source": source}, problems)
+
+
+def count_no_delivery(catalog, info):
+    """이번 시즌에 배송 불가로 걸리는 상품이 몇 개인지 센다.
+
+    주문서(js/alcohol.js)가 하는 것과 같은 판정이라야 관리자가 여기서 본
+    숫자와 관리자 홈에 뜨는 숫자가 같다.
+    """
+    pre, main = set(info["pre"]), set(info["main"])
+    hit = []
+    for r in catalog:
+        if isinstance(r.get("sort"), int) and r["sort"] in main:
+            hit.append(r["code"])
+            continue
+        if any(n in pre for n in (pre_category_of(r) or [])):
+            hit.append(r["code"])
+    return hit
+
+
+def describe_categories(categories):
+    """관리자가 보고 그대로 옮겨 적을 수 있게 분류 이름을 나열한다."""
+    if not categories:
+        return []
+    out = []
+    for title, rows in (("사전행사", categories[0]), ("본행사", categories[1])):
+        out.append("%s 분류: %s" % (title, ", ".join("%d %s" % (n, l) for n, l in rows)))
+    return out
+
+
 def benefit_codes(field):
     """attached / attached_e 문자열("3,15,1")을 번호 목록으로."""
     out = []
@@ -866,7 +993,7 @@ def pre_category_of(row):
 
 
 def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_note,
-                      categories):
+                      categories, no_delivery):
     entries, market, conflicts = [], [], []
     n_pre = n_main = 0
 
@@ -933,7 +1060,12 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
         "  preNote: %s,\n"
         "  catalogSearch: %s,  // 카탈로그 검색 주소 (뒤에 상품코드가 붙는다)\n"
         "  catalogImage: %s,  // 상품 사진 주소 (뒤에 <상품코드>.webp 가 붙는다)\n"
-        "  catalogIcons: %s   // 안내 아이콘 주소 (뒤에 <번호>.png 가 붙는다)\n"
+        "  catalogIcons: %s,   // 안내 아이콘 주소 (뒤에 <번호>.png 가 붙는다)\n"
+        "  // 택배로 보낼 수 없는 분류(주류). 이 분류의 상품은 배송 배분에서 빠지고\n"
+        "  // 매장 수령 안내가 뜬다 (js/alcohol.js). 분류 번호는 시즌마다 바뀌므로\n"
+        "  // 여기 적힌 값이 이번 시즌의 정답이다. %s\n"
+        "  noDeliveryCats: %s,\n"
+        "  noDeliveryLabels: %s\n"
         "};\n\n"
         % (season, source_desc, len(catalog), len(market),
            n_pre, pre_start, n_main, main_start,
@@ -941,7 +1073,12 @@ def write_products_js(catalog, season, source_desc, pre_start, main_start, pre_n
            pre_start, main_start, json.dumps(pre_note, ensure_ascii=False),
            json.dumps(catalog_search_url(source_desc), ensure_ascii=False),
            json.dumps(catalog_image_url(source_desc), ensure_ascii=False),
-           json.dumps(catalog_icon_url(source_desc), ensure_ascii=False))
+           json.dumps(catalog_icon_url(source_desc), ensure_ascii=False),
+           "(분류 이름에서 자동으로 찾음)" if no_delivery["source"] == "자동"
+           else "(시즌설정.txt 의 '배송 불가 분류' 줄에서 가져옴)",
+           json.dumps({"pre": no_delivery["pre"], "main": no_delivery["main"]},
+                      ensure_ascii=False),
+           json.dumps(no_delivery["labels"], ensure_ascii=False))
     )
     # 저장소가 CRLF 로 보관돼 있다. LF 로 쓰면 줄바꿈만 바뀐 거대한 diff 가 생긴다.
     with io.open(PRODUCTS_JS, "w", encoding="utf-8", newline="\r\n") as f:
@@ -1260,9 +1397,56 @@ def main():
         if missing:
             print("   [!] 이름이 없는 분류 번호: %s" % missing)
 
+    # 택배로 보낼 수 없는 분류(주류)를 이번 시즌 값으로 확정한다.
+    #
+    # 주문서 혼자 분류 이름을 보고 판단하게 두면, 이름을 못 읽은 시즌에
+    # 주류가 배송 가능한 상품으로 조용히 섞여 들어간다. 그래서 갱신 때
+    # 여기서 정하고, 못 정하면 만들지 않고 멈춘다 - 갱신이 멈추면 주문서는
+    # 이전 상태 그대로라 손님이 잘못 안내받는 일은 없다.
+    nd_tokens = parse_no_delivery_setting(cfg.get("no_delivery"))
+    no_delivery, nd_problems = resolve_no_delivery(categories, nd_tokens)
+    setting_name = os.path.basename(args.config)
+
+    if nd_problems:
+        print("   [!] '배송 불가 분류' 줄을 알아듣지 못했습니다.")
+        for why in nd_problems:
+            print("       %s" % why)
+        for line in describe_categories(categories):
+            print("       %s" % line)
+        print("       %s 의 '배송 불가 분류' 줄을 위 이름 그대로 고쳐 주세요." % setting_name)
+        return 1
+
+    nd_codes = count_no_delivery(catalog, no_delivery)
+    if no_delivery["main"] or no_delivery["pre"]:
+        print("   배송 불가(주류): %d품목 · %s  [%s]"
+              % (len(nd_codes), ", ".join(no_delivery["labels"]) or "번호로 지정",
+                 no_delivery["source"]))
+    elif nd_tokens == []:
+        print("   배송 불가(주류): 없음  [설정에 '없음' 이라고 적혀 있습니다]")
+    else:
+        # 자동으로도 못 찾았고 관리자가 적어 둔 것도 없다.
+        # 술이 없는 시즌인지, 이름이 낯설어 못 알아본 것인지 여기서는 알 수 없다.
+        print("   [!] 택배 배송이 안 되는 분류(주류)를 찾지 못했습니다.")
+        print("       주류는 택배로 못 보내므로 주문서가 배송 정보 대신 매장 수령")
+        print("       안내를 띄웁니다. 그 판단을 할 수 없는 채로 배포하면 술이")
+        print("       배송되는 상품으로 섞여 들어갑니다. 그래서 여기서 멈춥니다.")
+        if categories:
+            for line in describe_categories(categories):
+                print("       %s" % line)
+            print("       위 이름을 보고 %s 에 한 줄 추가한 뒤 다시 실행하세요." % setting_name)
+            print("           배송불가 분류: 양주/와인, 소주/전통주")
+        else:
+            print("       분류 이름을 못 가져와서 자동으로 찾을 수가 없습니다.")
+            print("       카탈로그 사이트의 목록에서 술이 들어 있는 묶음이")
+            print("       몇 번째인지 세어 %s 에 번호로 적어 주세요." % setting_name)
+            print("           배송불가 분류: 10, 11")
+        print("       술이 아예 없는 시즌이면 이렇게 적으시면 됩니다.")
+        print("           배송불가 분류: 없음")
+        return 1
+
     market, n_pre, n_main, conflicts = write_products_js(
         catalog, cfg["season"], cfg["catalog"],
-        cfg["pre_start"], cfg["main_start"], cfg["pre_note"], categories)
+        cfg["pre_start"], cfg["main_start"], cfg["pre_note"], categories, no_delivery)
     write_store_js(cfg["store"], cfg["season"], cfg["links"])
     print("   상품 %d개, 시세반영 %d개 %s" % (len(catalog), len(market), market))
     print("   행사: 사전행사 %d개 (%s ~) / 본행사 %d개 (%s ~)"
