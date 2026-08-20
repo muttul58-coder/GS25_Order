@@ -146,6 +146,26 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 4. `window.print()` opens browser print dialog
 5. (Optional) `apps_script.js` on Google Sheets parses responses into formatted sheets
 
+**주문 확인 화면 (`doGet()` in `apps_script.js`).** A web app served by Apps Script that
+lists orders and renders one in the order-form layout, so the admin never has to hunt
+through spreadsheet tabs. It reads the same `주문 데이터 (JSON)` column the per-order
+sheets are built from, so there is no second source of truth.
+
+Deployment must be **실행 계정 = 웹 앱에 액세스하는 사용자** + **액세스 = Google 계정이
+있는 모든 사용자**. That combination makes the script read the sheet *as the visitor*, so
+the sheet's own sharing list becomes the access list and someone who guesses the URL sees
+nothing. Do not deploy it as 실행 계정 = 나 — that publishes every customer's name, phone
+and address to anyone with the link. An email allowlist is not a substitute:
+`Session.getActiveUser().getEmail()` returns `""` for consumer Gmail visitors when
+executing as the owner, so the check would silently pass everyone. The unauthorized case
+is caught in `doGet()` and rendered as a Korean explanation rather than Google's raw
+exception. Everything the page prints goes through `escapeHtml()` — customer text and
+catalog product names are other people's writing.
+
+The web app URL lands in `SITE_LINKS.orderViewer` via `시즌설정.txt`'s `주문 확인 주소`,
+the same path `응답 시트 주소` already takes. `admin.html` shows deployment instructions
+in place of the button while it is empty, rather than hiding the row.
+
 **Barcodes in the generated sheet come from GitHub Pages, not from the spreadsheet.**
 `apps_script.js` writes `=IMAGE(BARCODE_BASE + <코드>.jpg?v=<시즌>)`. The older design
 kept 601 pictures pasted into a `상품목록` sheet and pulled them with `VLOOKUP(…,B:C,2)`;

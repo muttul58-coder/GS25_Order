@@ -873,3 +873,386 @@ function finalizeSheet(sheet, lastRow) {
       .setBorder(true, true, true, true, true, true, COLOR.BORDER_COLOR, SpreadsheetApp.BorderStyle.SOLID);
   }
 }
+
+
+// ============================================================
+//  8. 주문 확인 화면 (웹 앱)
+// ============================================================
+//
+// 구글 시트 탭을 뒤지지 않고 주문을 보기 위한 화면이다.
+// 시트에는 주문 하나가 JSON 한 덩어리로 들어 있고(C열), 지금까지는 그것을
+// 풀어 '주문 시트'를 한 장씩 만들어 왔다. 주문이 쌓일수록 탭이 늘어나
+// 찾기가 어려워진다. 이 화면은 같은 JSON 을 목록과 상세로 보여 준다.
+//
+// ── 배포 방법 (최초 1회) ──────────────────────────────────
+//   Apps Script 편집기 → 배포 → 새 배포 → 유형 '웹 앱'
+//     실행 계정      : 웹 앱에 액세스하는 사용자      ★ 중요
+//     액세스 권한    : Google 계정이 있는 모든 사용자  ★ 중요
+//   → 배포하면 주소가 나온다. 그 주소를 시즌설정.txt 의
+//     '주문 확인 주소' 줄에 넣으면 관리자 홈에 버튼이 생긴다.
+//
+//   왜 이 조합인가: 스크립트가 **접속한 사람의 자격으로** 시트를 읽는다.
+//   그래서 시트를 공유받지 못한 사람은 주소를 알아내 들어와도 아무것도
+//   못 본다. 즉 시트의 공유 목록이 그대로 이 화면의 접근 권한이 된다.
+//   ('실행 계정: 나' 로 두면 누구나 남의 주문을 다 보게 되므로 쓰지 말 것.
+//    코드에서 이메일로 걸러내는 방법은 개인 지메일 계정에서 접속자
+//    이메일이 빈 값으로 와서 믿을 수 없다.)
+//
+//   코드를 고친 뒤에는 '배포 관리 → 수정 → 버전: 새 버전' 으로 다시
+//   배포해야 반영된다. 저장만 해서는 옛 화면이 그대로 뜬다.
+
+/** 목록 한 페이지에 보여 줄 주문 수 */
+var VIEWER_PAGE_SIZE = 30;
+
+
+function doGet(e) {
+  var params = (e && e.parameter) || {};
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) throw new Error('스프레드시트를 열지 못했습니다.');
+
+    if (params.row) {
+      return viewerPage(renderOrderDetail(ss, Number(params.row)), '주문 상세');
+    }
+    return viewerPage(renderOrderList(ss, Number(params.page) || 1, params.q || ''), '주문 확인');
+
+  } catch (err) {
+    // 시트를 공유받지 못한 사람이 들어오면 여기로 온다.
+    // 구글이 던지는 영문 예외를 그대로 보여주면 고장난 것처럼 보인다.
+    return viewerPage(
+      '<div class="empty"><h2>주문을 볼 권한이 없습니다</h2>'
+      + '<p>이 주문서의 응답 시트를 공유받은 구글 계정으로 로그인해야 합니다.</p>'
+      + '<p class="sub">지금 로그인된 계정으로는 열 수 없습니다. '
+      + '매장 담당자에게 시트 공유를 요청하세요.</p>'
+      + '<p class="sub">(안내: ' + escapeHtml(String(err && err.message || err)) + ')</p></div>',
+      '권한 없음');
+  }
+}
+
+
+/**
+ * 응답 시트에서 주문 한 건을 읽어 온다
+ * @returns {Object|null} {row, timestamp, orderDateTime, name, phone, data}
+ */
+function readOrderRow(ss, row) {
+  var sheet = ss.getSheets()[0];
+  if (row < 2 || row > sheet.getLastRow()) return null;
+
+  var values = sheet.getRange(row, 1, 1, 5).getValues()[0];
+  var json = String(values[2] || '').trim();
+  if (!json) return null;
+
+  var data;
+  try {
+    data = JSON.parse(json);
+  } catch (err) {
+    return { row: row, timestamp: values[0], orderDateTime: values[1],
+             name: values[3], phone: values[4], data: null, broken: String(err) };
+  }
+  return { row: row, timestamp: values[0], orderDateTime: values[1],
+           name: values[3], phone: values[4], data: data };
+}
+
+
+/** 목록 화면 */
+function renderOrderList(ss, page, query) {
+  var sheet = ss.getSheets()[0];
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return '<div class="empty"><h2>아직 주문이 없습니다</h2></div>';
+  }
+
+  // 최근 주문이 위로 오도록 아래 행부터 읽는다
+  var rows = [];
+  for (var r = lastRow; r >= 2; r--) {
+    var o = readOrderRow(ss, r);
+    if (!o) continue;
+    if (query && !orderMatches(o, query)) continue;
+    rows.push(o);
+  }
+
+  var total = rows.length;
+  var pages = Math.max(1, Math.ceil(total / VIEWER_PAGE_SIZE));
+  page = Math.min(Math.max(1, page), pages);
+  var slice = rows.slice((page - 1) * VIEWER_PAGE_SIZE, page * VIEWER_PAGE_SIZE);
+
+  var html = ''
+    + '<form class="search" method="get">'
+    + '<input type="text" name="q" placeholder="성명 · 전화번호 · 상품코드 · 받는 분" value="'
+    + escapeHtml(query) + '">'
+    + '<button type="submit">찾기</button>'
+    + (query ? '<a class="clear" href="?">전체 보기</a>' : '')
+    + '</form>'
+    + '<p class="count">' + (query ? '검색 결과 ' : '') + total + '건'
+    + (pages > 1 ? ' · ' + page + '/' + pages + '쪽' : '') + '</p>'
+    + '<table class="list"><thead><tr>'
+    + '<th>주문 일시</th><th>주문자</th><th>전화번호</th><th>상품</th>'
+    + '<th class="num">금액</th><th>배송</th><th></th>'
+    + '</tr></thead><tbody>';
+
+  for (var i = 0; i < slice.length; i++) {
+    var o = slice[i];
+    var d = o.data || {};
+    var products = d['상품목록'] || [];
+    var sections = d['주문목록'] || [];
+    var noDelivery = d['배송불가'];
+    var totals = d['전체합계'] || {};
+
+    var first = products.length ? String(products[0]['상품이름'] || '') : '';
+    var label = first + (products.length > 1 ? ' 외 ' + (products.length - 1) + '건' : '');
+
+    html += '<tr>'
+      + '<td class="when">' + escapeHtml(String(o.orderDateTime || o.timestamp || '')) + '</td>'
+      + '<td class="who">' + escapeHtml(String(o.name || '')) + '</td>'
+      + '<td>' + escapeHtml(String(o.phone || '')) + '</td>'
+      + '<td class="what">' + escapeHtml(label)
+      + (o.broken ? ' <span class="bad">읽기 실패</span>' : '') + '</td>'
+      + '<td class="num">' + formatNumber(totals['총금액'] || 0) + '</td>'
+      + '<td>' + (sections.length ? sections.length + '곳' : '<span class="muted">없음</span>')
+      + (noDelivery ? ' <span class="tag-alcohol">매장수령</span>' : '') + '</td>'
+      + '<td><a class="go" href="?row=' + o.row + '">열기</a></td>'
+      + '</tr>';
+  }
+
+  html += '</tbody></table>';
+
+  if (pages > 1) {
+    html += '<div class="pager">';
+    if (page > 1) {
+      html += '<a href="?page=' + (page - 1) + (query ? '&q=' + encodeURIComponent(query) : '') + '">← 이전</a>';
+    }
+    if (page < pages) {
+      html += '<a href="?page=' + (page + 1) + (query ? '&q=' + encodeURIComponent(query) : '') + '">다음 →</a>';
+    }
+    html += '</div>';
+  }
+  return html;
+}
+
+
+/** 검색어가 이 주문에 들어 있는가 (성명·전화·상품코드·상품이름·받는 분) */
+function orderMatches(o, query) {
+  var q = String(query).toLowerCase().replace(/\s/g, '');
+  var hay = [String(o.name || ''), String(o.phone || '')];
+
+  var d = o.data || {};
+  var products = d['상품목록'] || [];
+  for (var i = 0; i < products.length; i++) {
+    hay.push(String(products[i]['상품코드'] || ''));
+    hay.push(String(products[i]['상품이름'] || ''));
+  }
+  var sections = d['주문목록'] || [];
+  for (var s = 0; s < sections.length; s++) {
+    var recv = sections[s]['받는분'] || {};
+    hay.push(String(recv['성명'] || ''));
+    hay.push(String(recv['전화번호'] || ''));
+  }
+  return hay.join('|').toLowerCase().replace(/\s/g, '').indexOf(q) !== -1;
+}
+
+
+/** 상세 화면 — 주문서와 같은 순서로 보여 준다 */
+function renderOrderDetail(ss, row) {
+  var o = readOrderRow(ss, row);
+  if (!o) {
+    return '<div class="empty"><h2>그런 주문이 없습니다</h2>'
+      + '<p><a href="?">목록으로</a></p></div>';
+  }
+  if (!o.data) {
+    return '<div class="empty"><h2>주문 데이터를 읽지 못했습니다</h2>'
+      + '<p class="sub">' + escapeHtml(String(o.broken)) + '</p>'
+      + '<p><a href="?">목록으로</a></p></div>';
+  }
+
+  var d = o.data;
+  var season = d['시즌'] || '';
+  var html = '<div class="detail-top">'
+    + '<a class="back" href="?">← 목록</a>'
+    + '<div class="when">' + escapeHtml(String(o.orderDateTime || o.timestamp || ''))
+    + (season ? ' <span class="season">' + escapeHtml(season) + '</span>' : '') + '</div>'
+    + '<button class="print" onclick="window.print()">인쇄</button>'
+    + '</div>';
+
+  html += personBlock('주문 정보', d['주문자정보'] || {}, 'orderer');
+
+  // 상품 정보
+  var products = d['상품목록'] || [];
+  html += '<h3 class="sec product">상품 정보</h3>'
+    + '<table class="grid"><thead><tr>'
+    + '<th>상품코드</th><th>상품이름</th><th>행사</th><th class="num">수량</th>'
+    + '<th class="num">지급수량</th><th class="num">단가</th><th class="num">금액</th><th>바코드</th>'
+    + '</tr></thead><tbody>';
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    var code = String(p['상품코드'] || '').trim();
+    var ev = p['행사'] || '없음';
+    html += '<tr>'
+      + '<td class="code">' + escapeHtml(code) + '</td>'
+      + '<td>' + escapeHtml(String(p['상품이름'] || '')) + '</td>'
+      + '<td' + (ev !== '없음' && ev !== '' ? ' class="event"' : '') + '>' + escapeHtml(ev) + '</td>'
+      + '<td class="num">' + (p['수량'] || 0) + '</td>'
+      + '<td class="num">' + (p['지급수량'] || '') + '</td>'
+      + '<td class="num">' + formatNumber(p['단가'] || 0) + '</td>'
+      + '<td class="num">' + formatNumber(p['금액'] || 0) + '</td>'
+      // loading="lazy" 를 쓰지 않는다. 인쇄할 때 아직 안 받은 그림은 빈칸으로
+      // 찍히는데, 이 화면에는 인쇄 단추가 있고 한 주문의 바코드는 몇 장뿐이다.
+      + '<td class="bar">' + (code
+          ? '<img src="' + escapeHtml(barcodeUrl(code, season)) + '" alt="' + escapeHtml(code) + '">'
+          : '') + '</td>'
+      + '</tr>';
+  }
+  html += '</tbody></table>';
+
+  // 배송 불가 (주류)
+  var nd = d['배송불가'];
+  if (nd && (nd['상품목록'] || []).length) {
+    html += '<div class="nodelivery"><b>🚫 배송 불가 — ' + escapeHtml(String(nd['사유'] || '매장 수령')) + '</b><ul>';
+    var list = nd['상품목록'];
+    for (var n = 0; n < list.length; n++) {
+      html += '<li>' + escapeHtml(String(list[n]['상품코드'] || '')) + ' '
+        + escapeHtml(String(list[n]['상품이름'] || ''))
+        + ' · ' + (list[n]['지급수량'] || 0) + '개</li>';
+    }
+    html += '</ul></div>';
+  }
+
+  // 배송 정보
+  var sections = d['주문목록'] || [];
+  for (var s = 0; s < sections.length; s++) {
+    var sec = sections[s];
+    html += '<h3 class="sec ship">배송 정보 #' + (sec['주문번호'] || (s + 1))
+      + (sec['배송희망일'] ? ' <small>배송 희망일 ' + escapeHtml(String(sec['배송희망일'])) + '</small>' : '')
+      + '</h3>';
+    html += personBlock('보내는 분', sec['보내는분'] || {}, 'sender');
+    html += personBlock('받는 분', sec['받는분'] || {}, 'receiver');
+
+    var dp = sec['배송상품목록'] || [];
+    if (dp.length) {
+      html += '<table class="grid small"><thead><tr><th>상품코드</th><th>상품이름</th><th class="num">수량</th></tr></thead><tbody>';
+      for (var k = 0; k < dp.length; k++) {
+        html += '<tr><td class="code">' + escapeHtml(String(dp[k]['상품코드'] || '')) + '</td>'
+          + '<td>' + escapeHtml(String(dp[k]['상품이름'] || '')) + '</td>'
+          + '<td class="num">' + (dp[k]['수량'] || 0) + '</td></tr>';
+      }
+      html += '</tbody></table>';
+    }
+  }
+
+  // 합계
+  var t = d['전체합계'] || {};
+  html += '<div class="grand">'
+    + '<span>총 주문 건수 <b>' + (t['총주문건수'] || 0) + '</b></span>'
+    + '<span>총 수량 <b>' + (t['총수량'] || 0) + '</b></span>'
+    + '<span>총 지급수량 <b>' + (t['총지급수량'] || 0) + '</b></span>'
+    + '<span>총 금액 <b>' + formatNumber(t['총금액'] || 0) + ' 원</b></span>'
+    + '</div>';
+
+  return html;
+}
+
+
+/** 인적사항 한 덩어리 */
+function personBlock(title, info, kind) {
+  var addr = String(info['기본주소'] || '');
+  if (info['상세주소']) addr += ' ' + info['상세주소'];
+  return '<div class="person ' + kind + '">'
+    + '<div class="p-title">' + escapeHtml(title) + '</div>'
+    + '<div class="p-body">'
+    + '<span class="nm">' + escapeHtml(String(info['성명'] || '')) + '</span>'
+    + '<span class="ph">' + escapeHtml(String(info['전화번호'] || '')) + '</span>'
+    + '<span class="ad">' + (info['우편번호'] ? '(' + escapeHtml(String(info['우편번호'])) + ') ' : '')
+    + escapeHtml(addr) + '</span>'
+    + '</div></div>';
+}
+
+
+/** HTML 에 넣을 때 남의 글이 태그로 해석되지 않게 한다 */
+function escapeHtml(text) {
+  return String(text === null || text === undefined ? '' : text)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+
+/** 공통 껍데기 (스타일 포함) */
+function viewerPage(body, title) {
+  var html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+    + '<title>' + escapeHtml(title) + '</title><style>' + VIEWER_CSS + '</style></head>'
+    + '<body><div class="wrap"><h1>주문 확인</h1>' + body + '</div></body></html>';
+  return HtmlService.createHtmlOutput(html)
+    .setTitle(title)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+
+var VIEWER_CSS = [
+  ':root{--ink:#0f172a;--soft:#475569;--mute:#94a3b8;--line:#e2e8f0;--bg:#f8fafc;',
+  '--orderer:#0891b2;--sender:#ea580c;--receiver:#9333ea;--product:#16a34a;--stop:#dc2626;}',
+  '*{box-sizing:border-box;}',
+  'body{margin:0;padding:18px;background:var(--bg);color:var(--ink);',
+  'font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif;font-size:14px;line-height:1.5;}',
+  '.wrap{max-width:1000px;margin:0 auto;}',
+  'h1{font-size:20px;margin:0 0 14px;}',
+  'a{color:#2563eb;}',
+  '.search{display:flex;gap:6px;margin-bottom:10px;}',
+  '.search input{flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;}',
+  '.search button{padding:9px 16px;border:0;border-radius:8px;background:#2563eb;color:#fff;',
+  'font-weight:700;cursor:pointer;}',
+  '.search .clear{align-self:center;padding:0 8px;font-size:13px;}',
+  '.count{color:var(--soft);font-size:13px;margin:0 0 8px;}',
+  'table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;}',
+  'th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;}',
+  'th{background:#f1f5f9;font-size:12px;color:var(--soft);white-space:nowrap;}',
+  '.num{text-align:right;white-space:nowrap;}',
+  '.list .when{white-space:nowrap;color:var(--soft);font-size:13px;}',
+  '.list .who{font-weight:700;}',
+  '.list .what{color:var(--soft);}',
+  '.muted{color:var(--mute);}',
+  '.bad{color:var(--stop);font-weight:700;}',
+  '.tag-alcohol{display:inline-block;padding:0 6px;border-radius:4px;background:#fee2e2;',
+  'color:#b91c1c;font-size:11px;font-weight:700;}',
+  '.go{display:inline-block;padding:4px 12px;border-radius:6px;background:#2563eb;color:#fff;',
+  'text-decoration:none;font-size:13px;font-weight:700;}',
+  '.pager{display:flex;gap:10px;justify-content:center;margin:14px 0;}',
+  '.pager a{padding:6px 14px;background:#fff;border:1px solid var(--line);border-radius:8px;',
+  'text-decoration:none;}',
+  '.empty{background:#fff;border-radius:10px;padding:32px;text-align:center;}',
+  '.empty h2{margin:0 0 8px;font-size:17px;}',
+  '.empty .sub{color:var(--soft);font-size:13px;}',
+  '.detail-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}',
+  '.detail-top .when{flex:1;color:var(--soft);font-size:13px;}',
+  '.detail-top .season{background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:5px;font-size:12px;}',
+  '.back{text-decoration:none;font-weight:700;}',
+  '.print{padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;}',
+  '.sec{margin:18px 0 6px;padding:6px 10px;border-radius:6px;color:#fff;font-size:14px;}',
+  '.sec small{font-weight:400;opacity:.9;}',
+  '.sec.product{background:var(--product);}',
+  '.sec.ship{background:#0d9488;}',
+  '.person{display:flex;background:#fff;border-radius:8px;margin-bottom:6px;overflow:hidden;}',
+  '.p-title{width:88px;flex:none;padding:9px;color:#fff;font-weight:700;font-size:12px;',
+  'display:flex;align-items:center;justify-content:center;text-align:center;}',
+  '.person.orderer .p-title{background:var(--orderer);}',
+  '.person.sender .p-title{background:var(--sender);}',
+  '.person.receiver .p-title{background:var(--receiver);}',
+  '.p-body{flex:1;padding:9px 12px;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline;}',
+  '.p-body .nm{font-weight:700;}',
+  '.p-body .ph{color:var(--soft);}',
+  '.p-body .ad{flex-basis:100%;color:var(--soft);font-size:13px;}',
+  '.grid .code{font-family:monospace;font-weight:700;}',
+  '.grid .event{color:var(--stop);font-weight:700;}',
+  '.grid .bar img{height:56px;width:auto;display:block;}',
+  '.grid.small{margin-bottom:6px;}',
+  '.nodelivery{margin:10px 0;padding:11px 14px;background:#fef2f2;border:2px solid #fca5a5;',
+  'border-left:6px solid var(--stop);border-radius:8px;color:#7f1d1d;}',
+  '.nodelivery ul{margin:6px 0 0;padding-left:18px;}',
+  '.grand{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;padding:12px 14px;',
+  'background:#eff6ff;border-radius:8px;}',
+  '.grand b{font-size:15px;}',
+  '@media print{body{background:#fff;padding:0;}.detail-top .print,.back{display:none;}}',
+  '@media (max-width:640px){',
+  'body{padding:10px;}',
+  '.list th:nth-child(3),.list td:nth-child(3),.list th:nth-child(5),.list td:nth-child(5){display:none;}',
+  '.grid .bar{display:none;}',
+  '}'
+].join('');

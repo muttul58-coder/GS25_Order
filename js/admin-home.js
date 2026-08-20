@@ -205,6 +205,21 @@ function renderLinks() {
         row.remove();
     }
 
+    // 주문 확인 화면 (Apps Script 웹 앱). 아직 배포하지 않았으면 배포하라고 알려 준다 —
+    // 링크만 지우면 "그런 화면이 있었나" 하고 잊어버린다.
+    const viewer = (typeof SITE_LINKS !== 'undefined' && SITE_LINKS.orderViewer) || '';
+    const viewerRow = document.getElementById('rowViewer');
+    if (viewer) {
+        setHref('linkViewer', viewer);
+    } else if (viewerRow) {
+        viewerRow.querySelector('.text').innerHTML =
+            '<b>주문 확인</b><small>아직 배포하지 않았습니다. 응답 시트의 '
+            + '<b>확장 프로그램 → Apps Script → 배포 → 새 배포 → 웹 앱</b> 으로 배포한 뒤, '
+            + '나온 주소를 시즌설정.txt 의 <b>주문 확인 주소</b> 줄에 넣으면 여기 버튼이 생깁니다.</small>';
+        const vbtn = viewerRow.querySelector('.go');
+        if (vbtn) vbtn.remove();
+    }
+
     const sheetRow = document.getElementById('rowSheet');
     if (sheet) {
         setHref('linkSheet', sheet);

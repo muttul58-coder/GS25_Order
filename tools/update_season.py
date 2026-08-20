@@ -184,6 +184,7 @@ SETTING_FIELDS = [
     ("본행사시작", "main_start", True, "2026-09-05"),
     ("사전행사조건", "pre_note", False, "삼성/KB국민/비씨/신한카드 결제 시"),
     ("응답시트주소", "sheet_url", False, "https://docs.google.com/spreadsheets/d/…/edit"),
+    ("주문확인주소", "viewer_url", False, "https://script.google.com/macros/s/…/exec"),
     ("배송불가분류", "no_delivery", False, "양주/와인, 소주/전통주"),
 ]
 
@@ -202,6 +203,8 @@ SETTING_ALIASES = {
     "응답시트": "응답시트주소", "주문내역": "응답시트주소", "주문내역주소": "응답시트주소",
     "구글시트": "응답시트주소", "구글시트주소": "응답시트주소", "시트주소": "응답시트주소",
     "응답시트링크": "응답시트주소",
+    "주문확인": "주문확인주소", "주문보기": "주문확인주소", "웹앱주소": "주문확인주소",
+    "주문확인화면": "주문확인주소", "주문확인링크": "주문확인주소",
     "배송불가": "배송불가분류", "주류분류": "배송불가분류", "택배불가분류": "배송불가분류",
     "배송제외분류": "배송불가분류", "매장수령분류": "배송불가분류",
 }
@@ -339,6 +342,11 @@ def load_settings(path):
         problems.append((values["sheet_url"][1], out["sheet_url"],
                          "응답 시트 주소는 http 로 시작하는 주소여야 합니다. 쓰지 않으시면 줄째로 비워 두세요."))
 
+    if out.get("viewer_url") and not out["viewer_url"].startswith("http"):
+        problems.append((values["viewer_url"][1], out["viewer_url"],
+                         "주문 확인 주소는 http 로 시작하는 주소여야 합니다. "
+                         "Apps Script 를 웹 앱으로 배포하면 나오는 주소입니다."))
+
     if problems:
         # 줄 번호 순으로. 줄이 아예 없는 항목(번호 0)은 맨 뒤에 모아 보여 준다.
         problems.sort(key=lambda p: (p[0] == 0, p[0]))
@@ -368,6 +376,7 @@ def load_settings(path):
         "pre_note": out.get("pre_note", ""),
         "links": {
             "responseSheet": out.get("sheet_url", ""),
+            "orderViewer": out.get("viewer_url", ""),
         },
         # 줄이 아예 없으면 None (= 분류 이름에서 자동으로 찾는다).
         # 빈 값은 위에서 걸러지므로 여기에 "" 가 들어올 일은 없다.
