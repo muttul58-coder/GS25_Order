@@ -359,6 +359,9 @@ function validateDeliveryQuantities() {
     });
 
     // 불일치 확인
+    // 아래 messages 는 innerHTML 로 들어간다(줄바꿈에 <br> 을 쓴다).
+    // 상품코드는 점원이 직접 친 값이라 형식 검사를 통과하지 못한 글자가
+    // 그대로 남아 있을 수 있으므로 반드시 escapeHtml() 을 거친다.
     let hasIssue = false;
     let allMatch = true;
     const messages = [];
@@ -370,11 +373,11 @@ function validateDeliveryQuantities() {
             allMatch = false;
             if (deliveryQty > orderQty) {
                 hasIssue = true;
-                messages.push(`⚠️ [${code}] 배송 수량(${deliveryQty})이 지급 수량(${orderQty})을 초과합니다.`);
+                messages.push(`⚠️ [${escapeHtml(code)}] 배송 수량(${deliveryQty})이 지급 수량(${orderQty})을 초과합니다.`);
             } else {
                 // 0개도 반드시 안내한다. 안내가 없으면 사용자는 어떤 상품이
                 // 배분되지 않았는지 모른 채 전송 단계에서 막히게 된다.
-                messages.push(`ℹ️ [${code}] 배송 수량(${deliveryQty}) / 지급 수량(${orderQty})`);
+                messages.push(`ℹ️ [${escapeHtml(code)}] 배송 수량(${deliveryQty}) / 지급 수량(${orderQty})`);
             }
         }
     }
@@ -383,7 +386,7 @@ function validateDeliveryQuantities() {
     for (const code in deliveryProducts) {
         if (!orderProducts[code] && deliveryProducts[code] > 0) {
             hasIssue = true;
-            messages.push(`⚠️ [${code}] 주문 목록에 없는 상품입니다.`);
+            messages.push(`⚠️ [${escapeHtml(code)}] 주문 목록에 없는 상품입니다.`);
         }
     }
 

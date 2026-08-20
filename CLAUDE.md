@@ -27,7 +27,7 @@ GS25 convenience store parcel order management web application (Korean language)
 | File | Purpose |
 |---|---|
 | `products.js` | Product database — exports globals `PRODUCTS_DATA` (601 items: name, price, 행사, 구성 설명) and `PROMO_CONFIG` (season name, promotion period dates, catalog addresses). Generated from `시즌설정.txt`. |
-| `store.js` | Exports globals `STORE_INFO` (store name, manager, phone) rendered in the page header, and `SITE_LINKS` (currently just `responseSheet`, read only by `admin.html`). Generated from `시즌설정.txt`. |
+| `store.js` | Exports globals `STORE_INFO` (store name, manager, phone) rendered in the page header, and `SITE_LINKS` (`responseSheet`, `orderViewer` — read only by `admin.html`). Generated from `시즌설정.txt`. Both links are Google-authenticated, so shipping them to every visitor costs nothing; do not put a secret here. |
 | `config.js` | Google Forms endpoint URL and entry IDs — exports global `GOOGLE_FORM_CONFIG` |
 
 ## File Structure
@@ -39,29 +39,43 @@ GS25_Order/
 ├── order_split.html      # 상품 찾기 panel (left) + order form in an iframe (right)
 ├── admin.html            # 관리자 홈 — current-state readout + every admin link (not linked from the order form)
 ├── css/
-│   ├── main.css          # Screen styles: layout, forms, tables, buttons, alerts (~854 lines)
-│   ├── print.css         # Print-only @media print styles for A4 (~476 lines)
-│   └── responsive.css    # Mobile responsive breakpoints (~81 lines)
+│   ├── main.css          # Screen styles: layout, forms, tables, buttons, alerts (~1200 lines)
+│   ├── print.css         # Print-only @media print styles for A4 (~550 lines)
+│   ├── responsive.css    # Mobile responsive breakpoints (~89 lines)
+│   ├── admin-test.css    # Test banner + admin panel (order form AND split shell)
+│   ├── catalog-panel.css # 상품 찾기 panel (order_split.html only)
+│   └── admin-home.css    # admin.html only
 ├── js/
 │   ├── utils.js          # Global vars, alerts, formatting, phone auto-hyphen (~100 lines)
-│   ├── address.js        # Daum Postcode API address search (~75 lines)
-│   ├── alcohol.js        # 주류 배송 불가 판별 + 안내 (~230 lines)
+│   ├── address.js        # Daum Postcode API address search (~81 lines)
+│   ├── admin-test.js     # 행사 period preview (?admin=1) (~351 lines)
+│   ├── alcohol.js        # 주류 배송 불가 판별 + 안내 (~266 lines)
 │   ├── product.js        # Product CRUD, calculation, barcode (~480 lines)
 │   ├── delivery.js       # Delivery product management, quantity validation (~250 lines)
 │   ├── copy-sync.js      # Info copy/sync between orderer, sender, receiver (~230 lines)
 │   ├── validation.js     # Input validation, sequential input guide (~260 lines)
 │   ├── section.js        # Delivery section add/remove/renumber (~165 lines)
 │   ├── print-image.js    # Print layout, image save (html2canvas) (~425 lines)
-│   ├── submit.js         # Google Forms submission, config status (~245 lines)
-│   └── init.js           # Page initialization (DOMContentLoaded) (~63 lines)
+│   ├── submit.js         # Google Forms submission, config status (~347 lines)
+│   ├── init.js           # Page initialization (DOMContentLoaded) (~124 lines)
+│   ├── catalog-panel.js  # 상품 찾기 panel (order_split.html only) (~620 lines)
+│   └── admin-home.js     # admin.html only (~316 lines)
 ├── config.js             # Google Forms configuration (9 lines)
 ├── products.js           # Product database (601 products, GENERATED)
-├── apps_script.js        # Google Apps Script for Sheets automation (not loaded by HTML)
+├── store.js              # 매장 정보 + 관리자 링크 (GENERATED)
+├── 시즌설정.txt          # The admin's only file — every season input (이름: 값)
+├── season.json           # Script-managed 구매혜택 icon memory (not hand-edited)
+├── apps_script.js        # Google Apps Script: 주문 시트 생성 + 주문 확인 웹 앱 (not loaded by HTML)
 ├── BarcodeImgs/          # 601 barcode JPEGs, one per code (GENERATED, e.g. 08-01.jpg)
 ├── BarcodeSource/        # Season barcode-book PDFs (source for BarcodeImgs/)
 ├── tools/
 │   ├── update_season.py  # Regenerates products.js + BarcodeImgs/ from a season PDF
 │   └── season_prep.py    # Step 0: verify the two links, fetch banner + unknown icons, draft 시즌설정.txt
+├── docs/
+│   ├── 관리자안내.md      # Admin-facing refresh guide — the source of truth
+│   └── manual.html       # Same content as a standalone page (GitHub Pages)
+├── .github/workflows/
+│   └── season-update.yml # 시즌 갱신 workflow (manual dispatch)
 ├── plan.md               # PDF implementation plan
 ├── README.md             # Korean documentation
 └── LICENSE               # MIT
@@ -69,7 +83,8 @@ GS25_Order/
 
 ### Modular Architecture
 
-Application code is split into **3 CSS files** and **10 JS files** loaded via `<link>` and `<script src>` tags in `order_form.html`. All JS functions are in **global scope** (no ES modules, no bundler). HTML body uses inline `onclick` attributes that call global functions.
+Application code is split into **6 CSS files** and **14 JS files**; `order_form.html` loads
+12 of the JS files (the other two belong to `order_split.html` and `admin.html`). All JS functions are in **global scope** (no ES modules, no bundler). HTML body uses inline `onclick` attributes that call global functions.
 
 ## Architecture & Code Organization
 
@@ -96,6 +111,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 
 <!-- App modules (order matters!) -->
 <script src="js/utils.js"></script>          <!-- No dependencies -->
+<script src="js/admin-test.js"></script>     <!-- Depends on: utils -->
 <script src="js/address.js"></script>        <!-- No dependencies -->
 <script src="js/alcohol.js"></script>        <!-- No dependencies (reads PRODUCTS_DATA/CATEGORIES) -->
 <script src="js/product.js"></script>        <!-- Depends on: utils, alcohol -->
@@ -592,15 +608,15 @@ Dependencies: `pip install pdfplumber pymupdf pillow`
 
 ### Google Forms Configuration
 
-Edit `config.js` with the form URL and entry IDs. The status indicator on the page shows:
-- Green: config loaded and valid
-- Yellow: partial configuration
-- Red: config missing or broken
+Edit `config.js` with the form URL and entry IDs. `checkConfigStatus()` (`js/submit.js`)
+paints a green/yellow/red indicator into `#configStatus` — **but `order_form.html` no
+longer contains that element**, so the function returns early and nothing is shown. A
+broken config surfaces instead as a `showAlert()` warning at submit time. Either re-add
+the element or delete the function; do not document a status light that isn't on screen.
 
 ### Known Issues / Active Work
 
 - **PDF export**: html2pdf.js has been replaced with html2canvas for image capture. `plan.md` documents the original plan.
-- **Legacy files**: `styles.css` and `print.css` (root level) are vestigial and not loaded.
 
 ## Commit Message Convention
 

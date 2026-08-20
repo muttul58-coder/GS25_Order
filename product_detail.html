@@ -458,10 +458,10 @@ function seasonName() {
 /**
  * 상품명·설명은 카탈로그에서 온 남의 글이다. 그대로 HTML 로 넣지 않는다.
  */
+// 실제 구현은 js/utils.js 의 escapeHtml() 하나뿐이다.
+// 두 벌을 두면 한쪽만 고쳐져 화면마다 다르게 새는 일이 생긴다.
 function escapeText(s) {
-    const d = document.createElement('div');
-    d.textContent = String(s == null ? '' : s);
-    return d.innerHTML;
+    return escapeHtml(s);
 }
 
 document.addEventListener('DOMContentLoaded', function () {

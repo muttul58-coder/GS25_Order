@@ -50,10 +50,15 @@ GS25_Order/
 ├── css/
 │   ├── main.css          # 화면 스타일
 │   ├── print.css         # A4 인쇄 전용 스타일
-│   └── responsive.css    # 모바일 반응형
+│   ├── responsive.css    # 모바일 반응형
+│   ├── admin-test.css    # 행사 미리보기 띠·패널 (주문서 + 2단 화면)
+│   ├── catalog-panel.css # 상품 찾기 패널 (2단 화면 전용)
+│   └── admin-home.css    # 관리자 홈 전용
 ├── js/                   # 앱 로직 (의존성 순서대로 로드)
 │   ├── utils.js          # 알림, 숫자/전화 포맷
 │   ├── address.js        # 우편번호 검색
+│   ├── admin-test.js     # 행사 기간 미리보기 (?admin=1)
+│   ├── alcohol.js        # 주류 배송 불가 판별 + 안내
 │   ├── product.js        # 상품 조회, 지급수량/금액 계산, 바코드
 │   ├── delivery.js       # 배송 상품, 수량 검증
 │   ├── copy-sync.js      # 주문자→보내는분→받는분 복사
@@ -61,8 +66,10 @@ GS25_Order/
 │   ├── section.js        # 배송 섹션 추가/삭제
 │   ├── print-image.js    # 인쇄 레이아웃, 이미지 저장, 카톡 공유
 │   ├── submit.js         # Google Forms 전송
-│   └── init.js           # 초기화
-├── season.json           # ★ 시즌 설정 (매장정보/날짜/링크/행사표) — 관리자가 고치는 유일한 파일
+│   ├── init.js           # 초기화
+│   ├── catalog-panel.js  # 상품 찾기 패널 (2단 화면 전용)
+│   └── admin-home.js     # 관리자 홈 (admin.html 전용)
+├── season.json           # 구매혜택 아이콘 기억 — 스크립트가 관리 (손대지 않음)
 ├── config.js             # Google Forms 설정 (URL, Entry ID)
 ├── products.js           # 상품 데이터 (601개) — 자동 생성
 ├── store.js              # 매장 정보 — 자동 생성
@@ -73,11 +80,11 @@ GS25_Order/
 ├── docs/
 │   ├── 관리자안내.md      # 명절마다 갱신하는 방법 (개발 지식 불필요) — 기준 문서
 │   └── manual.html       # 위 내용의 웹 매뉴얼 (GitHub Pages 로 바로 열림)
-├── 시즌설정.txt          # 관리자가 고치는 유일한 파일 (이름: 값 형식)
+├── 시즌설정.txt          # ★ 관리자가 고치는 유일한 파일 (이름: 값 형식)
 ├── tools/
 │   ├── update_season.py  # 시즌 상품/바코드 일괄 갱신
 │   └── season_prep.py    # 준비 0단계 — 카탈로그 주소와 PDF만 받아 확인하고 재료를 모음
-├── apps_script.js        # Google Apps Script (시트 자동 생성)
+├── apps_script.js        # Google Apps Script — 주문 시트 생성 + 주문 확인 화면(웹 앱)
 └── README.md
 ```
 
@@ -96,7 +103,7 @@ GS25_Order/
 | `BarcodeImgs/` | 상품코드별 바코드 이미지 (예: `08-01.jpg`). **자동 생성** |
 | `tools/update_season.py` | `시즌설정.txt`를 읽어 위 자동 생성물을 만듭니다 |
 | `.github/workflows/season-update.yml` | GitHub에서 버튼으로 갱신을 실행 |
-| `apps_script.js` | Google Sheets에서 실행. 폼 응답을 주문서 시트로 변환 |
+| `apps_script.js` | Google Sheets에서 실행. 폼 응답을 주문서 시트로 변환하고, **주문 확인 화면**(웹 앱)을 띄웁니다 |
 
 ---
 

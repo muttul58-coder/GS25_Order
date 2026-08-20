@@ -4,6 +4,27 @@
 let sectionCounter = 1; // 섹션 번호를 추적하는 카운터
 
 // ========================================
+// HTML 에 글자를 끼워 넣을 때
+// ========================================
+
+/**
+ * HTML 로 해석되면 안 되는 글자를 안전하게 만든다
+ *
+ * 손님이 입력한 값(성명 등)과 카탈로그에서 온 상품명은 우리가 쓴 글이 아니다.
+ * innerHTML 로 넣을 때 이 함수를 거치지 않으면 태그가 그대로 살아난다.
+ * 가능하면 textContent 를 쓰고, 문자열로 HTML 을 엮어야 할 때만 이걸 쓴다.
+ *
+ * 모든 화면이 utils.js 를 읽으므로 구현은 여기 하나만 둔다.
+ * @param {*} text
+ * @returns {string}
+ */
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = String(text === null || text === undefined ? '' : text);
+    return d.innerHTML;
+}
+
+// ========================================
 // 알림 메시지 표시 함수
 // ========================================
 

@@ -227,7 +227,7 @@ function renderLinks() {
         // 주소를 안 적어 두었으면 어디에 적는지를 대신 알려 준다.
         // 링크를 그냥 지우면 "왜 없지" 하고 다시 헤매게 된다.
         sheetRow.querySelector('.text').innerHTML =
-            '<b>주문 내역 보기</b><small>아직 주소를 적어두지 않았습니다. '
+            '<b>주문 내역 시트</b><small>아직 주소를 적어두지 않았습니다. '
             + '시즌설정.txt 의 <b>응답 시트 주소</b> 줄에 구글 스프레드시트 주소를 넣으면 여기 버튼이 생깁니다.</small>';
         const btn = sheetRow.querySelector('.go');
         if (btn) btn.remove();
@@ -301,16 +301,34 @@ function setHref(id, url) {
     if (el) el.href = url;
 }
 
-/** 카탈로그에서 온 문구를 화면에 넣기 전에 태그를 막는다 */
-function escapeHtml(text) {
-    const d = document.createElement('div');
-    d.textContent = text;
-    return d.innerHTML;
+// escapeHtml() 은 js/utils.js 에 있다. 같은 함수를 두 벌 두면 한쪽만 고쳐져
+// 화면마다 다르게 새는 일이 생기므로 여기서는 정의하지 않는다.
+
+/**
+ * 한 칸이 실패해도 나머지는 그려지게 한다
+ *
+ * 이 화면은 관리자가 "지금이 정상인지" 를 확인하러 오는 곳이다. 한 군데가
+ * 터졌다고 전체가 빈 화면이 되면, 정상인지 아닌지조차 알 수 없게 된다.
+ * (실제로 겪은 경우: 브라우저가 옛 js 파일을 캐시해 함수 하나가 없었더니
+ *  화면 전체가 비었다. 파일이 여러 개로 나뉘어 있는 한 이 조합은 또 생긴다.)
+ */
+function runSafely(name, fn) {
+    try {
+        fn();
+    } catch (err) {
+        console.error('[관리자 홈] ' + name + ' 를 그리지 못했습니다:', err);
+        const box = document.getElementById('bootError');
+        if (box) {
+            box.style.display = '';
+            box.textContent = '화면 일부를 그리지 못했습니다 (' + name + '). '
+                + 'Ctrl+F5 로 새로고침해 보시고, 그래도 같으면 개발자에게 알려주세요.';
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    renderStatus();
-    renderNow();
-    renderLinks();
-    loadLastUpdate();
+    runSafely('지금 상태', renderStatus);
+    runSafely('지금 할 일', renderNow);
+    runSafely('링크', renderLinks);
+    runSafely('마지막 갱신', loadLastUpdate);
 });

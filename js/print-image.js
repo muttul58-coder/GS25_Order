@@ -512,7 +512,9 @@ function showShareGuideDialog(fileName) {
             '<p class="share-guide-subtitle">이미지가 다운로드 되었습니다</p>' +
             '<div class="share-guide-file-info">' +
                 '<span class="share-guide-file-icon">📁</span>' +
-                '<span class="share-guide-filename">' + fileName + '</span>' +
+                // 파일명에는 주문자가 직접 입력한 성명이 들어 있다.
+                // 그대로 엮으면 '홍길동<img ...>' 같은 이름이 태그로 살아난다.
+                '<span class="share-guide-filename">' + escapeHtml(fileName) + '</span>' +
             '</div>' +
             '<div class="share-guide-steps">' +
                 '<div class="share-guide-step">' +
