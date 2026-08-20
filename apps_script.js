@@ -1270,7 +1270,9 @@ var VIEWER_CSS = [
   '.p-body .ad{flex-basis:100%;color:var(--soft);font-size:13px;}',
   '.grid .code{font-family:monospace;font-weight:700;}',
   '.grid .event{color:var(--stop);font-weight:700;}',
-  '.grid .bar img{height:56px;width:auto;display:block;}',
+  // 바코드는 눈으로 읽고 스캐너로도 찍는 것이라 작으면 쓸모가 없다.
+  // 원본이 600x484 라 높이만 정하면 가로는 알아서 따라온다.
+  '.grid .bar img{height:110px;width:auto;display:block;}',
   '.grid.small{margin-bottom:6px;}',
   '.nodelivery{margin:10px 0;padding:11px 14px;background:#fef2f2;border:2px solid #fca5a5;',
   'border-left:6px solid var(--stop);border-radius:8px;color:#7f1d1d;}',
