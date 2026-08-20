@@ -884,6 +884,17 @@ function finalizeSheet(sheet, lastRow) {
 // 풀어 '주문 시트'를 한 장씩 만들어 왔다. 주문이 쌓일수록 탭이 늘어나
 // 찾기가 어려워진다. 이 화면은 같은 JSON 을 목록과 상세로 보여 준다.
 //
+// ── 화면 이동을 하지 않는 이유 ────────────────────────────
+// 구글은 웹 앱 화면을 **샌드박스 iframe** 안에 넣어 띄운다. 그래서 페이지
+// 안에서 '?row=2' 같은 주소로 이동시키면 iframe 자신의 주소를 기준으로
+// 풀려 엉뚱한 곳으로 가고, 화면이 텅 빈 채로 남는다. 웹 앱 전체 주소를
+// ScriptApp.getService().getUrl() 로 얻어 붙이는 방법도 있지만, 그 값이
+// 빈 문자열로 오는 경우가 있어 같은 증상이 조용히 되살아난다.
+//
+// 그래서 **이동을 아예 하지 않는다.** 목록은 한 번에 다 그려 두고,
+// 검색은 브라우저 안에서 걸러내고, 상세는 google.script.run 으로 받아
+// 같은 페이지에 끼워 넣는다. 주소를 만들 일이 없으니 틀릴 일도 없다.
+//
 // ── 배포 방법 (최초 1회) ──────────────────────────────────
 //   Apps Script 편집기 → 배포 → 새 배포 → 유형 '웹 앱'
 //     실행 계정      : 웹 앱에 액세스하는 사용자      ★ 중요
@@ -901,44 +912,12 @@ function finalizeSheet(sheet, lastRow) {
 //   코드를 고친 뒤에는 '배포 관리 → 수정 → 버전: 새 버전' 으로 다시
 //   배포해야 반영된다. 저장만 해서는 옛 화면이 그대로 뜬다.
 
-/** 목록 한 페이지에 보여 줄 주문 수 */
-var VIEWER_PAGE_SIZE = 30;
-
-
-/**
- * 이 웹 앱의 주소 (.../exec)
- *
- * 왜 필요한가: 구글은 웹 앱 화면을 **샌드박스 iframe** 안에 넣어 띄운다.
- * 그래서 '?row=2' 같은 상대 주소를 쓰면 iframe 의 주소
- * (googleusercontent.com/...) 를 기준으로 풀려 엉뚱한 곳으로 가고,
- * 화면에는 아무것도 안 나온다. 링크는 전체 주소여야 한다.
- * (링크가 iframe 을 빠져나가도록 <base target="_top"> 도 함께 쓴다)
- */
-function viewerBaseUrl() {
-  try {
-    return ScriptApp.getService().getUrl() || '';
-  } catch (err) {
-    return '';
-  }
-}
-
-
-/** 이 화면 안에서 쓸 링크 주소 ('?row=2' 같은 뒤쪽만 넘긴다) */
-function viewerLink(query) {
-  return viewerBaseUrl() + (query || '');
-}
-
 
 function doGet(e) {
-  var params = (e && e.parameter) || {};
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     if (!ss) throw new Error('스프레드시트를 열지 못했습니다.');
-
-    if (params.row) {
-      return viewerPage(renderOrderDetail(ss, Number(params.row)), '주문 상세');
-    }
-    return viewerPage(renderOrderList(ss, Number(params.page) || 1, params.q || ''), '주문 확인');
+    return viewerPage(renderOrderList(ss), '주문 확인');
 
   } catch (err) {
     // 시트를 공유받지 못한 사람이 들어오면 여기로 온다.
@@ -978,54 +957,55 @@ function readOrderRow(ss, row) {
 }
 
 
-/** 목록 화면 */
-function renderOrderList(ss, page, query) {
+/**
+ * 클라이언트(google.script.run)가 부르는 상세 화면
+ *
+ * 접속한 사람 자격으로 실행되므로, 시트를 못 보는 사람은 여기서도
+ * 예외가 나서 아무것도 얻지 못한다. 따로 막을 것이 없다.
+ */
+function getOrderDetailHtml(row) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('스프레드시트를 열지 못했습니다.');
+  return renderOrderDetail(ss, Number(row));
+}
+
+
+/** 목록 — 한 번에 다 그린다. 검색은 브라우저가 이 안에서 걸러낸다. */
+function renderOrderList(ss) {
   var sheet = ss.getSheets()[0];
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) {
     return '<div class="empty"><h2>아직 주문이 없습니다</h2></div>';
   }
 
-  // 최근 주문이 위로 오도록 아래 행부터 읽는다
   var rows = [];
-  for (var r = lastRow; r >= 2; r--) {
+  for (var r = lastRow; r >= 2; r--) {     // 최근 주문이 위로
     var o = readOrderRow(ss, r);
-    if (!o) continue;
-    if (query && !orderMatches(o, query)) continue;
-    rows.push(o);
+    if (o) rows.push(o);
   }
 
-  var total = rows.length;
-  var pages = Math.max(1, Math.ceil(total / VIEWER_PAGE_SIZE));
-  page = Math.min(Math.max(1, page), pages);
-  var slice = rows.slice((page - 1) * VIEWER_PAGE_SIZE, page * VIEWER_PAGE_SIZE);
-
   var html = ''
-    + '<form class="search" method="get" action="' + escapeHtml(viewerBaseUrl()) + '" target="_top">'
-    + '<input type="text" name="q" placeholder="성명 · 전화번호 · 상품코드 · 받는 분" value="'
-    + escapeHtml(query) + '">'
-    + '<button type="submit">찾기</button>'
-    + (query ? '<a class="clear" href="' + escapeHtml(viewerLink('')) + '">전체 보기</a>' : '')
-    + '</form>'
-    + '<p class="count">' + (query ? '검색 결과 ' : '') + total + '건'
-    + (pages > 1 ? ' · ' + page + '/' + pages + '쪽' : '') + '</p>'
+    + '<div class="search">'
+    + '<input type="text" id="q" placeholder="성명 · 전화번호 · 상품코드 · 상품이름 · 받는 분"'
+    + ' oninput="filterList()" autocomplete="off">'
+    + '</div>'
+    + '<p class="count"><span id="shown">' + rows.length + '</span>건</p>'
     + '<table class="list"><thead><tr>'
     + '<th>주문 일시</th><th>주문자</th><th>전화번호</th><th>상품</th>'
     + '<th class="num">금액</th><th>배송</th><th></th>'
-    + '</tr></thead><tbody>';
+    + '</tr></thead><tbody id="rows">';
 
-  for (var i = 0; i < slice.length; i++) {
-    var o = slice[i];
+  for (var i = 0; i < rows.length; i++) {
+    var o = rows[i];
     var d = o.data || {};
     var products = d['상품목록'] || [];
     var sections = d['주문목록'] || [];
-    var noDelivery = d['배송불가'];
     var totals = d['전체합계'] || {};
 
     var first = products.length ? String(products[0]['상품이름'] || '') : '';
     var label = first + (products.length > 1 ? ' 외 ' + (products.length - 1) + '건' : '');
 
-    html += '<tr>'
+    html += '<tr data-find="' + escapeHtml(searchKey(o)) + '">'
       + '<td class="when">' + escapeHtml(String(o.orderDateTime || o.timestamp || '')) + '</td>'
       + '<td class="who">' + escapeHtml(String(o.name || '')) + '</td>'
       + '<td>' + escapeHtml(String(o.phone || '')) + '</td>'
@@ -1033,67 +1013,52 @@ function renderOrderList(ss, page, query) {
       + (o.broken ? ' <span class="bad">읽기 실패</span>' : '') + '</td>'
       + '<td class="num">' + formatNumber(totals['총금액'] || 0) + '</td>'
       + '<td>' + (sections.length ? sections.length + '곳' : '<span class="muted">없음</span>')
-      + (noDelivery ? ' <span class="tag-alcohol">매장수령</span>' : '') + '</td>'
-      + '<td><a class="go" href="' + escapeHtml(viewerLink('?row=' + o.row)) + '">열기</a></td>'
+      + (d['배송불가'] ? ' <span class="tag-alcohol">매장수령</span>' : '') + '</td>'
+      + '<td><button class="go" onclick="openOrder(' + o.row + ')">열기</button></td>'
       + '</tr>';
   }
 
-  html += '</tbody></table>';
-
-  if (pages > 1) {
-    html += '<div class="pager">';
-    if (page > 1) {
-      html += '<a href="' + escapeHtml(viewerLink('?page=' + (page - 1)
-        + (query ? '&q=' + encodeURIComponent(query) : ''))) + '">← 이전</a>';
-    }
-    if (page < pages) {
-      html += '<a href="' + escapeHtml(viewerLink('?page=' + (page + 1)
-        + (query ? '&q=' + encodeURIComponent(query) : ''))) + '">다음 →</a>';
-    }
-    html += '</div>';
-  }
+  html += '</tbody></table>'
+    + '<p class="none" id="none" style="display:none">찾는 주문이 없습니다.</p>';
   return html;
 }
 
 
-/** 검색어가 이 주문에 들어 있는가 (성명·전화·상품코드·상품이름·받는 분) */
-function orderMatches(o, query) {
-  var q = String(query).toLowerCase().replace(/\s/g, '');
-  var hay = [String(o.name || ''), String(o.phone || '')];
-
+/** 검색에 쓸 글자들을 한 줄로 모은다 (성명·전화·상품·받는 분) */
+function searchKey(o) {
   var d = o.data || {};
+  var parts = [String(o.name || ''), String(o.phone || '')];
+
   var products = d['상품목록'] || [];
   for (var i = 0; i < products.length; i++) {
-    hay.push(String(products[i]['상품코드'] || ''));
-    hay.push(String(products[i]['상품이름'] || ''));
+    parts.push(String(products[i]['상품코드'] || ''));
+    parts.push(String(products[i]['상품이름'] || ''));
   }
   var sections = d['주문목록'] || [];
   for (var s = 0; s < sections.length; s++) {
     var recv = sections[s]['받는분'] || {};
-    hay.push(String(recv['성명'] || ''));
-    hay.push(String(recv['전화번호'] || ''));
+    parts.push(String(recv['성명'] || ''));
+    parts.push(String(recv['전화번호'] || ''));
   }
-  return hay.join('|').toLowerCase().replace(/\s/g, '').indexOf(q) !== -1;
+  return parts.join(' ').toLowerCase().replace(/\s+/g, ' ');
 }
 
 
-/** 상세 화면 — 주문서와 같은 순서로 보여 준다 */
+/** 상세 — 주문서와 같은 순서로 보여 준다 */
 function renderOrderDetail(ss, row) {
   var o = readOrderRow(ss, row);
   if (!o) {
-    return '<div class="empty"><h2>그런 주문이 없습니다</h2>'
-      + '<p><a href="' + escapeHtml(viewerLink('')) + '">목록으로</a></p></div>';
+    return '<div class="empty"><h2>그런 주문이 없습니다</h2></div>';
   }
   if (!o.data) {
     return '<div class="empty"><h2>주문 데이터를 읽지 못했습니다</h2>'
-      + '<p class="sub">' + escapeHtml(String(o.broken)) + '</p>'
-      + '<p><a href="?">목록으로</a></p></div>';
+      + '<p class="sub">' + escapeHtml(String(o.broken)) + '</p></div>';
   }
 
   var d = o.data;
   var season = d['시즌'] || '';
   var html = '<div class="detail-top">'
-    + '<a class="back" href="' + escapeHtml(viewerLink('')) + '">← 목록</a>'
+    + '<button class="back" onclick="closeOrder()">← 목록</button>'
     + '<div class="when">' + escapeHtml(String(o.orderDateTime || o.timestamp || ''))
     + (season ? ' <span class="season">' + escapeHtml(season) + '</span>' : '') + '</div>'
     + '<button class="print" onclick="window.print()">인쇄</button>'
@@ -1101,7 +1066,6 @@ function renderOrderDetail(ss, row) {
 
   html += personBlock('주문 정보', d['주문자정보'] || {}, 'orderer');
 
-  // 상품 정보
   var products = d['상품목록'] || [];
   html += '<h3 class="sec product">상품 정보</h3>'
     + '<table class="grid"><thead><tr>'
@@ -1112,6 +1076,8 @@ function renderOrderDetail(ss, row) {
     var p = products[i];
     var code = String(p['상품코드'] || '').trim();
     var ev = p['행사'] || '없음';
+    // loading="lazy" 를 쓰지 않는다. 인쇄할 때 아직 안 받은 그림은 빈칸으로
+    // 찍히는데, 이 화면에는 인쇄 단추가 있고 한 주문의 바코드는 몇 장뿐이다.
     html += '<tr>'
       + '<td class="code">' + escapeHtml(code) + '</td>'
       + '<td>' + escapeHtml(String(p['상품이름'] || '')) + '</td>'
@@ -1120,8 +1086,6 @@ function renderOrderDetail(ss, row) {
       + '<td class="num">' + (p['지급수량'] || '') + '</td>'
       + '<td class="num">' + formatNumber(p['단가'] || 0) + '</td>'
       + '<td class="num">' + formatNumber(p['금액'] || 0) + '</td>'
-      // loading="lazy" 를 쓰지 않는다. 인쇄할 때 아직 안 받은 그림은 빈칸으로
-      // 찍히는데, 이 화면에는 인쇄 단추가 있고 한 주문의 바코드는 몇 장뿐이다.
       + '<td class="bar">' + (code
           ? '<img src="' + escapeHtml(barcodeUrl(code, season)) + '" alt="' + escapeHtml(code) + '">'
           : '') + '</td>'
@@ -1129,7 +1093,6 @@ function renderOrderDetail(ss, row) {
   }
   html += '</tbody></table>';
 
-  // 배송 불가 (주류)
   var nd = d['배송불가'];
   if (nd && (nd['상품목록'] || []).length) {
     html += '<div class="nodelivery"><b>🚫 배송 불가 — ' + escapeHtml(String(nd['사유'] || '매장 수령')) + '</b><ul>';
@@ -1142,7 +1105,6 @@ function renderOrderDetail(ss, row) {
     html += '</ul></div>';
   }
 
-  // 배송 정보
   var sections = d['주문목록'] || [];
   for (var s = 0; s < sections.length; s++) {
     var sec = sections[s];
@@ -1164,7 +1126,6 @@ function renderOrderDetail(ss, row) {
     }
   }
 
-  // 합계
   var t = d['전체합계'] || {};
   html += '<div class="grand">'
     + '<span>총 주문 건수 <b>' + (t['총주문건수'] || 0) + '</b></span>'
@@ -1200,17 +1161,63 @@ function escapeHtml(text) {
 }
 
 
-/** 공통 껍데기 (스타일 포함) */
+/** 공통 껍데기 (스타일 + 화면 전환 스크립트 포함) */
 function viewerPage(body, title) {
   var html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
-    + '<base target="_top">'
     + '<title>' + escapeHtml(title) + '</title><style>' + VIEWER_CSS + '</style></head>'
-    + '<body><div class="wrap"><h1>주문 확인</h1>' + body + '</div></body></html>';
+    + '<body><div class="wrap">'
+    + '<h1 id="head">주문 확인</h1>'
+    + '<div id="list">' + body + '</div>'
+    + '<div id="detail" style="display:none"></div>'
+    + '<div id="loading" style="display:none">불러오는 중…</div>'
+    + '</div><script>' + VIEWER_JS + '</' + 'script></body></html>';
   return HtmlService.createHtmlOutput(html)
     .setTitle(title)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
+
+
+// 화면 전환은 전부 브라우저 안에서 한다. 주소로 이동하지 않는다 (맨 위 설명 참고).
+var VIEWER_JS = [
+  'function $(id){return document.getElementById(id);}',
+  'function filterList(){',
+  '  var q=$("q").value.trim().toLowerCase();',
+  '  var rows=$("rows").getElementsByTagName("tr"), n=0;',
+  '  for(var i=0;i<rows.length;i++){',
+  '    var hit = !q || rows[i].getAttribute("data-find").indexOf(q)!==-1;',
+  '    rows[i].style.display = hit ? "" : "none";',
+  '    if(hit) n++;',
+  '  }',
+  '  $("shown").textContent=n;',
+  '  $("none").style.display = n ? "none" : "";',
+  '}',
+  'function openOrder(row){',
+  '  $("list").style.display="none";',
+  '  $("loading").style.display="";',
+  '  google.script.run',
+  '    .withSuccessHandler(function(html){',
+  '      $("loading").style.display="none";',
+  '      $("detail").innerHTML=html;',
+  '      $("detail").style.display="";',
+  '      window.scrollTo(0,0);',
+  '    })',
+  // 조용히 실패하면 "아무것도 안 나온다" 가 된다. 무슨 일인지 반드시 보여 준다.
+  '    .withFailureHandler(function(err){',
+  '      $("loading").style.display="none";',
+  '      $("detail").innerHTML=\'<div class="empty"><h2>주문을 불러오지 못했습니다</h2>\'',
+  '        +\'<p class="sub">\'+String(err && err.message ? err.message : err)+\'</p>\'',
+  '        +\'<p><button class="back" onclick="closeOrder()">← 목록</button></p></div>\';',
+  '      $("detail").style.display="";',
+  '    })',
+  '    .getOrderDetailHtml(row);',
+  '}',
+  'function closeOrder(){',
+  '  $("detail").style.display="none";',
+  '  $("detail").innerHTML="";',
+  '  $("list").style.display="";',
+  '}'
+].join('\n');
 
 
 var VIEWER_CSS = [
@@ -1221,13 +1228,11 @@ var VIEWER_CSS = [
   'font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif;font-size:14px;line-height:1.5;}',
   '.wrap{max-width:1000px;margin:0 auto;}',
   'h1{font-size:20px;margin:0 0 14px;}',
-  'a{color:#2563eb;}',
-  '.search{display:flex;gap:6px;margin-bottom:10px;}',
-  '.search input{flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;}',
-  '.search button{padding:9px 16px;border:0;border-radius:8px;background:#2563eb;color:#fff;',
-  'font-weight:700;cursor:pointer;}',
-  '.search .clear{align-self:center;padding:0 8px;font-size:13px;}',
+  '.search{margin-bottom:10px;}',
+  '.search input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px;}',
   '.count{color:var(--soft);font-size:13px;margin:0 0 8px;}',
+  '.none{padding:24px;text-align:center;color:var(--soft);background:#fff;border-radius:10px;}',
+  '#loading{padding:24px;text-align:center;color:var(--soft);}',
   'table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;}',
   'th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;}',
   'th{background:#f1f5f9;font-size:12px;color:var(--soft);white-space:nowrap;}',
@@ -1239,19 +1244,16 @@ var VIEWER_CSS = [
   '.bad{color:var(--stop);font-weight:700;}',
   '.tag-alcohol{display:inline-block;padding:0 6px;border-radius:4px;background:#fee2e2;',
   'color:#b91c1c;font-size:11px;font-weight:700;}',
-  '.go{display:inline-block;padding:4px 12px;border-radius:6px;background:#2563eb;color:#fff;',
-  'text-decoration:none;font-size:13px;font-weight:700;}',
-  '.pager{display:flex;gap:10px;justify-content:center;margin:14px 0;}',
-  '.pager a{padding:6px 14px;background:#fff;border:1px solid var(--line);border-radius:8px;',
-  'text-decoration:none;}',
+  '.go{padding:5px 13px;border:0;border-radius:6px;background:#2563eb;color:#fff;',
+  'font-size:13px;font-weight:700;cursor:pointer;}',
   '.empty{background:#fff;border-radius:10px;padding:32px;text-align:center;}',
   '.empty h2{margin:0 0 8px;font-size:17px;}',
-  '.empty .sub{color:var(--soft);font-size:13px;}',
+  '.empty .sub{color:var(--soft);font-size:13px;word-break:break-all;}',
   '.detail-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}',
   '.detail-top .when{flex:1;color:var(--soft);font-size:13px;}',
   '.detail-top .season{background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:5px;font-size:12px;}',
-  '.back{text-decoration:none;font-weight:700;}',
-  '.print{padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;}',
+  '.back,.print{padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;',
+  'cursor:pointer;font-size:13px;font-weight:700;}',
   '.sec{margin:18px 0 6px;padding:6px 10px;border-radius:6px;color:#fff;font-size:14px;}',
   '.sec small{font-weight:400;opacity:.9;}',
   '.sec.product{background:var(--product);}',
@@ -1276,7 +1278,7 @@ var VIEWER_CSS = [
   '.grand{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;padding:12px 14px;',
   'background:#eff6ff;border-radius:8px;}',
   '.grand b{font-size:15px;}',
-  '@media print{body{background:#fff;padding:0;}.detail-top .print,.back{display:none;}}',
+  '@media print{body{background:#fff;padding:0;}.detail-top .print,.back,#head{display:none;}}',
   '@media (max-width:640px){',
   'body{padding:10px;}',
   '.list th:nth-child(3),.list td:nth-child(3),.list th:nth-child(5),.list td:nth-child(5){display:none;}',
