@@ -905,6 +905,30 @@ function finalizeSheet(sheet, lastRow) {
 var VIEWER_PAGE_SIZE = 30;
 
 
+/**
+ * 이 웹 앱의 주소 (.../exec)
+ *
+ * 왜 필요한가: 구글은 웹 앱 화면을 **샌드박스 iframe** 안에 넣어 띄운다.
+ * 그래서 '?row=2' 같은 상대 주소를 쓰면 iframe 의 주소
+ * (googleusercontent.com/...) 를 기준으로 풀려 엉뚱한 곳으로 가고,
+ * 화면에는 아무것도 안 나온다. 링크는 전체 주소여야 한다.
+ * (링크가 iframe 을 빠져나가도록 <base target="_top"> 도 함께 쓴다)
+ */
+function viewerBaseUrl() {
+  try {
+    return ScriptApp.getService().getUrl() || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+
+/** 이 화면 안에서 쓸 링크 주소 ('?row=2' 같은 뒤쪽만 넘긴다) */
+function viewerLink(query) {
+  return viewerBaseUrl() + (query || '');
+}
+
+
 function doGet(e) {
   var params = (e && e.parameter) || {};
   try {
@@ -977,11 +1001,11 @@ function renderOrderList(ss, page, query) {
   var slice = rows.slice((page - 1) * VIEWER_PAGE_SIZE, page * VIEWER_PAGE_SIZE);
 
   var html = ''
-    + '<form class="search" method="get">'
+    + '<form class="search" method="get" action="' + escapeHtml(viewerBaseUrl()) + '" target="_top">'
     + '<input type="text" name="q" placeholder="성명 · 전화번호 · 상품코드 · 받는 분" value="'
     + escapeHtml(query) + '">'
     + '<button type="submit">찾기</button>'
-    + (query ? '<a class="clear" href="?">전체 보기</a>' : '')
+    + (query ? '<a class="clear" href="' + escapeHtml(viewerLink('')) + '">전체 보기</a>' : '')
     + '</form>'
     + '<p class="count">' + (query ? '검색 결과 ' : '') + total + '건'
     + (pages > 1 ? ' · ' + page + '/' + pages + '쪽' : '') + '</p>'
@@ -1010,7 +1034,7 @@ function renderOrderList(ss, page, query) {
       + '<td class="num">' + formatNumber(totals['총금액'] || 0) + '</td>'
       + '<td>' + (sections.length ? sections.length + '곳' : '<span class="muted">없음</span>')
       + (noDelivery ? ' <span class="tag-alcohol">매장수령</span>' : '') + '</td>'
-      + '<td><a class="go" href="?row=' + o.row + '">열기</a></td>'
+      + '<td><a class="go" href="' + escapeHtml(viewerLink('?row=' + o.row)) + '">열기</a></td>'
       + '</tr>';
   }
 
@@ -1019,10 +1043,12 @@ function renderOrderList(ss, page, query) {
   if (pages > 1) {
     html += '<div class="pager">';
     if (page > 1) {
-      html += '<a href="?page=' + (page - 1) + (query ? '&q=' + encodeURIComponent(query) : '') + '">← 이전</a>';
+      html += '<a href="' + escapeHtml(viewerLink('?page=' + (page - 1)
+        + (query ? '&q=' + encodeURIComponent(query) : ''))) + '">← 이전</a>';
     }
     if (page < pages) {
-      html += '<a href="?page=' + (page + 1) + (query ? '&q=' + encodeURIComponent(query) : '') + '">다음 →</a>';
+      html += '<a href="' + escapeHtml(viewerLink('?page=' + (page + 1)
+        + (query ? '&q=' + encodeURIComponent(query) : ''))) + '">다음 →</a>';
     }
     html += '</div>';
   }
@@ -1056,7 +1082,7 @@ function renderOrderDetail(ss, row) {
   var o = readOrderRow(ss, row);
   if (!o) {
     return '<div class="empty"><h2>그런 주문이 없습니다</h2>'
-      + '<p><a href="?">목록으로</a></p></div>';
+      + '<p><a href="' + escapeHtml(viewerLink('')) + '">목록으로</a></p></div>';
   }
   if (!o.data) {
     return '<div class="empty"><h2>주문 데이터를 읽지 못했습니다</h2>'
@@ -1067,7 +1093,7 @@ function renderOrderDetail(ss, row) {
   var d = o.data;
   var season = d['시즌'] || '';
   var html = '<div class="detail-top">'
-    + '<a class="back" href="?">← 목록</a>'
+    + '<a class="back" href="' + escapeHtml(viewerLink('')) + '">← 목록</a>'
     + '<div class="when">' + escapeHtml(String(o.orderDateTime || o.timestamp || ''))
     + (season ? ' <span class="season">' + escapeHtml(season) + '</span>' : '') + '</div>'
     + '<button class="print" onclick="window.print()">인쇄</button>'
@@ -1178,6 +1204,7 @@ function escapeHtml(text) {
 function viewerPage(body, title) {
   var html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+    + '<base target="_top">'
     + '<title>' + escapeHtml(title) + '</title><style>' + VIEWER_CSS + '</style></head>'
     + '<body><div class="wrap"><h1>주문 확인</h1>' + body + '</div></body></html>';
   return HtmlService.createHtmlOutput(html)
