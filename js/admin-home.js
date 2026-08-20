@@ -111,6 +111,20 @@ function renderStatus() {
     setHtml('factPre', (cfg.preStart || '?') + ' <span class="unit">~ · ' + n.pre + '품목</span>');
     setHtml('factMain', (cfg.mainStart || '?') + ' <span class="unit">~ · ' + n.main + '품목</span>');
 
+    // 주류(택배 배송 불가) 품목 수. 시즌마다 분류 번호가 바뀌므로 분류 '이름'으로
+    // 세고, 이름 자체를 못 읽었으면 0 이 아니라 못 세는 상태라고 말해야 한다 —
+    // 0 이라고 적으면 관리자는 "이번 시즌엔 술이 없구나" 로 읽는다.
+    const alcoholCats = (typeof alcoholCategories === 'function') ? alcoholCategories() : null;
+    if (!alcoholCats || !alcoholCats.known) {
+        setHtml('factAlcohol', '<span class="warn">판별 불가</span>'
+            + ' <span class="unit">— 카탈로그 분류 이름이 없습니다</span>');
+    } else if (alcoholCats.labels.length === 0) {
+        setHtml('factAlcohol', '0<span class="unit">개 — 주류 분류가 없는 시즌입니다</span>');
+    } else {
+        setHtml('factAlcohol', countAlcoholProducts() + '<span class="unit">개 · '
+            + escapeHtml(alcoholCats.labels.join(', ')) + '</span>');
+    }
+
     const store = (typeof STORE_INFO !== 'undefined' && STORE_INFO) || {};
     const who = [store.name, store.manager, store.phone].filter(Boolean).join(' · ');
     setText('storeLine', who || '매장 정보 없음');

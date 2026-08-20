@@ -17,7 +17,8 @@
  *  {
  *    "주문자정보": { 성명, 전화번호, 우편번호, 기본주소, 상세주소 },
  *    "상품목록": [{ 상품코드, 상품이름, 행사, 수량, 단가, 금액 }],
- *    "주문목록": [{
+ *    "배송불가": { 사유, 상품목록: [{ 상품코드, 상품이름, 지급수량 }] },   // 주류만. 없으면 키 자체가 없다
+ *    "주문목록": [{                                                      // 전부 주류면 빈 배열
  *      주문번호,
  *      보내는분: { 성명, 전화번호, 우편번호, 기본주소, 상세주소 },
  *      받는분:   { 성명, 전화번호, 우편번호, 기본주소, 상세주소 },
@@ -419,6 +420,7 @@ function createOrderSheet(sheet, timestamp, orderDateTime, data) {
   r = writeTimestamps(sheet, r, timestamp, orderDateTime);
   r = writeOrdererSection(sheet, r, data['주문자정보'] || {});
   r = writeProductSection(sheet, r, data['상품목록'] || []);
+  r = writeNoDeliverySection(sheet, r, data['배송불가'] || null);
 
   var sections = data['주문목록'] || [];
   for (var i = 0; i < sections.length; i++) {
@@ -469,6 +471,36 @@ function writeOrdererSection(sheet, r, info) {
     .setBackground(COLOR.ORDERER_HEADER_BG).setFontColor(COLOR.ORDERER_HEADER_FG);
   r++;
   r = writePersonInfo(sheet, r, info, COLOR.ORDERER_LABEL_BG);
+  return r + 1;
+}
+
+// ── 배송 불가 (주류 · 매장 수령) ──
+//
+// 주류는 택배로 못 보내므로 주문서에서 배송 상품 배분에 넣지 않는다.
+// 그 사실을 시트에 적지 않으면, 상품 정보에는 있는데 배송 상품 목록에는 없는
+// 상품이 되어 빠뜨린 주문처럼 보인다. 주문이 전부 주류면 배송 섹션 자체가 없다.
+function writeNoDeliverySection(sheet, r, noDelivery) {
+  if (!noDelivery) return r;
+  var products = noDelivery['상품목록'] || [];
+  if (products.length === 0) return r;
+
+  mergeAndSet(sheet, r, 1, 1, TOTAL_COLS, '🚫 배송 불가 — ' + (noDelivery['사유'] || '매장 수령'));
+  sheet.getRange(r, 1)
+    .setFontWeight('bold').setHorizontalAlignment('center')
+    .setBackground('#dc2626').setFontColor('white');
+  r++;
+
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    mergeAndSet(sheet, r, 1, 1, TOTAL_COLS,
+      (p['상품코드'] || '') + '  ' + (p['상품이름'] || '')
+      + '  ·  ' + (Number(p['지급수량']) || 0) + '개');
+    sheet.getRange(r, 1)
+      .setHorizontalAlignment('center')
+      .setBackground('#fef2f2').setFontColor('#7f1d1d');
+    r++;
+  }
+
   return r + 1;
 }
 

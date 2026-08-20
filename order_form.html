@@ -26,6 +26,7 @@
     <script src="js/utils.js"></script>
     <script src="js/admin-test.js"></script>
     <script src="js/address.js"></script>
+    <script src="js/alcohol.js"></script>
     <script src="js/product.js"></script>
     <script src="js/delivery.js"></script>
     <script src="js/copy-sync.js"></script>
@@ -180,6 +181,11 @@
                 </table>
             </div>
         </div>
+
+        <!-- 주류 배송 불가 안내 (js/alcohol.js 가 채운다)
+             주문한 상품이 전부 주류이면 아래 배송 정보 영역을 숨기고 이 안내가 그 자리를 대신한다.
+             인쇄물에도 나와야 한다 — 종이에 배송지 칸만 비어 있으면 빠뜨린 주문서처럼 보인다. -->
+        <div id="alcoholNotice" class="alcohol-notice" style="display: none;"></div>
 
         <!-- 주문 섹션들을 담는 컨테이너 -->
         <div id="orderSectionsContainer">

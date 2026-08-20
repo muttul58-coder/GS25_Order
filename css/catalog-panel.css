@@ -241,6 +241,18 @@ body {
     font-weight: 700;
 }
 
+/* 주류 - 택배 배송 불가 (js/alcohol.js) */
+.product-card .nodelivery {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 5px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
 .product-card .desc {
     margin-top: 4px;
     font-size: 12px;

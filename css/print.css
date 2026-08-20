@@ -503,4 +503,48 @@
             .delivery-product-section th:nth-child(4) { width: auto !important; }
             .delivery-product-section th:nth-child(5) { width: 10% !important; }
 
+            /* 주류 배송 불가 안내 — 반드시 인쇄된다.
+               종이에서 배송지 칸만 비어 있으면 빠뜨린 주문서로 보인다. */
+            .alcohol-notice {
+                margin: 4pt 0 !important;
+                padding: 5pt 8pt !important;
+                border: 2pt solid #dc2626 !important;
+                border-radius: 0 !important;
+                background-color: #fef2f2 !important;
+                page-break-inside: avoid;
+            }
+
+            .alcohol-notice-only {
+                padding: 10pt !important;
+            }
+
+            .alcohol-notice-title {
+                font-size: 11pt !important;
+                margin-bottom: 4pt !important;
+            }
+
+            .alcohol-notice-only .alcohol-notice-title {
+                font-size: 13pt !important;
+            }
+
+            .alcohol-notice-list li {
+                padding: 2pt 0 !important;
+                font-size: 9pt !important;
+            }
+
+            .alcohol-notice-list .code {
+                font-size: 8pt !important;
+            }
+
+            .alcohol-notice-help {
+                font-size: 8pt !important;
+            }
+
+            .alcohol-badge {
+                margin-top: 2pt !important;
+                padding: 0 2pt !important;
+                font-size: 7pt !important;
+            }
+
+
         }

@@ -92,6 +92,12 @@ function validateAllInputs() {
         }
     }
 
+    // 주문한 상품이 전부 주류이면 배송 정보를 받지 않는다 (js/alcohol.js).
+    // 화면에서 감춘 칸을 그대로 검사하면 채울 수 없는 값을 요구하며 전송이 막힌다.
+    if (typeof isAlcoholOnlyOrder === 'function' && isAlcoholOnlyOrder()) {
+        return true;
+    }
+
     // 3. 각 섹션별 검증
     const sections = document.querySelectorAll('.order-section');
     for (let i = 0; i < sections.length; i++) {
@@ -386,6 +392,11 @@ function checkSequentialInput() {
             productCheck.missingField.classList.remove('error');
         }, 3000);
         return false;
+    }
+
+    // 상품이 전부 주류면 보내는 분·받는 분을 물을 이유가 없다 (js/alcohol.js)
+    if (typeof isAlcoholOnlyOrder === 'function' && isAlcoholOnlyOrder()) {
+        return true;
     }
 
     // 3. 주문 #1 보내는 분 정보 확인

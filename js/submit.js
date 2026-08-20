@@ -210,7 +210,25 @@ function collectOrderData() {
         주문목록: []
     };
 
-    const sections = document.querySelectorAll('.order-section');
+    // 주류는 택배로 보낼 수 없다 (js/alcohol.js).
+    // 어떤 상품이 매장 수령인지 남기지 않으면, 시트를 받는 쪽에서는 그 상품이
+    // 배송 상품 목록에 없는 이유를 알 수 없어 빠뜨린 주문으로 보인다.
+    const alcoholScan = (typeof scanOrderForAlcohol === 'function')
+        ? scanOrderForAlcohol() : { alcohol: [], deliverable: [] };
+    const alcoholOnly = alcoholScan.alcohol.length > 0 && alcoholScan.deliverable.length === 0;
+    if (alcoholScan.alcohol.length > 0) {
+        data.배송불가 = {
+            사유: '주류 - 택배 배송 불가 (매장 수령)',
+            상품목록: alcoholScan.alcohol.map(p => ({
+                상품코드: p.code,
+                상품이름: p.name,
+                지급수량: p.qty
+            }))
+        };
+    }
+
+    // 전부 주류면 배송 정보를 받지 않았으므로 화면에 남아 있는 빈 칸을 긁지 않는다
+    const sections = alcoholOnly ? [] : document.querySelectorAll('.order-section');
     sections.forEach((section, index) => {
         // 배송 상품 목록 수집
         const deliveryProductList = [];

@@ -361,6 +361,14 @@ function buildCard(code) {
         e.textContent = applicable.event;
         priceLine.appendChild(e);
     }
+    // 주류는 택배로 못 보낸다 (js/alcohol.js). 담기 전에 보이는 편이 낫다 —
+    // 담고 나서 알면 손님께 이미 배송된다고 말한 뒤가 된다.
+    if (typeof isAlcoholInfo === 'function' && isAlcoholInfo(info)) {
+        const a = document.createElement('span');
+        a.className = 'nodelivery';
+        a.textContent = '배송불가';
+        priceLine.appendChild(a);
+    }
     body.appendChild(priceLine);
 
     if (info.desc) {
@@ -467,9 +475,11 @@ function addToOrder(code) {
     flashRow(win, target);
 
     const info = PRODUCTS_DATA[code];
+    const alcohol = typeof isAlcoholInfo === 'function' && isAlcoholInfo(info);
     panelToast(`${code} ${info ? info.name : ''} 담았습니다.`
+        + (alcohol ? ' 주류라 택배 배송이 되지 않습니다 — 매장 수령으로 안내해 주세요.' : '')
         + (info && info.marketPrice ? ' 시세(단가)를 입력해 주세요.' : ''),
-        info && info.marketPrice ? 'warning' : 'success');
+        (alcohol || (info && info.marketPrice)) ? 'warning' : 'success');
 
     // 폰에서는 패널이 주문서를 덮고 있다. 담은 결과를 봐야 하므로 닫는다.
     if (isNarrowScreen()) closeCatalog();

@@ -251,6 +251,8 @@ function removeProductRow(button) {
     refreshAllDeliveryProductSelects();
     // 바코드 이미지 업데이트
     updateBarcodeImages();
+    // 주류 안내 갱신 (마지막 주류를 지우면 배송 정보가 다시 나와야 한다)
+    if (typeof updateAlcoholNotice === 'function') updateAlcoholNotice();
 
     showAlert('✅ 상품 행이 삭제되었습니다.', 'success');
 }
@@ -271,12 +273,16 @@ function renumberProductRows() {
 }
 
 /**
- * 주문 상품 테이블에서 유효한 상품 목록 추출
+ * 주문 상품 테이블에서 **배송에 배분할 수 있는** 상품 목록 추출
  *
  * qty 는 구매 수량이 아니라 **지급 수량**이다. 배송 상품은 덤을 포함해
  * 실제로 나가는 개수를 배분해야 하므로 지급 수량이 기준이 된다.
  * 같은 상품코드가 여러 행에 입력된 경우 하나로 합산한다.
  * (합산하지 않으면 배송 상품 콤보박스에 같은 코드가 중복으로 표시된다)
+ *
+ * 주류는 여기서 빠진다. 택배로 보낼 수 없으니 배송 상품 콤보박스에 뜨면
+ * 안 되고, 배분 잔량 계산에도 들어가면 안 된다 (js/alcohol.js).
+ * 이 함수를 읽는 곳은 전부 배송 배분 쪽(js/delivery.js)이다.
  * @returns {Array} - [{code, name, qty}, ...]
  */
 function getOrderProductList() {
@@ -287,6 +293,7 @@ function getOrderProductList() {
         const name = row.querySelector('.product-name').value.trim();
         const qty = getRowGivenQuantity(row);
         if (!code || !name) return;
+        if (typeof isAlcoholCode === 'function' && isAlcoholCode(code)) return;
 
         if (byCode.has(code)) {
             byCode.get(code).qty += qty;
@@ -527,6 +534,10 @@ function calculateRowTotal(row) {
 
     // 합계 업데이트
     updateProductTotals();
+
+    // 주류 안내 갱신 — 상품이 바뀌는 길목은 전부 이 함수를 지나간다.
+    // (상품코드 조회 / 수량 변경 / 행사 변경 / 단가 입력)
+    if (typeof updateAlcoholNotice === 'function') updateAlcoholNotice();
 }
 
 /**
@@ -810,6 +821,15 @@ function attachProductCodeFormatting(row) {
                     const condition = (appliedEvent.period === 'pre' && preNote)
                         ? ` (사전행사 · ${preNote})` : '';
                     showAlert(`🎁 [${formattedCode}] ${appliedEvent.event} 행사 상품입니다${condition}. 행사가 다르면 직접 바꿔주세요.`, 'success');
+                }
+
+                // 주류는 택배로 보낼 수 없다 (js/alcohol.js).
+                // 알림 자리가 하나뿐이라 나중에 부른 쪽이 화면에 남으므로, 행사 안내보다
+                // 뒤에 띄운다 — 덤을 못 받는 것보다 배송이 안 되는 쪽이 큰 일이다.
+                // 행사는 함께 적어 준다. 여기서 안 알리면 조회 시점에는 알 길이 없다.
+                if (typeof isAlcoholCode === 'function' && isAlcoholCode(formattedCode)) {
+                    const eventNote = appliedEvent.event ? ` (${appliedEvent.event} 행사 적용)` : '';
+                    showAlert(`🚫 [${formattedCode}] 주류는 택배 배송이 되지 않습니다. 매장 수령으로 안내해 주세요.${eventNote}`, 'warning');
                 }
 
                 console.log(`상품 정보 자동완성: ${formattedCode} -> ${productInfo.name} (수량: ${quantityInput.value}, 단가: ${productInfo.marketPrice ? '시세반영' : productInfo.price + '원'}, 행사: ${appliedEvent.event || '없음'}/${appliedEvent.period})`);

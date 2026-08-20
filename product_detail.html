@@ -21,6 +21,7 @@
          두 화면이 서로 다른 행사를 말하게 된다. -->
     <script src="js/utils.js"></script>
     <script src="js/admin-test.js"></script>
+    <script src="js/alcohol.js"></script>
     <script src="js/product.js"></script>
 
     <style>
@@ -87,6 +88,18 @@
             font-size: 15px;
             font-weight: 700;
             color: #b45309;
+        }
+
+        /* 주류 배송 불가 (js/alcohol.js) */
+        .no-delivery {
+            margin: 10px 0 4px;
+            padding: 8px 10px;
+            border: 2px solid #dc2626;
+            border-radius: 8px;
+            background: #fef2f2;
+            color: #b91c1c;
+            font-size: 14px;
+            font-weight: 700;
         }
 
         /* 카탈로그의 안내 아이콘 (냉장·냉동·무료배송 등) */
@@ -266,6 +279,12 @@ function renderDetail() {
     } else {
         parts.push('<div class="price">' + formatNumberWithCommas(info.price)
             + '<span class="won"> 원</span></div>');
+    }
+
+    // 주류는 택배로 보낼 수 없다 (js/alcohol.js). 값은 주문서와 같은 코드에서 온다 —
+    // 여기서 따로 판단하면 두 창이 같은 상품을 놓고 다른 말을 하게 된다.
+    if (typeof isAlcoholInfo === 'function' && isAlcoholInfo(info)) {
+        parts.push('<div class="no-delivery">🚫 주류 — 택배 배송 불가, 매장에서 직접 수령</div>');
     }
 
     parts.push(renderInfoIcons(info, cfg));

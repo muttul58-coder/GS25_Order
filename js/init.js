@@ -111,6 +111,9 @@ function initializePage() {
         input.value = today;
         input.min = today;
     });
+
+    // 주류 배송 불가 안내 초기 상태 (js/alcohol.js)
+    updateAlcoholNotice();
 }
 
 // ========================================

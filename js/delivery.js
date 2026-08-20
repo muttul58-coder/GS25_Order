@@ -334,12 +334,14 @@ function reconcileDeliveryQuantities() {
 function validateDeliveryQuantities() {
     // 주문 상품별 수량 수집
     // 구매 수량이 아니라 지급 수량(덤 포함) 기준 — 실제로 배송되는 개수와 맞춰야 한다
+    // 주류는 배송 대상이 아니므로 세지 않는다. 세면 배분할 방법이 없는 상품을 두고
+    // "배송 수량 0 / 지급 수량 1" 이 영원히 뜨면서 전송까지 막힌다.
     const orderProducts = {};
     const productRows = document.getElementById('productTableBody').querySelectorAll('.product-row');
     productRows.forEach(row => {
         const code = row.querySelector('.product-code').value.trim();
         const qty = getRowGivenQuantity(row);
-        if (code) {
+        if (code && !(typeof isAlcoholCode === 'function' && isAlcoholCode(code))) {
             orderProducts[code] = (orderProducts[code] || 0) + qty;
         }
     });

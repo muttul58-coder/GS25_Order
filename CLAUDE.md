@@ -45,6 +45,7 @@ GS25_Order/
 ├── js/
 │   ├── utils.js          # Global vars, alerts, formatting, phone auto-hyphen (~100 lines)
 │   ├── address.js        # Daum Postcode API address search (~75 lines)
+│   ├── alcohol.js        # 주류 배송 불가 판별 + 안내 (~230 lines)
 │   ├── product.js        # Product CRUD, calculation, barcode (~480 lines)
 │   ├── delivery.js       # Delivery product management, quantity validation (~250 lines)
 │   ├── copy-sync.js      # Info copy/sync between orderer, sender, receiver (~230 lines)
@@ -96,7 +97,8 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 <!-- App modules (order matters!) -->
 <script src="js/utils.js"></script>          <!-- No dependencies -->
 <script src="js/address.js"></script>        <!-- No dependencies -->
-<script src="js/product.js"></script>        <!-- Depends on: utils -->
+<script src="js/alcohol.js"></script>        <!-- No dependencies (reads PRODUCTS_DATA/CATEGORIES) -->
+<script src="js/product.js"></script>        <!-- Depends on: utils, alcohol -->
 <script src="js/delivery.js"></script>       <!-- Depends on: utils, product -->
 <script src="js/copy-sync.js"></script>      <!-- Depends on: utils -->
 <script src="js/validation.js"></script>     <!-- Depends on: utils, delivery -->
@@ -112,6 +114,7 @@ Application code is split into **3 CSS files** and **10 JS files** loaded via `<
 |---|---|---|
 | `js/utils.js` | `showAlert()`, `formatNumberWithCommas()`, `parseFormattedNumber()`, `getTodayDate()`, `updateDateTime()`, `isMobileDevice()`, `formatPhoneNumber()`, `initPhoneFormatting()` | Global utilities, number formatting, phone auto-hyphen |
 | `js/address.js` | `searchOrdererAddress()`, `searchSenderAddress()`, `searchReceiverAddress()` | Daum Postcode API integration |
+| `js/alcohol.js` | `alcoholCategories()`, `isAlcoholInfo()`, `isAlcoholCode()`, `countAlcoholProducts()`, `scanOrderForAlcohol()`, `isAlcoholOnlyOrder()`, `markAlcoholRows()`, `updateAlcoholNotice()` | 주류 판별(분류 이름 기준) + 배송 불가 안내. `order_form.html` / `order_split.html` / `product_detail.html` / `admin.html` 네 화면이 모두 읽는다 |
 | `js/product.js` | `resolveCodeDigits()`, `getProductInfo()`, `formatProductCode()`, `addProductRow()`, `calculateGivenQuantity()`, `getApplicableEvent()`, `applyCatalogEvent()`, `getRowGivenQuantity()`, `calculateRowTotal()`, `updateProductTotals()`, `updateBarcodeImages()`, `catalogSearchLink()`, `openCatalogPopup()` | Product code lookup, table row CRUD, promotion auto-select, given-quantity + total calculation, barcode display + detail popup |
 | `js/delivery.js` | `refreshDeliveryProductSelects()`, `onDeliveryProductCodeChange()`, `addDeliveryProductRow()`, `removeDeliveryProductRow()`, `getDeliveryQuantityLimit()`, `clampDeliveryQuantity()`, `reconcileDeliveryQuantities()`, `validateDeliveryQuantities()` | Delivery product selection, quantity clamping/reconciliation, validation |
 | `js/copy-sync.js` | `toggleOrdererInfoCopy()`, `toggleReceiverInfoCopy()`, `syncFromOrderer()`, `syncFromSender()`, `initCopySync()` | Auto-copy orderer info to sender/receiver with live sync |
@@ -236,6 +239,48 @@ does paint a banner to defer to.
 to 삼성/KB국민/비씨/신한 card payments) and is appended to the auto-select toast. Do not
 drop it — a clerk who promises a bonus that the payment method does not qualify for
 has to make it good.
+
+### 주류 배송 불가 (`js/alcohol.js`)
+
+주류는 택배로 보낼 수 없다 — 손님이 매장에서 직접 받아 가야 한다. 2026 추석
+카탈로그에서는 601개 중 85개(양주/와인 62, 소주/전통주 23)가 여기 해당한다.
+
+**판별은 카탈로그 분류의 *이름*으로 한다. 번호로 하지 않는다.** 분류 번호는
+시즌마다 다시 매겨지므로 `cat === 10` 같은 상수를 코드에 적으면 다음 시즌에
+조용히 엉뚱한 분류가 주류가 된다 — 그 순간 이 화면은 "배송되는 술"과 "배송 안 되는
+통조림"을 만들어 낸다. `alcoholCategories()`가 `CATEGORIES` 의 라벨을
+`ALCOHOL_LABEL_PATTERN` 으로 걸러 번호 집합을 만든다.
+
+`CATEGORIES` 는 카탈로그 번들 스크랩이 실패하면 `null` 이 될 수 있다(위의
+**Category browsing** 참고). 그러면 주류를 가려낼 수단이 아예 없으므로 조용히
+넘어가지 않는다: `console.error` 를 남기고, **관리자 홈이 `배송 불가 (주류)` 칸에
+"판별 불가"로 표시한다** — 0 이라고 적으면 관리자는 "이번 시즌엔 술이 없구나"로
+읽는다. 이 칸의 숫자와 분류 이름은 전부 데이터에서 계산한다. 시즌 값을 적지 말 것.
+
+동작은 두 갈래다:
+
+- **주류 + 일반 상품이 섞인 주문** — 배송 정보 영역은 그대로 둔다. 일반 상품은
+  어딘가로 보내야 하기 때문이다. 주류만 배송 배분에서 빠지고, 어떤 상품이 매장
+  수령인지 빨간 띠로 알린다.
+- **주문한 상품이 전부 주류** — 받을 배송지가 없으므로 `#orderSectionsContainer`
+  와 `배송 정보 추가` 버튼을 숨기고 안내가 그 자리를 대신한다.
+
+주류를 배송에서 빼는 지점은 **두 곳이고 둘 다 필요하다**: `getOrderProductList()`
+(배송 상품 콤보박스와 잔량 계산의 유일한 입력)와 `validateDeliveryQuantities()`
+(자체적으로 상품 행을 훑는다). 후자를 빠뜨리면 배분할 방법이 없는 상품을 두고
+"배송 수량 0 / 지급 수량 1"이 영원히 뜨면서 전송까지 막힌다.
+
+전부 주류일 때는 `validateAllInputs()` / `checkSequentialInput()` 이 섹션 검사를
+건너뛰고, `collectOrderData()` 는 숨겨 둔 빈 칸을 긁지 않는다(`주문목록: []`).
+대신 `배송불가: { 사유, 상품목록 }` 을 싣는다 — 이걸 안 보내면 시트를 받는 쪽에서는
+상품 정보에는 있는데 배송 상품 목록에는 없는 상품이 되어 빠뜨린 주문으로 보인다.
+`apps_script.js` 의 `writeNoDeliverySection()` 이 그 칸을 그린다(관리자가 Apps
+Script 를 다시 배포해야 반영된다).
+
+안내와 행 뱃지는 **인쇄된다**(`.no-print` 가 아니다). 종이에서 배송지 칸만 비어
+있으면 빠뜨린 주문서로 보이기 때문이다. 조회 시점 알림은 행사 알림보다 **뒤에**
+띄운다 — 알림 자리가 하나뿐이라 나중에 부른 쪽이 화면에 남고, 덤을 못 받는 것보다
+배송이 안 되는 쪽이 큰 일이다. 그래서 그 문구에 행사도 함께 적는다.
 
 ### Color Scheme (section theming)
 
