@@ -10,7 +10,12 @@ const PROMO_CONFIG = {
   preNote: "삼성/KB국민/비씨/신한카드 결제 시",
   catalogSearch: "https://gs25mobile.com/2026_2nd/products/1/0?search=",  // 카탈로그 검색 주소 (뒤에 상품코드가 붙는다)
   catalogImage: "https://gs25mobile.com/2026_2nd/goods/",  // 상품 사진 주소 (뒤에 <상품코드>.webp 가 붙는다)
-  catalogIcons: "https://gs25mobile.com/2026_2nd/icons/benefit_"   // 안내 아이콘 주소 (뒤에 <번호>.png 가 붙는다)
+  catalogIcons: "https://gs25mobile.com/2026_2nd/icons/benefit_",   // 안내 아이콘 주소 (뒤에 <번호>.png 가 붙는다)
+  // 택배로 보낼 수 없는 분류(주류). 이 분류의 상품은 배송 배분에서 빠지고
+  // 매장 수령 안내가 뜬다 (js/alcohol.js). 분류 번호는 시즌마다 바뀌므로
+  // 여기 적힌 값이 이번 시즌의 정답이다. (분류 이름에서 자동으로 찾음)
+  noDeliveryCats: {"pre": [], "main": [10, 11]},
+  noDeliveryLabels: ["양주/와인", "소주/전통주"]
 };
 
 // 카탈로그 목록의 분류 (카탈로그 사이트에서 가져옴)
